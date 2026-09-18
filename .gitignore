@@ -8,5 +8,6 @@ __pycache__/
 .pytest_cache/
 *.pyc
 *.log
+*.tsbuildinfo
 artifacts/
 .DS_Store

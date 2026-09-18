@@ -38,11 +38,12 @@ def extract(text, record_id=''):
         raw = text[start:end]
         entities.append(dict(type=kind, raw=raw, start=start, end=end, confidence=confidence,
                              normalized=normalize(kind, raw), role=role, sourceRecordId=record_id))
+    # Explicit account context wins over a phone-shaped 10-digit number.
+    for match in ACCOUNT.finditer(text):
+        add('Account', match.start(1), match.end(1))
     for kind, pattern in PATTERNS:
         for match in re.finditer(pattern, text):
             add(kind, match.start(), match.end())
-    for match in ACCOUNT.finditer(text):
-        add('Account', match.start(1), match.end(1))
     for match in PERSON.finditer(text):
         # Stop at separators; capitalization is checked independently of cue case.
         raw = match.group(2)

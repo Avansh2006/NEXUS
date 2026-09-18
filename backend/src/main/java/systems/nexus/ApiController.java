@@ -24,6 +24,7 @@ public class ApiController {
     @GetMapping("/entities/{id}") public Map<String,Object> entity(@PathVariable String id) {return service.detail(id);}
     private JsonNode part(String key) {return service.graph().analysis().has(key)?service.graph().analysis().get(key):json.createArrayNode();}
     @GetMapping("/clusters") public JsonNode clusters() {return part("communities");}
+    @GetMapping("/case-links") public JsonNode caseLinks() {return part("caseLinks");}
     @GetMapping("/influencers") public JsonNode influencers() {return part("metrics");}
     @GetMapping("/suspicious-patterns") public JsonNode alerts() {return part("alerts");}
     @GetMapping("/timeline/{id}") public List<Map<String,Object>> timeline(@PathVariable String id) {return service.timeline(id);}

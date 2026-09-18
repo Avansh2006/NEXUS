@@ -44,7 +44,8 @@ public final class GraphBuilder {
         add(n.properties(),"caseIds",caseId);
         String eid="ev-"+hash(s.id()+"|"+nid+"|"+start+"|"+end).substring(0,24);
         add(n.properties(),"evidenceIds",eid);
-        if(evidence.stream().noneMatch(e->e.id().equals(eid))) evidence.add(new Evidence(eid,s.id(),nid,null,start,end,s.payload().path("_row").asInt(1),label,confidence));
+        String raw=start!=null&&end!=null?s.payload().path("text").asText().substring(start,end):label;
+        if(evidence.stream().noneMatch(e->e.id().equals(eid))) evidence.add(new Evidence(eid,s.id(),nid,null,start,end,s.payload().path("_row").asInt(1),raw,confidence));
         return nid;
     }
     @SuppressWarnings("unchecked")

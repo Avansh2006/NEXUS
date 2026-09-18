@@ -27,6 +27,7 @@ def test_extract_spans_and_normalization():
     assert all(text[e['start']:e['end']]==e['raw'] and e['sourceRecordId']=='record' for e in entities)
     assert normalize('Phone','+91 9876543210')==normalize('Phone','9876543210')=='+919876543210'
     assert not extract('Phone 12345 is incomplete.')
+    assert extract('Account 9876543210.')[0]['type']=='Account'
 
 
 def test_gold_metrics():
@@ -84,6 +85,14 @@ def test_determinism_and_empty():
     assert analyze(g)==analyze(g)
     assert analyze(dict(nodes=[],edges=[]))['metrics']==[]
     assert analyze(dict(nodes=[node('a')],edges=[]))['metrics'][0]['degree']==0
+
+
+def test_case_links_exclude_public_identifiers():
+    g=dict(nodes=[node('a','Phone',['A','B']),node('public','Phone',['A','C'],'SYN-PHONE-999')],edges=[])
+    result=analyze(g)
+    assert len(result['caseLinks'])==1
+    assert result['caseLinks'][0]['caseIds']==['A','B']
+    assert result['counts']['casesLinked']==2
 
 
 def test_api_contract():

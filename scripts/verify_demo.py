@@ -52,6 +52,8 @@ def main():
     analysis_time=time.perf_counter()-started
     assert set(truth['expectedRules'])<={a['ruleId'] for a in analysis['alerts']}
     assert analysis==request('/analyze',{}),'Analysis must be deterministic'
+    assert analysis['counts']['casesLinked']==3
+    assert len(analysis['caseLinks'])==3
     public=next(n for n in graph['nodes'] if n['label']==truth['publicPhone'])
     assert any(a['suppressed'] and public['id'] in a['entityIds'] for a in analysis['alerts'])
     assert all(a['evidenceIds'] and set(a['evidenceIds'])<=ev.keys() for a in analysis['alerts'])
@@ -60,7 +62,7 @@ def main():
     phone=next(n for n in graph['nodes'] if n['label']==truth['sharedPhone'])
     account=next(n for n in graph['nodes'] if n['label']==truth['sharedAccount'])
     nid=phone['id']
-    for endpoint in ['/entities/'+nid,'/network/'+nid+'?hops=2','/entities/search?q=SYN-PHONE-001','/clusters','/influencers','/suspicious-patterns','/timeline/'+nid,'/link-suggestions','/quality','/audit','/health']:
+    for endpoint in ['/entities/'+nid,'/network/'+nid+'?hops=2','/entities/search?q=SYN-PHONE-001','/clusters','/case-links','/influencers','/suspicious-patterns','/timeline/'+nid,'/link-suggestions','/quality','/audit','/health']:
         assert request(endpoint) is not None
     path=request('/paths?from='+nid+'&to='+account['id'])
     assert path['nodeIds'][0]==nid and path['nodeIds'][-1]==account['id'] and path['edges']

@@ -22,6 +22,7 @@ def analyze(payload, rules=None):
     communities = sorted((sorted(c) for c in communities), key=lambda c: c[0])
     membership = {n: i for i, c in enumerate(communities) for n in c}
     degree, between = nx.degree_centrality(graph), nx.betweenness_centrality(graph)
+    articulation = set(nx.articulation_points(graph))
     max_b = max(between.values(), default=0) or 1
     max_c = max((len(n.get('properties', {}).get('caseIds', [])) for n in nodes.values()), default=0) or 1
     metrics = []
@@ -53,15 +54,15 @@ def analyze(payload, rules=None):
         person_cases = {c for p in persons for c in nodes[p].get('properties', {}).get('caseIds', [])}
         if node['type'] == 'Phone' and len(person_cases) >= cfg['shared_cases']:
             suppressed = node['label'] in cfg['public_identifiers']
-            emit('R1', [nid, *persons], related,
+            emit('R1', [nid, *persons], [e for e in related if e['type'] in ('USES','CONNECTED_TO_CASE')],
                  f"{node['label']} links {len(persons)} people across {len(person_cases)} cases." +
                  (' Suppressed — public/service number; shared use is expected.' if suppressed else ' Review source records before drawing conclusions.'), suppressed)
         if node['type'] == 'Account' and (len(persons) >= cfg['shared_persons'] or len(cases) >= cfg['shared_cases']):
             suppressed = node['label'] in cfg['public_identifiers']
-            emit('R2', [nid, *persons], related, f"{node['label']} is linked to {len(persons)} people and {len(cases)} cases." +
+            emit('R2', [nid, *persons], [e for e in related if e['type'] in ('OWNS','USES','CONNECTED_TO_CASE')], f"{node['label']} is linked to {len(persons)} people and {len(cases)} cases." +
                  (' Suppressed — public/service number.' if suppressed else ' Shared account is a lead for review.'), suppressed)
         neighbor_communities = {membership[n] for n in graph.neighbors(nid)}
-        if len(neighbor_communities) >= 2 and between[nid] >= cfg['bridge_betweenness']:
+        if len(neighbor_communities) >= 2 and (nid in articulation or between[nid] >= cfg['bridge_betweenness']):
             emit('R3', [nid], related, f"{node['label']} connects {len(neighbor_communities)} communities; normalized betweenness is {between[nid]:.4f}.")
     incoming, outgoing = defaultdict(list), defaultdict(list)
     for e in edges:
@@ -84,7 +85,7 @@ def analyze(payload, rules=None):
                         delta = (datetime.fromisoformat(b['timestamp'].replace('Z', '+00:00')) - datetime.fromisoformat(a['timestamp'].replace('Z', '+00:00'))).total_seconds()/60
                         if 0 <= delta <= cfg['pass_through_minutes']:
                             pairs += 1
-                            support.extend([ein, eout])
+                            support.append({'properties': {'evidenceIds': [a['evidenceId'], b['evidenceId']]}})
         if pairs:
             emit('R4', [target], support, f'Rapid pass-through: {pairs} incoming/outgoing transfer pairs within {cfg["pass_through_minutes"]} minutes. Timing alone does not establish the origin of funds.')
     at_location = defaultdict(list)
@@ -107,8 +108,19 @@ def analyze(payload, rules=None):
     for e in edges:
         if e['type'] == 'CO_ACCUSED' and len(e['properties'].get('caseIds', [])) >= cfg['shared_cases']:
             emit('R6', [e['source'], e['target']], [e], f'The same 2 people are co-accused in {len(e["properties"]["caseIds"])} cases. This is a record relationship, not a finding of guilt.')
+    links = defaultdict(list)
+    for nid, n in nodes.items():
+        if n['type'] in ('Phone', 'Account') and n['label'] not in cfg['public_identifiers']:
+            for pair in combinations(sorted(n.get('properties', {}).get('caseIds', [])), 2):
+                links[pair].append(nid)
+    case_links = []
+    for pair, ids in sorted(links.items()):
+        support = sorted({eid for nid in ids for eid in nodes[nid]['properties'].get('evidenceIds', [])})
+        case_links.append(dict(caseIds=list(pair), entityIds=sorted(ids), evidenceIds=support,
+                               explanation=f'{pair[0]} and {pair[1]} share {len(ids)} non-public phone/account identifiers. Review the underlying records; cases are not automatically merged.'))
     return dict(metrics=sorted(metrics, key=lambda m: (-m['influence'],m['entityId'])),
                 alerts=sorted(alerts,key=lambda a:(a['ruleId'], a['id'])),
+                caseLinks=case_links,
                 communities=[dict(id=i, entityIds=c) for i,c in enumerate(communities)],
                 counts=dict(records=len(payload.get('records', [])), entities=len(nodes), relationships=len(edges),
                             casesLinked=len({c for n in nodes.values() if n['type'] in ('Phone','Account') and n['label'] not in cfg['public_identifiers'] and len(n.get('properties',{}).get('caseIds',[]))>1 for c in n['properties']['caseIds']})))

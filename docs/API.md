@@ -24,6 +24,7 @@ Metrics: `{entityId,degree,betweenness,caseComponent,influence,community}`.
 | GET /entities/{id} | none | `{node,edges,evidence,records,alerts}` | 404 |
 | GET /entities/search | `?q=` (max 100 chars) | Node[] case-insensitive match | 400 |
 | GET /clusters | none | `{id,entityIds}[]` | — |
+| GET /case-links | none | `{caseIds,entityIds,evidenceIds,explanation}[]` shared non-public identifier leads | — |
 | GET /influencers | none | Metrics[] descending influence | — |
 | GET /suspicious-patterns | none | Alert[] including suppressed | — |
 | GET /timeline/{entityId} | none | `{edgeId,timestamp,evidenceId,type}[]` sorted | 404 |
