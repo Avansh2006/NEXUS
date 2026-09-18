@@ -1,0 +1,13 @@
+{
+  "seed": 42,
+  "shared_cases": 2,
+  "shared_persons": 2,
+  "repeated_transfers": 3,
+  "fan_in_senders": 3,
+  "pass_through_minutes": 30,
+  "colocation_minutes": 15,
+  "colocation_windows": 2,
+  "bridge_betweenness": 0.04,
+  "public_identifiers": ["SYN-PHONE-999"],
+  "influence_weights": {"degree": 0.45, "betweenness": 0.35, "cases": 0.20}
+}

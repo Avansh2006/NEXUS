@@ -1,0 +1,269 @@
+[
+  {
+    "id": "gold-00",
+    "text": "Accused Aariv Veylan; phone SYN-PHONE-001.",
+    "entities": [
+      {
+        "type": "Person",
+        "raw": "Aariv Veylan",
+        "start": 8,
+        "end": 20
+      },
+      {
+        "type": "Phone",
+        "raw": "SYN-PHONE-001",
+        "start": 28,
+        "end": 41
+      }
+    ]
+  },
+  {
+    "id": "gold-01",
+    "text": "Witness Mira Solven; account SYN-ACCOUNT-003.",
+    "entities": [
+      {
+        "type": "Person",
+        "raw": "Mira Solven",
+        "start": 8,
+        "end": 19
+      },
+      {
+        "type": "Account",
+        "raw": "SYN-ACCOUNT-003",
+        "start": 29,
+        "end": 44
+      }
+    ]
+  },
+  {
+    "id": "gold-02",
+    "text": "Complainant Dev Neral; vehicle ZZ00NX0001.",
+    "entities": [
+      {
+        "type": "Person",
+        "raw": "Dev Neral",
+        "start": 12,
+        "end": 21
+      },
+      {
+        "type": "Vehicle",
+        "raw": "ZZ00NX0001",
+        "start": 31,
+        "end": 41
+      }
+    ]
+  },
+  {
+    "id": "gold-03",
+    "text": "Seen at Navapur Exchange.",
+    "entities": [
+      {
+        "type": "Location",
+        "raw": "Navapur Exchange",
+        "start": 8,
+        "end": 24
+      }
+    ]
+  },
+  {
+    "id": "gold-04",
+    "text": "Veyra Services used SYN-ACCOUNT-900.",
+    "entities": [
+      {
+        "type": "Organization",
+        "raw": "Veyra Services",
+        "start": 0,
+        "end": 14
+      },
+      {
+        "type": "Account",
+        "raw": "SYN-ACCOUNT-900",
+        "start": 20,
+        "end": 35
+      }
+    ]
+  },
+  {
+    "id": "gold-05",
+    "text": "No identifiers were provided.",
+    "entities": []
+  },
+  {
+    "id": "gold-06",
+    "text": "Phone 12345 is incomplete.",
+    "entities": []
+  },
+  {
+    "id": "gold-07",
+    "text": "A date 2026-09-02 is not an account.",
+    "entities": []
+  },
+  {
+    "id": "gold-08",
+    "text": "Co-accused Lio Marven; phone SYN-PHONE-020.",
+    "entities": [
+      {
+        "type": "Person",
+        "raw": "Lio Marven",
+        "start": 11,
+        "end": 21
+      },
+      {
+        "type": "Phone",
+        "raw": "SYN-PHONE-020",
+        "start": 29,
+        "end": 42
+      }
+    ]
+  },
+  {
+    "id": "gold-09",
+    "text": "Witness Aariv Veylen; location Navapur Sector 6.",
+    "entities": [
+      {
+        "type": "Person",
+        "raw": "Aariv Veylen",
+        "start": 8,
+        "end": 20
+      },
+      {
+        "type": "Location",
+        "raw": "Navapur Sector 6",
+        "start": 31,
+        "end": 47
+      }
+    ]
+  },
+  {
+    "id": "gold-10",
+    "text": "SYN-PHONE-001 called SYN-PHONE-999.",
+    "entities": [
+      {
+        "type": "Phone",
+        "raw": "SYN-PHONE-001",
+        "start": 0,
+        "end": 13
+      },
+      {
+        "type": "Phone",
+        "raw": "SYN-PHONE-999",
+        "start": 21,
+        "end": 34
+      }
+    ]
+  },
+  {
+    "id": "gold-11",
+    "text": "SYN-ACCOUNT-001 paid SYN-ACCOUNT-900.",
+    "entities": [
+      {
+        "type": "Account",
+        "raw": "SYN-ACCOUNT-001",
+        "start": 0,
+        "end": 15
+      },
+      {
+        "type": "Account",
+        "raw": "SYN-ACCOUNT-900",
+        "start": 21,
+        "end": 36
+      }
+    ]
+  },
+  {
+    "id": "gold-12",
+    "text": "Accused Rivan Kesh; phone SYN-PHONE-004.",
+    "entities": [
+      {
+        "type": "Person",
+        "raw": "Rivan Kesh",
+        "start": 8,
+        "end": 18
+      },
+      {
+        "type": "Phone",
+        "raw": "SYN-PHONE-004",
+        "start": 26,
+        "end": 39
+      }
+    ]
+  },
+  {
+    "id": "gold-13",
+    "text": "Accused Rivan Kesh; phone SYN-PHONE-005.",
+    "entities": [
+      {
+        "type": "Person",
+        "raw": "Rivan Kesh",
+        "start": 8,
+        "end": 18
+      },
+      {
+        "type": "Phone",
+        "raw": "SYN-PHONE-005",
+        "start": 26,
+        "end": 39
+      }
+    ]
+  },
+  {
+    "id": "gold-14",
+    "text": "Vehicle ZZ00NX0001 at Navapur Sector 5.",
+    "entities": [
+      {
+        "type": "Vehicle",
+        "raw": "ZZ00NX0001",
+        "start": 8,
+        "end": 18
+      },
+      {
+        "type": "Location",
+        "raw": "Navapur Sector 5",
+        "start": 22,
+        "end": 38
+      }
+    ]
+  },
+  {
+    "id": "gold-15",
+    "text": "Witness Isha Torven; Veyra Services.",
+    "entities": [
+      {
+        "type": "Person",
+        "raw": "Isha Torven",
+        "start": 8,
+        "end": 19
+      },
+      {
+        "type": "Organization",
+        "raw": "Veyra Services",
+        "start": 21,
+        "end": 35
+      }
+    ]
+  },
+  {
+    "id": "gold-16",
+    "text": "Amount INR 1,250.00 is alleged.",
+    "entities": [
+      {
+        "type": "Amount",
+        "raw": "INR 1,250.00",
+        "start": 7,
+        "end": 19
+      }
+    ]
+  },
+  {
+    "id": "gold-17",
+    "text": "UPI demo@synthetic.invalid is fictional.",
+    "entities": [
+      {
+        "type": "Account",
+        "raw": "demo@synthetic.invalid",
+        "start": 4,
+        "end": 26
+      }
+    ]
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "sharedPhone": "SYN-PHONE-001",
+  "sharedAccount": "SYN-ACCOUNT-001",
+  "linkedCases": [
+    "NXS-001",
+    "NXS-002",
+    "NXS-003"
+  ],
+  "publicPhone": "SYN-PHONE-999",
+  "distinctName": "Rivan Kesh",
+  "variantNames": [
+    "Aariv Veylan",
+    "Aariv Veylen"
+  ],
+  "expectedRules": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6"
+  ],
+  "records": 121
+}

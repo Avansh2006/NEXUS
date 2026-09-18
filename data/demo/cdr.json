@@ -1,0 +1,514 @@
+[
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-110",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "duration": 347,
+    "location": "Navapur Sector 1"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-111",
+    "timestamp": "2026-09-02T10:10:00Z",
+    "duration": 77,
+    "location": "Navapur Sector 1"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-112",
+    "timestamp": "2026-09-02T10:20:00Z",
+    "duration": 32,
+    "location": "Navapur Sector 1"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-113",
+    "timestamp": "2026-09-02T10:30:00Z",
+    "duration": 160,
+    "location": "Navapur Sector 1"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-114",
+    "timestamp": "2026-09-02T10:40:00Z",
+    "duration": 145,
+    "location": "Navapur Sector 1"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-115",
+    "timestamp": "2026-09-02T10:50:00Z",
+    "duration": 134,
+    "location": "Navapur Sector 1"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-116",
+    "timestamp": "2026-09-02T11:00:00Z",
+    "duration": 91,
+    "location": "Navapur Sector 1"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-117",
+    "timestamp": "2026-09-02T11:10:00Z",
+    "duration": 72,
+    "location": "Navapur Sector 1"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-118",
+    "timestamp": "2026-09-02T11:20:00Z",
+    "duration": 299,
+    "location": "Navapur Sector 1"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-119",
+    "timestamp": "2026-09-02T11:30:00Z",
+    "duration": 64,
+    "location": "Navapur Sector 1"
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-120",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "duration": 322,
+    "location": "Navapur Sector 2"
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-121",
+    "timestamp": "2026-09-03T10:10:00Z",
+    "duration": 236,
+    "location": "Navapur Sector 2"
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-122",
+    "timestamp": "2026-09-03T10:20:00Z",
+    "duration": 36,
+    "location": "Navapur Sector 2"
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-123",
+    "timestamp": "2026-09-03T10:30:00Z",
+    "duration": 35,
+    "location": "Navapur Sector 2"
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-124",
+    "timestamp": "2026-09-03T10:40:00Z",
+    "duration": 67,
+    "location": "Navapur Sector 2"
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-125",
+    "timestamp": "2026-09-03T10:50:00Z",
+    "duration": 131,
+    "location": "Navapur Sector 2"
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-126",
+    "timestamp": "2026-09-03T11:00:00Z",
+    "duration": 139,
+    "location": "Navapur Sector 2"
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-127",
+    "timestamp": "2026-09-03T11:10:00Z",
+    "duration": 278,
+    "location": "Navapur Sector 2"
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-128",
+    "timestamp": "2026-09-03T11:20:00Z",
+    "duration": 328,
+    "location": "Navapur Sector 2"
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-129",
+    "timestamp": "2026-09-03T11:30:00Z",
+    "duration": 33,
+    "location": "Navapur Sector 2"
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-130",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "duration": 307,
+    "location": "Navapur Sector 3"
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-131",
+    "timestamp": "2026-09-04T10:10:00Z",
+    "duration": 121,
+    "location": "Navapur Sector 3"
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-132",
+    "timestamp": "2026-09-04T10:20:00Z",
+    "duration": 352,
+    "location": "Navapur Sector 3"
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-133",
+    "timestamp": "2026-09-04T10:30:00Z",
+    "duration": 299,
+    "location": "Navapur Sector 3"
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-134",
+    "timestamp": "2026-09-04T10:40:00Z",
+    "duration": 234,
+    "location": "Navapur Sector 3"
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-135",
+    "timestamp": "2026-09-04T10:50:00Z",
+    "duration": 132,
+    "location": "Navapur Sector 3"
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-136",
+    "timestamp": "2026-09-04T11:00:00Z",
+    "duration": 249,
+    "location": "Navapur Sector 3"
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-137",
+    "timestamp": "2026-09-04T11:10:00Z",
+    "duration": 321,
+    "location": "Navapur Sector 3"
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-138",
+    "timestamp": "2026-09-04T11:20:00Z",
+    "duration": 162,
+    "location": "Navapur Sector 3"
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-139",
+    "timestamp": "2026-09-04T11:30:00Z",
+    "duration": 23,
+    "location": "Navapur Sector 3"
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-PHONE-004",
+    "to": "SYN-PHONE-140",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "duration": 101,
+    "location": "Navapur Sector 4"
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-PHONE-004",
+    "to": "SYN-PHONE-141",
+    "timestamp": "2026-09-05T10:10:00Z",
+    "duration": 236,
+    "location": "Navapur Sector 4"
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-PHONE-004",
+    "to": "SYN-PHONE-142",
+    "timestamp": "2026-09-05T10:20:00Z",
+    "duration": 194,
+    "location": "Navapur Sector 4"
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-PHONE-004",
+    "to": "SYN-PHONE-143",
+    "timestamp": "2026-09-05T10:30:00Z",
+    "duration": 162,
+    "location": "Navapur Sector 4"
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-PHONE-004",
+    "to": "SYN-PHONE-144",
+    "timestamp": "2026-09-05T10:40:00Z",
+    "duration": 99,
+    "location": "Navapur Sector 4"
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-PHONE-004",
+    "to": "SYN-PHONE-145",
+    "timestamp": "2026-09-05T10:50:00Z",
+    "duration": 130,
+    "location": "Navapur Sector 4"
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-PHONE-004",
+    "to": "SYN-PHONE-146",
+    "timestamp": "2026-09-05T11:00:00Z",
+    "duration": 192,
+    "location": "Navapur Sector 4"
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-PHONE-004",
+    "to": "SYN-PHONE-147",
+    "timestamp": "2026-09-05T11:10:00Z",
+    "duration": 72,
+    "location": "Navapur Sector 4"
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-PHONE-004",
+    "to": "SYN-PHONE-148",
+    "timestamp": "2026-09-05T11:20:00Z",
+    "duration": 67,
+    "location": "Navapur Sector 4"
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-PHONE-004",
+    "to": "SYN-PHONE-149",
+    "timestamp": "2026-09-05T11:30:00Z",
+    "duration": 214,
+    "location": "Navapur Sector 4"
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-PHONE-005",
+    "to": "SYN-PHONE-150",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "duration": 69,
+    "location": "Navapur Sector 5"
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-PHONE-005",
+    "to": "SYN-PHONE-151",
+    "timestamp": "2026-09-06T10:10:00Z",
+    "duration": 203,
+    "location": "Navapur Sector 5"
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-PHONE-005",
+    "to": "SYN-PHONE-152",
+    "timestamp": "2026-09-06T10:20:00Z",
+    "duration": 196,
+    "location": "Navapur Sector 5"
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-PHONE-005",
+    "to": "SYN-PHONE-153",
+    "timestamp": "2026-09-06T10:30:00Z",
+    "duration": 329,
+    "location": "Navapur Sector 5"
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-PHONE-005",
+    "to": "SYN-PHONE-154",
+    "timestamp": "2026-09-06T10:40:00Z",
+    "duration": 155,
+    "location": "Navapur Sector 5"
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-PHONE-005",
+    "to": "SYN-PHONE-155",
+    "timestamp": "2026-09-06T10:50:00Z",
+    "duration": 42,
+    "location": "Navapur Sector 5"
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-PHONE-005",
+    "to": "SYN-PHONE-156",
+    "timestamp": "2026-09-06T11:00:00Z",
+    "duration": 255,
+    "location": "Navapur Sector 5"
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-PHONE-005",
+    "to": "SYN-PHONE-157",
+    "timestamp": "2026-09-06T11:10:00Z",
+    "duration": 294,
+    "location": "Navapur Sector 5"
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-PHONE-005",
+    "to": "SYN-PHONE-158",
+    "timestamp": "2026-09-06T11:20:00Z",
+    "duration": 83,
+    "location": "Navapur Sector 5"
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-PHONE-005",
+    "to": "SYN-PHONE-159",
+    "timestamp": "2026-09-06T11:30:00Z",
+    "duration": 213,
+    "location": "Navapur Sector 5"
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-PHONE-006",
+    "to": "SYN-PHONE-160",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "duration": 60,
+    "location": "Navapur Sector 6"
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-PHONE-006",
+    "to": "SYN-PHONE-161",
+    "timestamp": "2026-09-07T10:10:00Z",
+    "duration": 302,
+    "location": "Navapur Sector 6"
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-PHONE-006",
+    "to": "SYN-PHONE-162",
+    "timestamp": "2026-09-07T10:20:00Z",
+    "duration": 170,
+    "location": "Navapur Sector 6"
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-PHONE-006",
+    "to": "SYN-PHONE-163",
+    "timestamp": "2026-09-07T10:30:00Z",
+    "duration": 341,
+    "location": "Navapur Sector 6"
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-PHONE-006",
+    "to": "SYN-PHONE-164",
+    "timestamp": "2026-09-07T10:40:00Z",
+    "duration": 336,
+    "location": "Navapur Sector 6"
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-PHONE-006",
+    "to": "SYN-PHONE-165",
+    "timestamp": "2026-09-07T10:50:00Z",
+    "duration": 205,
+    "location": "Navapur Sector 6"
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-PHONE-006",
+    "to": "SYN-PHONE-166",
+    "timestamp": "2026-09-07T11:00:00Z",
+    "duration": 315,
+    "location": "Navapur Sector 6"
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-PHONE-006",
+    "to": "SYN-PHONE-167",
+    "timestamp": "2026-09-07T11:10:00Z",
+    "duration": 118,
+    "location": "Navapur Sector 6"
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-PHONE-006",
+    "to": "SYN-PHONE-168",
+    "timestamp": "2026-09-07T11:20:00Z",
+    "duration": 55,
+    "location": "Navapur Sector 6"
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-PHONE-006",
+    "to": "SYN-PHONE-169",
+    "timestamp": "2026-09-07T11:30:00Z",
+    "duration": 43,
+    "location": "Navapur Sector 6"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-800",
+    "timestamp": "2026-09-02T15:00:00Z",
+    "duration": 60,
+    "location": "Navapur Exchange"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-020",
+    "to": "SYN-PHONE-800",
+    "timestamp": "2026-09-02T15:00:00Z",
+    "duration": 60,
+    "location": "Navapur Exchange"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-001",
+    "to": "SYN-PHONE-800",
+    "timestamp": "2026-09-03T15:00:00Z",
+    "duration": 60,
+    "location": "Navapur Exchange"
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-PHONE-020",
+    "to": "SYN-PHONE-800",
+    "timestamp": "2026-09-03T15:00:00Z",
+    "duration": 60,
+    "location": "Navapur Exchange"
+  }
+]

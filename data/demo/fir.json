@@ -1,0 +1,38 @@
+[
+  {
+    "caseId": "NXS-001",
+    "text": "SYNTHETIC TRAINING RECORD. Case NXS-001. Accused Aariv Veylan; phone SYN-PHONE-001; account SYN-ACCOUNT-001; location Navapur Sector 1; organization Veyra Services. Public service SYN-PHONE-999 is a fictional courier helpdesk. Co-accused Lio Marven; phone SYN-PHONE-020. ",
+    "date": "2026-09-02T09:00:00Z",
+    "crimeType": "Investment scam"
+  },
+  {
+    "caseId": "NXS-002",
+    "text": "SYNTHETIC TRAINING RECORD. Case NXS-002. Accused Mira Solven; phone SYN-PHONE-001; account SYN-ACCOUNT-001; location Navapur Sector 2; organization Veyra Services. Public service SYN-PHONE-999 is a fictional courier helpdesk. Co-accused Aariv Veylan; phone SYN-PHONE-001. Co-accused Lio Marven; phone SYN-PHONE-020. ",
+    "date": "2026-09-03T09:00:00Z",
+    "crimeType": "Fake-job fraud"
+  },
+  {
+    "caseId": "NXS-003",
+    "text": "SYNTHETIC TRAINING RECORD. Case NXS-003. Accused Dev Neral; phone SYN-PHONE-001; account SYN-ACCOUNT-001; location Navapur Sector 3; organization Veyra Services. Public service SYN-PHONE-999 is a fictional courier helpdesk. Witness Aariv Veylan; phone SYN-PHONE-001. ",
+    "date": "2026-09-04T09:00:00Z",
+    "crimeType": "Loan-app harassment"
+  },
+  {
+    "caseId": "NXS-004",
+    "text": "SYNTHETIC TRAINING RECORD. Case NXS-004. Accused Rivan Kesh; phone SYN-PHONE-004; account SYN-ACCOUNT-004; location Navapur Sector 4; organization Veyra Services. Public service SYN-PHONE-999 is a fictional courier helpdesk. Witness Aariv Veylan; phone SYN-PHONE-044. ",
+    "date": "2026-09-05T09:00:00Z",
+    "crimeType": "SIM-swap fraud"
+  },
+  {
+    "caseId": "NXS-005",
+    "text": "SYNTHETIC TRAINING RECORD. Case NXS-005. Accused Rivan Kesh; phone SYN-PHONE-005; account SYN-ACCOUNT-005; location Navapur Sector 5; organization Veyra Services. Public service SYN-PHONE-999 is a fictional courier helpdesk. Vehicle ZZ00NX0001. ",
+    "date": "2026-09-06T09:00:00Z",
+    "crimeType": "Vehicle theft"
+  },
+  {
+    "caseId": "NXS-006",
+    "text": "SYNTHETIC TRAINING RECORD. Case NXS-006. Accused Isha Torven; phone SYN-PHONE-006; account SYN-ACCOUNT-006; location Navapur Sector 6; organization Veyra Services. Public service SYN-PHONE-999 is a fictional courier helpdesk. Witness Aariv Veylen; phone SYN-PHONE-061. ",
+    "date": "2026-09-07T09:00:00Z",
+    "crimeType": "Decoy inquiry"
+  }
+]

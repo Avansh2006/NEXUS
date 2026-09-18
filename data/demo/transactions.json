@@ -1,0 +1,359 @@
+[
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-110",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-02T12:00:00Z",
+    "amount": 1000
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-111",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-02T12:01:00Z",
+    "amount": 1250
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-112",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-02T12:02:00Z",
+    "amount": 1500
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-113",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-02T12:03:00Z",
+    "amount": 1750
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-114",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-02T12:04:00Z",
+    "amount": 2000
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-115",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-02T12:05:00Z",
+    "amount": 2250
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-116",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-02T12:06:00Z",
+    "amount": 2500
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-117",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-02T12:07:00Z",
+    "amount": 2750
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-ACCOUNT-120",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-03T12:00:00Z",
+    "amount": 1000
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-ACCOUNT-121",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-03T12:01:00Z",
+    "amount": 1250
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-ACCOUNT-122",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-03T12:02:00Z",
+    "amount": 1500
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-ACCOUNT-123",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-03T12:03:00Z",
+    "amount": 1750
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-ACCOUNT-124",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-03T12:04:00Z",
+    "amount": 2000
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-ACCOUNT-125",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-03T12:05:00Z",
+    "amount": 2250
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-ACCOUNT-126",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-03T12:06:00Z",
+    "amount": 2500
+  },
+  {
+    "caseId": "NXS-002",
+    "from": "SYN-ACCOUNT-127",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-03T12:07:00Z",
+    "amount": 2750
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-ACCOUNT-130",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-04T12:00:00Z",
+    "amount": 1000
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-ACCOUNT-131",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-04T12:01:00Z",
+    "amount": 1250
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-ACCOUNT-132",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-04T12:02:00Z",
+    "amount": 1500
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-ACCOUNT-133",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-04T12:03:00Z",
+    "amount": 1750
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-ACCOUNT-134",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-04T12:04:00Z",
+    "amount": 2000
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-ACCOUNT-135",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-04T12:05:00Z",
+    "amount": 2250
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-ACCOUNT-136",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-04T12:06:00Z",
+    "amount": 2500
+  },
+  {
+    "caseId": "NXS-003",
+    "from": "SYN-ACCOUNT-137",
+    "to": "SYN-ACCOUNT-001",
+    "timestamp": "2026-09-04T12:07:00Z",
+    "amount": 2750
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-ACCOUNT-140",
+    "to": "SYN-ACCOUNT-004",
+    "timestamp": "2026-09-05T12:00:00Z",
+    "amount": 1000
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-ACCOUNT-141",
+    "to": "SYN-ACCOUNT-004",
+    "timestamp": "2026-09-05T12:01:00Z",
+    "amount": 1250
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-ACCOUNT-142",
+    "to": "SYN-ACCOUNT-004",
+    "timestamp": "2026-09-05T12:02:00Z",
+    "amount": 1500
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-ACCOUNT-143",
+    "to": "SYN-ACCOUNT-004",
+    "timestamp": "2026-09-05T12:03:00Z",
+    "amount": 1750
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-ACCOUNT-144",
+    "to": "SYN-ACCOUNT-004",
+    "timestamp": "2026-09-05T12:04:00Z",
+    "amount": 2000
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-ACCOUNT-145",
+    "to": "SYN-ACCOUNT-004",
+    "timestamp": "2026-09-05T12:05:00Z",
+    "amount": 2250
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-ACCOUNT-146",
+    "to": "SYN-ACCOUNT-004",
+    "timestamp": "2026-09-05T12:06:00Z",
+    "amount": 2500
+  },
+  {
+    "caseId": "NXS-004",
+    "from": "SYN-ACCOUNT-147",
+    "to": "SYN-ACCOUNT-004",
+    "timestamp": "2026-09-05T12:07:00Z",
+    "amount": 2750
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-ACCOUNT-150",
+    "to": "SYN-ACCOUNT-005",
+    "timestamp": "2026-09-06T12:00:00Z",
+    "amount": 1000
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-ACCOUNT-151",
+    "to": "SYN-ACCOUNT-005",
+    "timestamp": "2026-09-06T12:01:00Z",
+    "amount": 1250
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-ACCOUNT-152",
+    "to": "SYN-ACCOUNT-005",
+    "timestamp": "2026-09-06T12:02:00Z",
+    "amount": 1500
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-ACCOUNT-153",
+    "to": "SYN-ACCOUNT-005",
+    "timestamp": "2026-09-06T12:03:00Z",
+    "amount": 1750
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-ACCOUNT-154",
+    "to": "SYN-ACCOUNT-005",
+    "timestamp": "2026-09-06T12:04:00Z",
+    "amount": 2000
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-ACCOUNT-155",
+    "to": "SYN-ACCOUNT-005",
+    "timestamp": "2026-09-06T12:05:00Z",
+    "amount": 2250
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-ACCOUNT-156",
+    "to": "SYN-ACCOUNT-005",
+    "timestamp": "2026-09-06T12:06:00Z",
+    "amount": 2500
+  },
+  {
+    "caseId": "NXS-005",
+    "from": "SYN-ACCOUNT-157",
+    "to": "SYN-ACCOUNT-005",
+    "timestamp": "2026-09-06T12:07:00Z",
+    "amount": 2750
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-ACCOUNT-160",
+    "to": "SYN-ACCOUNT-006",
+    "timestamp": "2026-09-07T12:00:00Z",
+    "amount": 1000
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-ACCOUNT-161",
+    "to": "SYN-ACCOUNT-006",
+    "timestamp": "2026-09-07T12:01:00Z",
+    "amount": 1250
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-ACCOUNT-162",
+    "to": "SYN-ACCOUNT-006",
+    "timestamp": "2026-09-07T12:02:00Z",
+    "amount": 1500
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-ACCOUNT-163",
+    "to": "SYN-ACCOUNT-006",
+    "timestamp": "2026-09-07T12:03:00Z",
+    "amount": 1750
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-ACCOUNT-164",
+    "to": "SYN-ACCOUNT-006",
+    "timestamp": "2026-09-07T12:04:00Z",
+    "amount": 2000
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-ACCOUNT-165",
+    "to": "SYN-ACCOUNT-006",
+    "timestamp": "2026-09-07T12:05:00Z",
+    "amount": 2250
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-ACCOUNT-166",
+    "to": "SYN-ACCOUNT-006",
+    "timestamp": "2026-09-07T12:06:00Z",
+    "amount": 2500
+  },
+  {
+    "caseId": "NXS-006",
+    "from": "SYN-ACCOUNT-167",
+    "to": "SYN-ACCOUNT-006",
+    "timestamp": "2026-09-07T12:07:00Z",
+    "amount": 2750
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-001",
+    "to": "SYN-ACCOUNT-900",
+    "timestamp": "2026-09-02T12:10:00Z",
+    "amount": 3000
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-001",
+    "to": "SYN-ACCOUNT-900",
+    "timestamp": "2026-09-02T12:11:00Z",
+    "amount": 3000
+  },
+  {
+    "caseId": "NXS-001",
+    "from": "SYN-ACCOUNT-001",
+    "to": "SYN-ACCOUNT-900",
+    "timestamp": "2026-09-02T12:12:00Z",
+    "amount": 3000
+  }
+]
