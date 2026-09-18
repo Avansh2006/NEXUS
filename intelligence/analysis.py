@@ -111,4 +111,4 @@ def analyze(payload, rules=None):
                 alerts=sorted(alerts,key=lambda a:(a['ruleId'], a['id'])),
                 communities=[dict(id=i, entityIds=c) for i,c in enumerate(communities)],
                 counts=dict(records=len(payload.get('records', [])), entities=len(nodes), relationships=len(edges),
-                            casesLinked=len({c for n in nodes.values() if n['type'] != 'Case' and len(n.get('properties',{}).get('caseIds',[]))>1 for c in n['properties']['caseIds']})))
+                            casesLinked=len({c for n in nodes.values() if n['type'] in ('Phone','Account') and n['label'] not in cfg['public_identifiers'] and len(n.get('properties',{}).get('caseIds',[]))>1 for c in n['properties']['caseIds']})))

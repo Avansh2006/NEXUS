@@ -54,7 +54,7 @@ def generate():
         (ROOT / f'{kind}.json').write_text(json.dumps(rows, indent=2) + '\n', encoding='utf-8')
         if kind != 'fir':
             with (ROOT / f'{kind}.csv').open('w', newline='', encoding='utf-8') as f:
-                writer = csv.DictWriter(f, fieldnames=list(rows[0]))
+                writer = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator='\n')
                 writer.writeheader()
                 writer.writerows(rows)
     truth = dict(sharedPhone='SYN-PHONE-001', sharedAccount='SYN-ACCOUNT-001',
