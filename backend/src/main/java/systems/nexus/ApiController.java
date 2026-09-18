@@ -1,0 +1,40 @@
+package systems.nexus;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.MediaType;
+import java.io.IOException;
+import java.util.*;
+import static systems.nexus.Model.*;
+
+@RestController
+@RequestMapping("/api")
+public class ApiController {
+    private final InvestigationService service;private final Store store;private final EngineClient engine;private final ObjectMapper json;
+    public ApiController(InvestigationService service,Store store,EngineClient engine,ObjectMapper json) {this.service=service;this.store=store;this.engine=engine;this.json=json;}
+    @GetMapping("/health") public Map<String,String> health() {return Map.of("status","ok");}
+    @PostMapping("/data/{kind:fir|cdr|transactions}") public IngestResult ingest(@PathVariable String kind,@RequestBody IngestRequest body) {return service.ingest(kind,body);}
+    @PostMapping("/demo/load") public Map<String,IngestResult> load() throws IOException {return service.load();}
+    @PostMapping("/demo/reset") public Map<String,Boolean> reset() {service.reset();return Map.of("reset",true);}
+    @PostMapping("/analyze") public JsonNode analyze() {return service.analyze();}
+    @GetMapping("/graph") public Graph graph() {store.audit("graph:view");return service.graph();}
+    @GetMapping("/network/{id}") public Graph network(@PathVariable String id,@RequestParam(defaultValue="1") int hops) {return service.network(id,hops);}
+    @GetMapping("/entities/search") public List<Node> search(@RequestParam(defaultValue="") String q) {if(q.length()>100) throw new IllegalArgumentException("Search must be at most 100 characters");return service.graph().nodes().stream().filter(n->n.label().toLowerCase(Locale.ROOT).contains(q.toLowerCase(Locale.ROOT))).toList();}
+    @GetMapping("/entities/{id}") public Map<String,Object> entity(@PathVariable String id) {return service.detail(id);}
+    private JsonNode part(String key) {return service.graph().analysis().has(key)?service.graph().analysis().get(key):json.createArrayNode();}
+    @GetMapping("/clusters") public JsonNode clusters() {return part("communities");}
+    @GetMapping("/influencers") public JsonNode influencers() {return part("metrics");}
+    @GetMapping("/suspicious-patterns") public JsonNode alerts() {return part("alerts");}
+    @GetMapping("/timeline/{id}") public List<Map<String,Object>> timeline(@PathVariable String id) {return service.timeline(id);}
+    @GetMapping("/paths") public PathResult path(@RequestParam String from,@RequestParam String to) {return service.path(from,to);}
+    @GetMapping("/link-suggestions") public List<Suggestion> suggestions() {return service.graph().suggestions();}
+    @PostMapping("/link-suggestions/{id}/{action:accept|reject}") public Graph review(@PathVariable String id,@PathVariable String action) {return service.review(id,action.equals("accept"));}
+    @GetMapping("/quality") public JsonNode quality() {return engine.quality();}
+    @GetMapping("/audit") public List<Map<String,Object>> audit() {return store.audit();}
+    @PostMapping(value="/reports",produces=MediaType.TEXT_HTML_VALUE) public String report(@RequestBody(required=false) ReportRequest request) {
+        String image=request==null?null:request.graphImage();
+        if(image!=null&&(!image.matches("data:image/png;base64,[A-Za-z0-9+/=]+")||image.length()>1500000)) throw new IllegalArgumentException("Report image must be a PNG data URL below 1.5 MB");
+        store.audit("report:export");return Report.render(service.graph(),image);
+    }
+}
