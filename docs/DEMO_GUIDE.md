@@ -34,7 +34,7 @@ with `-Djdk.net.unixdomain.tmpdir=<short-existing-directory>` before `-jar`.
 11. Point out the **Syndicate Hierarchy & Tactical Role Badge** in the Inspector (e.g., Kingpin, Mule, Broker).
 12. Click **Generate Investigation Report**. Open downloaded HTML and print/save PDF.
     Includes the graph visual, cases, metrics, alerts, timeline ranges, evidence IDs, original source records,
-    and a formal **Section 65B Indian Evidence Act Certificate of Electronic Evidence** with automated verification.
+    and an **Electronic Record Provenance Statement** with automated SHA-256 digests plus a human-officer template certificate under Section 63 of the Bharatiya Sakshya Adhiniyam, 2023 (BSA 2023).
 
 ## Rehearsal and fallback
 `python scripts/verify_demo.py` performs a clean API rehearsal and writes

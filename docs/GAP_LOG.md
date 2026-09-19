@@ -1,0 +1,50 @@
+# NEXUS Re-Audit & Gap Log
+
+**Date:** 2026-09-19  
+**Repository:** `Avansh2006/NEXUS`  
+**Branch:** `first-agy`  
+**Auditor:** Antigravity Hardening Agent  
+
+---
+
+## 1. Executive Summary
+
+This log records the baseline audit comparing the active codebase against the hardening, scale, and feature requirements. NEXUS is a prototype criminal network analysis system developed for PS-13. The codebase has a working end-to-end pipeline (Spring Boot, Python/FastAPI, React/Cytoscape/Three.js, PostgreSQL/H2) with 100% passing tests (pytest, maven, playwright, verify_demo).
+
+This pass addresses critical legal accuracy, objective neutrality, independent evaluation, security architecture, and system scalability gaps.
+
+---
+
+## 2. Workstream A: Corrections & Objective Grounding
+
+| ID | Specification | Existing State | Gap / Resolution Required |
+| :--- | :--- | :--- | :--- |
+| **A1** | Replace "Section 65B" with BSA 2023, s.63 & Provenance Statement | `Report.java` contains a self-declared "Section 65B Certificate" claiming verification and court submission. | **Gap:** Under the Bharatiya Sakshya Adhiniyam, 2023 (BSA 2023, s. 63), software cannot certify its own integrity. **Resolution:** Replace with an automated "Electronic Record Provenance Statement" (hashes, timestamps, deterministic notice) + blank "Template certificate (BSA 2023, s.63, Schedule Part A/B)" for human officer signature. Purge all claims of self-certification or courtroom admissibility. |
+| **A2** | Neutralize role labels everywhere | `analysis.py` defines roles: `KINGPIN`, `BROKER`, `MONEY_MULE`, `DISPATCHER`, `OPERATIVE`, `FRONT_ENTITY`, `LOGISTICS`, `HOTSPOT`. Copilot chip says "Identify the kingpin...". | **Gap:** Graph metrics alone cannot assign criminal guilt. Pass-through account holders may be victims. **Resolution:** Rename to neutral pattern labels: `Central Hub (bridge pattern)`, `Cross-Cluster Broker Pattern`, `Pass-Through Account Pattern`, `Outbound Communication Hub`, `High-Activity Node`, `Business Entity (unverified)`, `Transport Asset`, `Location Nexus`. Add disclaimer: *"Pattern hypothesis — for investigator review"*, criteria values, and victim notice for pass-throughs. Audit and neutralize copy. |
+| **A3** | Independent Held-Out Evaluation | Benchmark is measured against 18 synthetic gold FIRs authored alongside the regex patterns (1.0 precision / 1.0 recall). | **Gap:** Self-authored test sets create misleadingly perfect metrics. **Resolution:** Author 40+ independent FIRs in `data/eval/heldout_dev/` and `data/eval/heldout_test/` with realistic noise (OCR errors, typos, irregular phone formats, mixed case, Hinglish, Devanagari numerals). Freeze test set, evaluate strict and lenient span F1, and publish honest results in UI & `docs/EVALUATION.md`. |
+| **A4** | Copilot Honesty & Intent Mapping | Copilot displays "ZERO-HALLUCINATION · DETERMINISTIC ENGINE". | **Gap:** "Zero-hallucination" is an overclaim for AI assistants. **Resolution:** Re-brand to "deterministic, graph-grounded". Add optional LLM Intent Mapper behind feature flag (default OFF) strictly generating structured query parameters; fallback to keyword matching with "I can't answer that from the graph data" and "did you mean" prompts. |
+| **A5** | Real Security Controls | Rate limit is a 30 req/min memory window in `RequestGuard.java`. Audit log has plain timestamps in DB. No auth. | **Gap:** Inadequate server-side rate-limiting headers, no tamper-evidence, unauthenticated endpoints. **Resolution:** Add standard HTTP 429 with `Retry-After`. Add SHA-256 hash chaining (`prev_hash` + row hash) with `GET /api/audit/verify`. Implement role-based JWT auth (`INVESTIGATOR`, `ADMIN`, `VIEWER`) with auto-login for seamless offline demo execution. |
+
+---
+
+## 3. Workstream B: Scale & Feature Extensions
+
+| ID | Specification | Existing State | Gap / Resolution Required |
+| :--- | :--- | :--- | :--- |
+| **B1** | Live Incremental FIR Ingestion | Full re-analysis resets or recalculates the whole graph. | **Gap:** No live incremental streaming of a single incoming FIR into an existing analyzed workspace. **Resolution:** Build "Add New FIR" / "Load incoming FIR (demo)" (NXS-007) that incrementally extracts, resolves, highlights cross-case links, and measures ingestion latency without resetting. Provide a remove button for repeatability. |
+| **B2** | Scale Proof & Performance | System tested up to 121 records (~146 nodes, 313 edges). | **Gap:** PS-13 requires scale resilience. Exact betweenness is $O(V \cdot E)$, which becomes slow at 10k+ nodes. **Resolution:** Create `scripts/generate_scale_data.py` (1k, 10k, 50k seeded synthetic records). Introduce sampled approximate betweenness (NetworkX $k$-sampling) with explicit exact vs. approximate UI flags. Add UI cluster meta-node collapse and lazy rendering. Document benchmarks in `docs/PERFORMANCE.md`. |
+| **B3** | PS Source-Coverage Gap | System ingests FIRs, CDRs, Bank Transactions. | **Gap:** Missing `SocialHandle`, `CriminalHistory`, `IntelReport`, `SurveillanceReport`, and Admiralty credibility grades (A–F, 1–6). **Resolution:** Add entities, parsers, dashed rendering for low credibility, and credibility fields across schema and UI. |
+| **B4** | What-If Disruption Analysis | Shortest path finder exists, but no node removal simulation. | **Gap:** Investigators cannot test the structural resilience of the syndicate upon node removal. **Resolution:** Add `POST /api/what-if/remove` simulating graph fragmentation, component splitting, and articulation point analysis. |
+| **B5** | Interactive Timeline Playback | Timeline is a static chronological list. | **Gap:** No dynamic temporal playback. **Resolution:** Add play/pause/scrub control with variable speeds to progressively reveal edges and events by timestamp, respecting `prefers-reduced-motion`. |
+| **B6** | Hindi / Hinglish / Devanagari | Extractor only parses Latin alphanumeric strings and standard Indian phone formats. | **Gap:** Real-world Indian FIRs frequently contain Devanagari digits, transliterated names, and Hindi role markers. **Resolution:** Add Devanagari numeral normalization ($\u0966-\u096f \to 0-9$), transliterated gazetteers, and Hindi demo FIR with separate recall metrics. |
+| **B7** | Investigator Workflow & Triage | Alerts are static read-only outputs from analysis. | **Gap:** No case-management workflow (status triage, notes, watchlist). **Resolution:** Add alert triage (`New`, `Under Review`, `Verified`, `Dismissed`), entity notes, and watchlist, stored with user attribution and hashed audit records. |
+| **B8** | Multi-Format Export & Confidence Badges | Reports only export HTML. Edge weights are uniform. | **Gap:** No CSV/GraphML export; no multi-factor confidence scoring. **Resolution:** Add CSV and GraphML export endpoints; add transparent Low/Medium/High confidence badges calculated from evidence diversity, extraction confidence, and hard/soft corroboration. |
+
+---
+
+## 4. Workstream C & D Deliverables
+
+- `docs/EVALUATION.md`: Independent evaluation on heldout dev & test sets.
+- `docs/PERFORMANCE.md`: Empirical benchmarks on 1k, 10k, and 50k nodes.
+- `docs/IMPROVEMENT_SUGGESTIONS.md`: Evidence-based error analysis, ranked future proposals, self-critique, and Top 5 next actions.
+- Synchronized documentation across README, `API.md`, `DEMO_GUIDE.md`, `SECURITY.md`, and `FINAL_FEATURES.md`.

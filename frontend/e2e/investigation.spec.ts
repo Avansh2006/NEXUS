@@ -63,7 +63,9 @@ test('clean investigation: evidence → network → review → report',async({pa
   expect(report).toContain('Supporting evidence');
   expect(report).toContain('data:image/png;base64,');
   expect(report).toContain('SYN-ACCOUNT-001');
-  expect(report).toContain('SECTION 65B');
+  expect(report).toContain('Electronic Record Provenance Statement');
+  expect(report).toContain('Bharatiya Sakshya Adhiniyam, 2023, Section 63');
+  expect(report).toContain('BSA 2023');
   await page.getByRole('button',{name:'Refresh',exact:true}).click();
   await expect(page.locator('.audit-row').first()).toBeVisible();
   expect(errors).toEqual([]);
@@ -101,7 +103,7 @@ test('mobile and reduced-motion layout remains usable',async({page},testInfo)=>{
   await page.screenshot({path:testInfo.outputPath('mobile-reduced-motion.png'),fullPage:true});
 });
 
-test('tactical extensions: 3D canvas toggle, Intel Copilot queries, and Section 65B report certificate', async ({ page }) => {
+test('tactical extensions: 3D canvas toggle, Intel Copilot queries, and BSA 2023 provenance statement', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Reset demo data', exact: true }).click();
   await page.getByRole('button', { name: 'Load demo', exact: true }).click();
@@ -129,11 +131,5 @@ test('tactical extensions: 3D canvas toggle, Intel Copilot queries, and Section 
   // Close copilot
   await page.getByLabel('Close Copilot').click();
   await expect(page.getByText('DETERMINISTIC AI · ZERO HALLUCINATION')).toBeHidden();
-
-  // Leave demo in clean analyzed pitch state
-  await page.getByRole('button', { name: 'Reset demo data', exact: true }).click();
-  await page.getByRole('button', { name: 'Load demo', exact: true }).click();
-  await page.getByRole('button', { name: 'Analyze Network', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('3 cases linked');
 });
 

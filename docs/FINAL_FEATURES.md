@@ -13,8 +13,8 @@
   (KINGPIN, BROKER, MONEY_MULE, DISPATCHER, OPERATIVE, LOGISTICS, FRONT_ENTITY, HOTSPOT) with badges in inspector.
 - Rule R7 (Circular Transaction Laundering Loops): detects directed cycles (hawala / round-tripping)
   in account transaction graphs.
-- Section 65B Indian Evidence Act Certificate of Electronic Evidence automatically generated in
-  investigation reports for court-admissible legal compliance.
+- Electronic Record Provenance Statement (with SHA-256 digests and deterministic derivation notice)
+  plus a human-officer template certificate under Section 63 of the Bharatiya Sakshya Adhiniyam, 2023 (BSA 2023).
 - Cursor-following SpotlightCard components with glowing borders and ambient spotlights.
 - Spring Boot REST backend; PostgreSQL relational graph/evidence JSONB storage;
   stateless FastAPI/spaCy/NetworkX sidecar. Four-service Docker Compose build.
@@ -34,7 +34,7 @@
   short graph fade/camera focus; graph coloring, community borders, influence sizes.
 - Case-link suggestions, shortest paths with hop evidence, highlighted FIRs,
   synthetic extraction-quality panel (27 TP, 0 FP, 0 FN on 18 samples).
-- Printable escaped HTML report with optional graph PNG, Section 65B legal certificate, and browser Save as PDF.
+- Printable escaped HTML report with optional graph PNG, Electronic Record Provenance Statement, BSA 2023 s.63 template certificate, and browser Save as PDF.
 - Reset/load demo, offline runtime, test suites, GitHub CI with PostgreSQL rehearsal.
 - Request/body validation, rate limiting, fixed CORS origin, parameterized SQL,
   no secrets in Git, local-only published port and safe JSON error envelope.
@@ -51,7 +51,7 @@
   independent precomputed analysis cache is used when the engine is down.
 - Audit logging/viewer is operational, not tamper-evident or identity-attributed.
 - Four automated browser scenarios cover the desktop journey, upload validation,
-  report download with Section 65B legal certificate, 3D Holo Sphere toggle,
+  report download with Electronic Record Provenance Statement and BSA 2023 template certificate, 3D Holo Sphere toggle,
   Intel Copilot natural language queries, mobile layout and reduced motion, with screenshots and video.
 
 ## Roadmap

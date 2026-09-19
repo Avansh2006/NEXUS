@@ -37,4 +37,16 @@ class GraphBuilderTest {
     @Test void reportEscapesUntrustedText() {
         assertThat(Report.escape("<script>alert('x')</script>")).doesNotContain("<script>").contains("&lt;script&gt;");
     }
+    @Test void reportContainsBSA2023ProvenanceStatementAndTemplate() {
+        Graph g = new GraphBuilder(json, Map.of(), Map.of()).build(List.of(fir("a", "A", "Rivan Kesh", "SYN-PHONE-004")));
+        String html = Report.render(g, null);
+        assertThat(html)
+            .contains("Electronic Record Provenance Statement")
+            .contains("BSA 2023")
+            .contains("Section 63")
+            .contains("PART A")
+            .contains("PART B")
+            .doesNotContain("Section 65B")
+            .doesNotContain("courtroom admissibility");
+    }
 }
