@@ -1,0 +1,28 @@
+{
+  "id": "test-016",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "phone_spaced"
+  ],
+  "text": "DELHI POLICE · PS GREATER KAILASH · Witness Tanvi Suri reported that accused Gaurav Bajaj called from 98110 99887 demanding extortion.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Tanvi Suri",
+      "start": 44,
+      "end": 54
+    },
+    {
+      "type": "Person",
+      "raw": "Gaurav Bajaj",
+      "start": 77,
+      "end": 89
+    },
+    {
+      "type": "Phone",
+      "raw": "98110 99887",
+      "start": 102,
+      "end": 113
+    }
+  ]
+}

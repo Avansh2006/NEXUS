@@ -1,0 +1,28 @@
+{
+  "id": "test-004",
+  "state": "UP Police",
+  "noiseTypes": [
+    "devanagari_phone"
+  ],
+  "text": "UP POLICE · PS ALAMBAGH LUCKNOW · Gawah Rohit Soni overheard accused Anil Tiwari negotiating ransom on phone ८१२३४५६७८९.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Rohit Soni",
+      "start": 40,
+      "end": 50
+    },
+    {
+      "type": "Person",
+      "raw": "Anil Tiwari",
+      "start": 69,
+      "end": 80
+    },
+    {
+      "type": "Phone",
+      "raw": "८१२३४५६७८९",
+      "start": 109,
+      "end": 119
+    }
+  ]
+}

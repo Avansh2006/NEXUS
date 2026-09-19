@@ -1,0 +1,34 @@
+{
+  "id": "test-018",
+  "state": "Maharashtra Police",
+  "noiseTypes": [
+    "hinglish_gawah"
+  ],
+  "text": "MAHARASHTRA POLICE · PS KURLA · Gawah Nitin Jadhav stated co-accused Bablu Khan drove vehicle MH-01-ZA-5566 near Navapur Sector 9.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Nitin Jadhav",
+      "start": 38,
+      "end": 50
+    },
+    {
+      "type": "Person",
+      "raw": "Bablu Khan",
+      "start": 69,
+      "end": 79
+    },
+    {
+      "type": "Vehicle",
+      "raw": "MH-01-ZA-5566",
+      "start": 94,
+      "end": 107
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Sector 9",
+      "start": 113,
+      "end": 129
+    }
+  ]
+}

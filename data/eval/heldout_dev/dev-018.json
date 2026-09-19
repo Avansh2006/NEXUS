@@ -1,0 +1,28 @@
+{
+  "id": "dev-018",
+  "state": "UP Police",
+  "noiseTypes": [
+    "naamzad_accused"
+  ],
+  "text": "UP POLICE · PS AGRA SADAR · Naamzad Ravi Chaurasia collected Rs 120000 under extortion threat at Navapur Sector 3.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Ravi Chaurasia",
+      "start": 36,
+      "end": 50
+    },
+    {
+      "type": "Amount",
+      "raw": "Rs 120000",
+      "start": 61,
+      "end": 70
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Sector 3",
+      "start": 97,
+      "end": 113
+    }
+  ]
+}

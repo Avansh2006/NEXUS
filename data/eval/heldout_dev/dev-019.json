@@ -1,0 +1,34 @@
+{
+  "id": "dev-019",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "ocr_broken_word"
+  ],
+  "text": "DELHI POLICE · PS SAKET · Complainant Varun Nair spotted accused Gaurav Seth near Navapur Sector 5 driving DL 01 AB 9012.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Varun Nair",
+      "start": 38,
+      "end": 48
+    },
+    {
+      "type": "Person",
+      "raw": "Gaurav Seth",
+      "start": 65,
+      "end": 76
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Sector 5",
+      "start": 82,
+      "end": 98
+    },
+    {
+      "type": "Vehicle",
+      "raw": "DL 01 AB 9012",
+      "start": 107,
+      "end": 120
+    }
+  ]
+}

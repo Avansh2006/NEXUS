@@ -1,0 +1,28 @@
+{
+  "id": "dev-003",
+  "state": "Karnataka Police",
+  "noiseTypes": [
+    "ocr_noise_letter_o"
+  ],
+  "text": "KARNATAKA STATE POLICE · PS INDIRANAGAR · FIR 402/2026. Accused Karthik Hegde instructed beneficiary deposit into account 4521O9823451 at Veyra Services branch.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Karthik Hegde",
+      "start": 64,
+      "end": 77
+    },
+    {
+      "type": "Account",
+      "raw": "4521O9823451",
+      "start": 122,
+      "end": 134
+    },
+    {
+      "type": "Organization",
+      "raw": "Veyra Services",
+      "start": 138,
+      "end": 152
+    }
+  ]
+}

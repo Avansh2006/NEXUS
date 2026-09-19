@@ -1,6 +1,7 @@
 """Descriptive graph rules. Every alert cites only the evidence that supports it."""
 import hashlib
 import json
+import time
 from collections import defaultdict
 from datetime import datetime
 from itertools import combinations
@@ -12,28 +13,96 @@ RULES = json.loads(Path(__file__).with_name('rules.json').read_text())
 
 
 def analyze(payload, rules=None):
+    t_start = time.perf_counter()
     cfg = rules or RULES
     nodes = {n['id']: n for n in sorted(payload['nodes'], key=lambda n: n['id'])}
     edges = sorted(payload['edges'], key=lambda e: e['id'])
     graph = nx.Graph()
     graph.add_nodes_from(nodes)
     graph.add_edges_from((e['source'], e['target']) for e in edges if e['source'] != e['target'])
+    
+    t_comm_start = time.perf_counter()
     communities = list(nx.community.louvain_communities(graph, seed=cfg['seed'])) if graph.number_of_edges() else [{n} for n in graph]
     communities = sorted((sorted(c) for c in communities), key=lambda c: c[0])
     membership = {n: i for i, c in enumerate(communities) for n in c}
-    degree, between = nx.degree_centrality(graph), nx.betweenness_centrality(graph)
+    t_comm = time.perf_counter() - t_comm_start
+
+    t_metrics_start = time.perf_counter()
+    degree = nx.degree_centrality(graph)
+    n_count = len(graph)
+    if n_count > 500:
+        k_samples = min(n_count, max(50, int(n_count**0.5 * 5)))
+        between = nx.betweenness_centrality(graph, k=k_samples, seed=cfg['seed'])
+        between_mode = f"approximate (k={k_samples})"
+    else:
+        between = nx.betweenness_centrality(graph)
+        between_mode = "exact"
+        k_samples = n_count
     articulation = set(nx.articulation_points(graph))
+    t_metrics = time.perf_counter() - t_metrics_start
+
     max_b = max(between.values(), default=0) or 1
     max_c = max((len(n.get('properties', {}).get('caseIds', [])) for n in nodes.values()), default=0) or 1
     metrics = []
+    metrics_by_id = {}
     for nid, node in nodes.items():
         d = degree[nid] if len(nodes) > 1 else 0
         b = between[nid] / max_b
         c = len(node.get('properties', {}).get('caseIds', [])) / max_c
         w = cfg['influence_weights']
-        metrics.append(dict(entityId=nid, degree=round(d, 6), betweenness=round(b, 6),
-                            caseComponent=round(c, 6), influence=round(100*(w['degree']*d+w['betweenness']*b+w['cases']*c), 2),
-                            community=membership[nid]))
+        inf = round(100*(w['degree']*d+w['betweenness']*b+w['cases']*c), 2)
+        ntype = node.get('type')
+        case_count = len(node.get('properties', {}).get('caseIds', []))
+        tactical_role = 'HIGH_ACTIVITY_NODE'
+        role_title = 'High-Activity Node'
+        role_criteria = f"Degree={d}, Normalized Betweenness={b:.3f}, Cases={case_count}, Influence={inf}"
+        role_hypothesis = "Pattern hypothesis — for investigator review."
+        if ntype == 'Person':
+            if case_count >= 2 and b >= 0.05 and inf >= 25:
+                tactical_role = 'CENTRAL_HUB'
+                role_title = 'Central Hub (bridge pattern)'
+                role_criteria = f"Cases={case_count} (>=2), Betweenness={b:.3f} (>=0.05), Influence={inf} (>=25)"
+            elif nid in articulation or b >= cfg.get('bridge_betweenness', 0.04):
+                tactical_role = 'CROSS_CLUSTER_BROKER'
+                role_title = 'Cross-Cluster Broker Pattern'
+                role_criteria = f"Betweenness={b:.3f} (>={cfg.get('bridge_betweenness', 0.04)}) or Articulation Point"
+            elif inf >= 20:
+                tactical_role = 'HIGH_ACTIVITY_NODE'
+                role_title = 'High-Activity Node'
+                role_criteria = f"Influence={inf} (>=20)"
+            else:
+                tactical_role = 'ASSOCIATE_NODE'
+                role_title = 'Associated Node'
+        elif ntype == 'Account':
+            tactical_role = 'FINANCIAL_NODE'
+            role_title = 'Financial Account'
+        elif ntype == 'Phone':
+            if case_count >= 2:
+                tactical_role = 'OUTBOUND_HUB'
+                role_title = 'Outbound Communication Hub'
+                role_criteria = f"Cases={case_count} (>=2)"
+            else:
+                tactical_role = 'COMMUNICATION_NODE'
+                role_title = 'Communication Node'
+        elif ntype == 'Vehicle':
+            tactical_role = 'TRANSPORT_ASSET'
+            role_title = 'Transport Asset'
+        elif ntype == 'Organization':
+            tactical_role = 'BUSINESS_ENTITY'
+            role_title = 'Business Entity (unverified)'
+        elif ntype == 'Location':
+            tactical_role = 'LOCATION_NEXUS'
+            role_title = 'Location Nexus'
+
+        m_dict = dict(entityId=nid, degree=round(d, 6), betweenness=round(b, 6),
+                      caseComponent=round(c, 6), influence=inf,
+                      community=membership[nid],
+                      tacticalRole=tactical_role,
+                      roleTitle=role_title,
+                      roleCriteria=role_criteria,
+                      roleHypothesis=role_hypothesis)
+        metrics.append(m_dict)
+        metrics_by_id[nid] = m_dict
     alerts = []
     incident = defaultdict(list)
     for e in edges:
@@ -76,6 +145,11 @@ def analyze(payload, rules=None):
     for target, es in sorted(incoming.items()):
         senders = {e['source'] for e in es}
         if len(senders) >= cfg['fan_in_senders']:
+            if target in metrics_by_id:
+                metrics_by_id[target]['tacticalRole'] = 'PASS_THROUGH_ACCOUNT'
+                metrics_by_id[target]['roleTitle'] = 'Pass-Through Account Pattern'
+                metrics_by_id[target]['roleCriteria'] = f"Fan-in: {len(senders)} senders (>={cfg['fan_in_senders']})"
+                metrics_by_id[target]['roleHypothesis'] = 'Pattern hypothesis — for investigator review. Account holders may be unwitting participants or victims.'
             emit('R4', [target, *senders], es, f'Fan-in: {len(senders)} distinct accounts sent {sum(len(e["properties"].get("events", [])) for e in es)} transfers to {nodes[target]["label"]}.')
         pairs, support = 0, []
         for ein in es:
@@ -87,7 +161,28 @@ def analyze(payload, rules=None):
                             pairs += 1
                             support.append({'properties': {'evidenceIds': [a['evidenceId'], b['evidenceId']]}})
         if pairs:
+            if target in metrics_by_id:
+                metrics_by_id[target]['tacticalRole'] = 'PASS_THROUGH_ACCOUNT'
+                metrics_by_id[target]['roleTitle'] = 'Pass-Through Account Pattern'
+                metrics_by_id[target]['roleCriteria'] = f"Rapid pass-through: {pairs} pairs within {cfg['pass_through_minutes']}m"
+                metrics_by_id[target]['roleHypothesis'] = 'Pattern hypothesis — for investigator review. Account holders may be unwitting participants or victims.'
             emit('R4', [target], support, f'Rapid pass-through: {pairs} incoming/outgoing transfer pairs within {cfg["pass_through_minutes"]} minutes. Timing alone does not establish the origin of funds.')
+    tx_graph = nx.DiGraph()
+    tx_lookup = defaultdict(list)
+    for e in edges:
+        if e['type'] == 'TRANSFERRED_TO':
+            tx_graph.add_edge(e['source'], e['target'])
+            tx_lookup[(e['source'], e['target'])].append(e)
+    if tx_graph.number_of_nodes() >= 3:
+        try:
+            cycles = [c for c in nx.simple_cycles(tx_graph) if 3 <= len(c) <= 5]
+            for cyc in sorted(cycles, key=lambda c: (len(c), c[0])):
+                cyc_nodes = list(cyc)
+                support = [e for i in range(len(cyc_nodes)) for e in tx_lookup.get((cyc_nodes[i], cyc_nodes[(i+1)%len(cyc_nodes)]), [])]
+                names = ' -> '.join(nodes[n]['label'] for n in cyc_nodes)
+                emit('R7', cyc_nodes, support, f'Circular fund transaction loop detected across {len(cyc_nodes)} accounts: {names} -> {nodes[cyc_nodes[0]]["label"]}. Closed transaction cycles represent a round-tripping transfer pattern for review.')
+        except Exception:
+            pass
     at_location = defaultdict(list)
     for e in edges:
         if e['type'] == 'SEEN_AT':
@@ -118,9 +213,24 @@ def analyze(payload, rules=None):
         support = sorted({eid for nid in ids for eid in nodes[nid]['properties'].get('evidenceIds', [])})
         case_links.append(dict(caseIds=list(pair), entityIds=sorted(ids), evidenceIds=support,
                                explanation=f'{pair[0]} and {pair[1]} share {len(ids)} non-public phone/account identifiers. Review the underlying records; cases are not automatically merged.'))
+    telemetry = dict(
+        nodeCount=len(nodes),
+        edgeCount=len(edges),
+        betweennessMode=between_mode,
+        kSamples=k_samples,
+        communityCount=len(communities),
+    )
+    if cfg.get('include_timing', False):
+        t_total = time.perf_counter() - t_start
+        telemetry['computationTimeMs'] = round(t_total * 1000, 2)
+        telemetry['breakdownMs'] = dict(
+            communities=round(t_comm * 1000, 2),
+            centrality=round(t_metrics * 1000, 2)
+        )
     return dict(metrics=sorted(metrics, key=lambda m: (-m['influence'],m['entityId'])),
                 alerts=sorted(alerts,key=lambda a:(a['ruleId'], a['id'])),
                 caseLinks=case_links,
                 communities=[dict(id=i, entityIds=c) for i,c in enumerate(communities)],
+                telemetry=telemetry,
                 counts=dict(records=len(payload.get('records', [])), entities=len(nodes), relationships=len(edges),
                             casesLinked=len({c for n in nodes.values() if n['type'] in ('Phone','Account') and n['label'] not in cfg['public_identifiers'] and len(n.get('properties',{}).get('caseIds',[]))>1 for c in n['properties']['caseIds']})))

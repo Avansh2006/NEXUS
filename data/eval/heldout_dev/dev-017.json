@@ -1,0 +1,28 @@
+{
+  "id": "dev-017",
+  "state": "Maharashtra Police",
+  "noiseTypes": [
+    "multiple_entities"
+  ],
+  "text": "MAHARASHTRA POLICE · PS ANDHERI · Accused Nilesh Rane contacted victim using 9867012345 and directed money to SYN-ACCOUNT-005.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Nilesh Rane",
+      "start": 42,
+      "end": 53
+    },
+    {
+      "type": "Phone",
+      "raw": "9867012345",
+      "start": 77,
+      "end": 87
+    },
+    {
+      "type": "Account",
+      "raw": "SYN-ACCOUNT-005",
+      "start": 110,
+      "end": 125
+    }
+  ]
+}

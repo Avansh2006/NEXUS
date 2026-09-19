@@ -1,0 +1,28 @@
+{
+  "id": "test-011",
+  "state": "Karnataka Police",
+  "noiseTypes": [
+    "standard"
+  ],
+  "text": "KARNATAKA POLICE · PS MARATHAHALLI · Complainant Sandeep Rao wired funds to account 802918374619 controlled by accused Prakash Hegde.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Sandeep Rao",
+      "start": 49,
+      "end": 60
+    },
+    {
+      "type": "Account",
+      "raw": "802918374619",
+      "start": 84,
+      "end": 96
+    },
+    {
+      "type": "Person",
+      "raw": "Prakash Hegde",
+      "start": 119,
+      "end": 132
+    }
+  ]
+}

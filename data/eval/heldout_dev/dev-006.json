@@ -1,0 +1,29 @@
+{
+  "id": "dev-006",
+  "state": "Maharashtra Police",
+  "noiseTypes": [
+    "synthetic_token",
+    "account_label"
+  ],
+  "text": "MAHARASHTRA POLICE · PS CYBER CRIME CELL PUNE. Accused Pradeep Kulkarni collected funds in account number 201928374651 and forwarded calls to SYN-PHONE-002.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Pradeep Kulkarni",
+      "start": 55,
+      "end": 71
+    },
+    {
+      "type": "Account",
+      "raw": "201928374651",
+      "start": 106,
+      "end": 118
+    },
+    {
+      "type": "Phone",
+      "raw": "SYN-PHONE-002",
+      "start": 142,
+      "end": 155
+    }
+  ]
+}

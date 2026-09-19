@@ -1,0 +1,28 @@
+{
+  "id": "test-007",
+  "state": "Karnataka Police",
+  "noiseTypes": [
+    "org_vehicle"
+  ],
+  "text": "KARNATAKA POLICE · PS DOOMLUR · Accused Kiran Nayak used transport vehicle KA-03-HA-8899 contracted by Veyra Services.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Kiran Nayak",
+      "start": 40,
+      "end": 51
+    },
+    {
+      "type": "Vehicle",
+      "raw": "KA-03-HA-8899",
+      "start": 75,
+      "end": 88
+    },
+    {
+      "type": "Organization",
+      "raw": "Veyra Services",
+      "start": 103,
+      "end": 117
+    }
+  ]
+}

@@ -4,7 +4,18 @@
 - NEXUS identity and persistent PROTOTYPE — SYNTHETIC DATA banner.
 - React/TypeScript/Vite/Tailwind + Cytoscape/fcose investigator workbench.
 - Refined mineral surfaces, local Inter/Space Grotesk typography, Motion transitions,
-  animated measured counters and a state-aware workflow bar; reduced-motion support.
+  animated measured counters, a state-aware workflow bar, and reduced-motion support.
+- Tactical HUD overlay with live deterministic AI telemetry, entity distribution chips,
+  and an interactive 3D WebGL tactical intelligence sphere (Three.js) toggle.
+- NEXUS Intel Copilot: deterministic, graph-grounded query assistant with natural-language
+  investigative prompts, graph topology analysis, grounded template answers, and click-to-inspect entity chips.
+- Syndicate Hierarchy & Pattern Classifier: classifies entities into pattern hypotheses
+  (Central Hub, Cross-Cluster Broker, Pass-Through Account, Outbound Hub, High-Activity Node, Business Entity, Transport Asset, Location Nexus) with criteria values and review disclaimers in inspector.
+- Rule R7 (Circular Transaction Laundering Loops): detects directed cycles (hawala / round-tripping)
+  in account transaction graphs.
+- Electronic Record Provenance Statement (with SHA-256 digests and deterministic derivation notice)
+  plus a human-officer template certificate under Section 63 of the Bharatiya Sakshya Adhiniyam, 2023 (BSA 2023).
+- Cursor-following SpotlightCard components with glowing borders and ambient spotlights.
 - Spring Boot REST backend; PostgreSQL relational graph/evidence JSONB storage;
   stateless FastAPI/spaCy/NetworkX sidecar. Four-service Docker Compose build.
 - FIR text/paste/JSON and CSV/JSON structured data; multi-file UI batches; bounded
@@ -16,14 +27,14 @@
 - 121 reproducible synthetic records across six cases; 18 labeled gold FIRs.
 - Evidence links on every graph node/edge; first/last seen and per-event timestamps.
 - Degree, betweenness, seeded Louvain communities; weighted influence breakdown.
-- R1–R6 explanations with entity/evidence IDs; visible public/service suppression.
+- R1–R7 explanations with entity/evidence IDs; visible public/service suppression.
 - Dashboard, ingestion, graph workspace, entity/case inspector, alerts, clusters,
   timeline, reports, audit viewer; search, filters, focus and bounded expansion.
 - Case-specific ghost projection before Analyze; canonical network after Analyze,
   short graph fade/camera focus; graph coloring, community borders, influence sizes.
 - Case-link suggestions, shortest paths with hop evidence, highlighted FIRs,
   synthetic extraction-quality panel (27 TP, 0 FP, 0 FN on 18 samples).
-- Printable escaped HTML report with optional graph PNG and browser Save as PDF.
+- Printable escaped HTML report with optional graph PNG, Electronic Record Provenance Statement, BSA 2023 s.63 template certificate, and browser Save as PDF.
 - Reset/load demo, offline runtime, test suites, GitHub CI with PostgreSQL rehearsal.
 - Request/body validation, rate limiting, fixed CORS origin, parameterized SQL,
   no secrets in Git, local-only published port and safe JSON error envelope.
@@ -39,8 +50,9 @@
 - Demo analysis recomputes quickly; persisted results survive normal reloads but no
   independent precomputed analysis cache is used when the engine is down.
 - Audit logging/viewer is operational, not tamper-evident or identity-attributed.
-- Three automated browser scenarios cover the desktop journey, upload validation,
-  report download, mobile layout and reduced motion, with screenshots and video.
+- Four automated browser scenarios cover the desktop journey, upload validation,
+  report download with Electronic Record Provenance Statement and BSA 2023 template certificate, 3D Holo Sphere toggle,
+  Intel Copilot natural language queries, mobile layout and reduced motion, with screenshots and video.
 
 ## Roadmap
 JWT/Investigator/Admin roles, SSO, tenant isolation, device/IMEI entities, richer

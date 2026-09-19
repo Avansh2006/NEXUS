@@ -32,6 +32,105 @@ public class Store {
         try { return json.treeToValue(n,Model.Graph.class); } catch(JsonProcessingException e) { throw new IllegalStateException(e); }
     }
     public void reset() { db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
-    public void audit(String action) { db.update("INSERT INTO audit_log(action,created_at) VALUES(?,?)",action,Instant.now().toString()); }
-    public List<Map<String,Object>> audit() { return db.query("SELECT action,created_at FROM audit_log ORDER BY id DESC LIMIT 200",(rs,n)->Map.of("action",rs.getString(1),"createdAt",rs.getString(2))); }
+    public void deleteSourcesByCaseId(String caseId) {
+        var list = sources();
+        for (var s : list) {
+            if (caseId.equals(s.payload().path("caseId").asText())) {
+                db.update("DELETE FROM evidence WHERE record_id=?", s.id());
+                db.update("DELETE FROM source_record WHERE id=?", s.id());
+            }
+        }
+    }
+
+    public static String sha256(String input) {
+        try {
+            var md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] d = md.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            var sb = new StringBuilder();
+            for (byte b : d) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch(Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public synchronized void audit(String action, String userId, String entityId, String payloadDigest) {
+        String prevHash = db.query(
+            "SELECT entry_hash FROM audit_log ORDER BY id DESC LIMIT 1",
+            (rs, n) -> rs.getString(1)
+        ).stream().findFirst().orElse("0".repeat(64));
+        String ts = Instant.now().toString();
+        String u = (userId == null || userId.isBlank()) ? "system" : userId;
+        String ent = entityId == null ? "" : entityId;
+        String dig = payloadDigest == null ? "" : payloadDigest;
+        String hash = sha256(prevHash + ts + u + action + ent + dig);
+        db.update(
+            "INSERT INTO audit_log(action, created_at, user_id, entity_id, payload_digest, prev_hash, entry_hash) VALUES(?,?,?,?,?,?,?)",
+            action, ts, u, ent, dig, prevHash, hash
+        );
+    }
+
+    public void audit(String action) {
+        audit(action, "system", "", "");
+    }
+
+    public List<Map<String,Object>> audit() {
+        return db.query(
+            "SELECT id, action, created_at, user_id, entity_id, payload_digest, prev_hash, entry_hash FROM audit_log ORDER BY id DESC LIMIT 200",
+            (rs, n) -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", rs.getLong(1));
+                m.put("action", rs.getString(2));
+                m.put("createdAt", rs.getString(3));
+                m.put("userId", rs.getString(4));
+                m.put("entityId", rs.getString(5));
+                m.put("payloadDigest", rs.getString(6));
+                m.put("prevHash", rs.getString(7));
+                m.put("entryHash", rs.getString(8));
+                return m;
+            }
+        );
+    }
+
+    public record AuditRow(long id, String action, String createdAt, String userId, String entityId, String payloadDigest, String prevHash, String entryHash) {}
+
+    public Map<String, Object> verifyAuditChain() {
+        var rows = db.query(
+            "SELECT id, action, created_at, user_id, entity_id, payload_digest, prev_hash, entry_hash FROM audit_log ORDER BY id ASC",
+            (rs, n) -> new AuditRow(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8))
+        );
+        String expectedPrev = "0".repeat(64);
+        for (int i = 0; i < rows.size(); i++) {
+            AuditRow r = rows.get(i);
+            if (!r.prevHash().equals(expectedPrev)) {
+                return Map.of(
+                    "valid", false,
+                    "brokenAtIndex", i,
+                    "expectedPrevHash", expectedPrev,
+                    "actualPrevHash", r.prevHash(),
+                    "reason", "Broken hash linkage at index " + i
+                );
+            }
+            String computed = sha256(r.prevHash() + r.createdAt() + r.userId() + r.action() + r.entityId() + r.payloadDigest());
+            if (!computed.equals(r.entryHash())) {
+                return Map.of(
+                    "valid", false,
+                    "brokenAtIndex", i,
+                    "computedHash", computed,
+                    "storedEntryHash", r.entryHash(),
+                    "reason", "Hash tampering detected at index " + i
+                );
+            }
+            expectedPrev = r.entryHash();
+        }
+        return Map.of(
+            "valid", true,
+            "entriesVerified", rows.size(),
+            "headHash", expectedPrev
+        );
+    }
+
+    public void tamperAuditEntry(long id, String tamperedAction) {
+        db.update("UPDATE audit_log SET action=? WHERE id=?", tamperedAction, id);
+    }
 }

@@ -40,4 +40,4 @@ try {
     Write-Host 'NEXUS starting at http://localhost:8080. Keep this terminal open. Ctrl+C stops these services.'
     $children | Select-Object Id,ProcessName | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $logDir 'local-processes.json')
     while ($true) { Start-Sleep -Seconds 2; foreach ($child in $children) { $child.Refresh(); if ($child.HasExited) { throw "Service $($child.ProcessName) exited; inspect artifacts/*.log." } } }
-} finally { foreach ($child in $children) { if (-not $child.HasExited) { Stop-Process -Id $child.Id -ErrorAction SilentlyContinue } } }
+} finally { foreach ($child in $children) { if (-not $child.HasExited) { Stop-Process -Id $child.Id -Force -ErrorAction SilentlyContinue } } }

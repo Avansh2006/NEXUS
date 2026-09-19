@@ -1,0 +1,34 @@
+{
+  "id": "dev-007",
+  "state": "Karnataka Police",
+  "noiseTypes": [
+    "standard_format"
+  ],
+  "text": "KARNATAKA POLICE · PS KORAMANGALA · Accused Vinay Bhat operated courier delivery from Navapur Exchange using vehicle KA-01-MJ-9912 registered under Veyra Services.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Vinay Bhat",
+      "start": 44,
+      "end": 54
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Exchange",
+      "start": 86,
+      "end": 102
+    },
+    {
+      "type": "Vehicle",
+      "raw": "KA-01-MJ-9912",
+      "start": 117,
+      "end": 130
+    },
+    {
+      "type": "Organization",
+      "raw": "Veyra Services",
+      "start": 148,
+      "end": 162
+    }
+  ]
+}

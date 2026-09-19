@@ -88,15 +88,32 @@ export interface Metric {
   caseComponent: number;
   influence: number;
   community: number;
+  tacticalRole?: string;
+  roleTitle?: string;
+  roleCriteria?: string;
+  roleHypothesis?: string;
 }
 export interface Community {
   id: number;
   entityIds: string[];
 }
+export interface Telemetry {
+  nodeCount: number;
+  edgeCount: number;
+  betweennessMode: string;
+  kSamples: number;
+  communityCount: number;
+  computationTimeMs?: number;
+  breakdownMs?: {
+    communities: number;
+    centrality: number;
+  };
+}
 export interface Analysis {
   metrics?: Metric[];
   alerts?: Alert[];
   communities?: Community[];
+  telemetry?: Telemetry;
   caseLinks?: {
     caseIds: string[];
     entityIds: string[];
@@ -135,11 +152,43 @@ export interface Quality {
   falseNegatives: number;
   samples: number;
   scope: string;
+  heldoutTest?: {
+    samples: number;
+    strictPrecision: number;
+    strictRecall: number;
+    strictF1: number;
+    lenientPrecision: number;
+    lenientRecall: number;
+    lenientF1: number;
+  };
+  heldoutDev?: {
+    samples: number;
+    strictPrecision: number;
+    strictRecall: number;
+    strictF1: number;
+    lenientPrecision: number;
+    lenientRecall: number;
+    lenientF1: number;
+  };
 }
 export interface IngestResult {
   accepted: number;
   duplicates: number;
   errors: { row: number; message: string }[];
+}
+export interface IncomingResult {
+  status: string;
+  caseId: string;
+  latencyMs: number;
+  newNodes: string[];
+  crossCaseLinks: Array<{
+    entityId: string;
+    label: string;
+    type: string;
+    cases: string[];
+  }>;
+  graph?: Graph;
+  message?: string;
 }
 export interface PathResult {
   nodeIds: string[];
@@ -163,8 +212,14 @@ export const emptyGraph: Graph = {
   analyzed: false,
   suggestions: [],
 };
+export const API_BASE = (
+  import.meta.env.VITE_API_URL
+    ? String(import.meta.env.VITE_API_URL).replace(/\/+$/, "")
+    : ""
+) + "/api";
+
 export async function api<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`${API_BASE}${path}`, {
     method: body === undefined ? "GET" : "POST",
     headers: body === undefined ? {} : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),

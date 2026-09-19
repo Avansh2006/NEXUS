@@ -1,0 +1,28 @@
+{
+  "id": "dev-012",
+  "state": "Karnataka Police",
+  "noiseTypes": [
+    "upi_id"
+  ],
+  "text": "KARNATAKA POLICE · PS WHITEFIELD · Complainant Priya Raman sent payment to fastpay@okaxis managed by accused Harish Gowda.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Priya Raman",
+      "start": 47,
+      "end": 58
+    },
+    {
+      "type": "Account",
+      "raw": "fastpay@okaxis",
+      "start": 75,
+      "end": 89
+    },
+    {
+      "type": "Person",
+      "raw": "Harish Gowda",
+      "start": 109,
+      "end": 121
+    }
+  ]
+}

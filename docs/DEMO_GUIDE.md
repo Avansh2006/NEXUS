@@ -25,9 +25,17 @@ with `-Djdk.net.unixdomain.tmpdir=<short-existing-directory>` before `-jar`.
    the sources and invalidates analysis. Re-analyze after changes.
 8. Open **Dashboard** to see case-link suggestions, then **Investigation → Find path**.
    Choose SYN-PHONE-001 and SYN-ACCOUNT-001; **Trace path**. Show evidence per hop.
-9. Click **Generate Investigation Report**. Open downloaded HTML and print/save PDF.
-   Includes the current or last-viewed graph if captured, cases, metrics, alerts,
-   timeline ranges, evidence IDs and original source records.
+9. Click **3D Holo Sphere** on the Tactical HUD to display the interactive 3D WebGL
+   force-directed evidence sphere (Three.js) with real-time rotational telemetry.
+10. Click the floating **NEXUS Intel Copilot** button (bottom right) to open the deterministic,
+    graph-grounded query assistant. Click investigative prompt chips like *"Which entities have the highest betweenness centrality?"*,
+    inspect the deterministic explanation citing exact graph metrics, and click the entity badge
+    to navigate directly to that node in the inspector.
+11. Point out the **Syndicate Hierarchy & Pattern Hypothesis Badge** in the Inspector (e.g., Central Hub, Pass-Through Account, Broker).
+12. Click **Generate Investigation Report**. Open downloaded HTML and print/save PDF.
+    Includes the graph visual, cases, metrics, alerts, timeline ranges, evidence IDs, original source records,
+    and an **Electronic Record Provenance Statement** with automated SHA-256 digests plus a human-officer template certificate under Section 63 of the Bharatiya Sakshya Adhiniyam, 2023 (BSA 2023).
+13. Click **Stream FIR NXS-007** in the action bar. Observe live streaming ingestion and cross-case linkage within ~50ms, connecting suspect Karan Bhati to the central syndicate hub SYN-PHONE-001 and Veyra Services. Click the cross-case badge to inspect the shared node, then click **Retract NXS-007** to demonstrate non-destructive rollback.
 
 ## Rehearsal and fallback
 `python scripts/verify_demo.py` performs a clean API rehearsal and writes
@@ -43,8 +51,17 @@ If the engine is unavailable, restore it and retry. No fabricated cached analysi
 displayed. A report/screenshots/recording are the presentation fallback.
 Do not claim real-world integrations, production security, crime prediction, or guilt.
 
+## Synthetic Credentials & Security Controls
+NEXUS ships with synthetic RBAC authentication and tamper-evident audit logging for demonstration:
+- **Admin**: `username: admin`, `password: AdminPass123!`, token: `synthetic-admin-token` (Full access).
+- **Investigator**: `username: investigator`, `password: Investigator123!`, token: `synthetic-investigator-token` (Full access).
+- **Viewer**: `username: viewer`, `password: Viewer123!`, token: `synthetic-viewer-token` (Read-only; POST mutations rejected with 403 Forbidden).
+- **Audit Verification**: Run `curl http://localhost:8080/api/audit/verify` to verify the SHA-256 hash-chain across all recorded transactions and actions.
+- **Rate Limit Headers**: Requests exceeding 30 mutations/minute receive HTTP 429 with standard `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers.
+
 ## Practical limits
 30 mutations/minute/client; avoid repeatedly hammering reset/analyze during rehearsal.
 Default graph shows top 80 + alert entities; **Expand all** shows the bounded network.
 Filters can hide selected nodes; clear filters when exploring another case.
 The Reports screen offers an HTML download; browser print is the PDF fallback.
+

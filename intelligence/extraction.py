@@ -17,21 +17,25 @@ PATTERNS = [
     ('IFSC', r'\b[A-Z]{4}0[A-Z0-9]{6}\b'),
     ('Amount', r'\b(?:INR|Rs\.?)\s?\d[\d,]*(?:\.\d{1,2})?\b'),
 ]
-PERSON = re.compile(r'\b(accused|co-accused|complainant|witness|arrested)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})', re.I)
-ACCOUNT = re.compile(r'\baccount(?:\s+number)?\s*[:#]?\s*(\d{9,18})\b', re.I)
+PERSON = re.compile(r'\b(accused|co-accused|complainant|witness|arrested|aaropi|shikayatkarta|gawah|naamzad)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})', re.I)
+ACCOUNT = re.compile(r'\b(?:account(?:\s+number)?|khata(?:\s+sankhya)?)\s*[:#]?\s*(\d{9,18})\b', re.I)
+
+DEVANAGARI_DIGITS = str.maketrans('०१२३४५६७८९', '0123456789')
 
 
 def normalize(kind, raw):
-    if kind == 'Phone' and not raw.startswith('SYN-'):
-        digits = re.sub(r'\D', '', raw)
+    raw_norm = raw.translate(DEVANAGARI_DIGITS)
+    if kind == 'Phone' and not raw_norm.startswith('SYN-'):
+        digits = re.sub(r'\D', '', raw_norm)
         return '+91' + digits[-10:]
     if kind == 'Vehicle':
-        return re.sub(r'[ -]', '', raw).upper()
-    return raw.strip().lower() if kind in ('Person', 'Account') and not raw.startswith('SYN-') else raw.strip()
+        return re.sub(r'[ -]', '', raw_norm).upper()
+    return raw_norm.strip().lower() if kind in ('Person', 'Account') and not raw_norm.startswith('SYN-') else raw.strip()
 
 
 def extract(text, record_id=''):
     entities = []
+    search_text = text.translate(DEVANAGARI_DIGITS)
     def add(kind, start, end, confidence=1.0, role=''):
         if any(start < e['end'] and end > e['start'] for e in entities):
             return
@@ -39,10 +43,10 @@ def extract(text, record_id=''):
         entities.append(dict(type=kind, raw=raw, start=start, end=end, confidence=confidence,
                              normalized=normalize(kind, raw), role=role, sourceRecordId=record_id))
     # Explicit account context wins over a phone-shaped 10-digit number.
-    for match in ACCOUNT.finditer(text):
+    for match in ACCOUNT.finditer(search_text):
         add('Account', match.start(1), match.end(1))
     for kind, pattern in PATTERNS:
-        for match in re.finditer(pattern, text):
+        for match in re.finditer(pattern, search_text):
             add(kind, match.start(), match.end())
     for match in PERSON.finditer(text):
         # Stop at separators; capitalization is checked independently of cue case.

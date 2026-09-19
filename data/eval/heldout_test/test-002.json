@@ -1,0 +1,34 @@
+{
+  "id": "test-002",
+  "state": "Maharashtra Police",
+  "noiseTypes": [
+    "devanagari_digits"
+  ],
+  "text": "MAHARASHTRA POLICE · PS WORLI · प्रथम खबरी अहवाल. Shikayatkarta Meena Joshi paid INR 45000 to aaropi Sanjay Kulkarni via account ८९०१२३४५६७८९.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Meena Joshi",
+      "start": 64,
+      "end": 75
+    },
+    {
+      "type": "Amount",
+      "raw": "INR 45000",
+      "start": 81,
+      "end": 90
+    },
+    {
+      "type": "Person",
+      "raw": "Sanjay Kulkarni",
+      "start": 101,
+      "end": 116
+    },
+    {
+      "type": "Account",
+      "raw": "८९०१२३४५६७८९",
+      "start": 129,
+      "end": 141
+    }
+  ]
+}

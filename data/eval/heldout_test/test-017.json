@@ -1,0 +1,22 @@
+{
+  "id": "test-017",
+  "state": "UP Police",
+  "noiseTypes": [
+    "standard"
+  ],
+  "text": "UP POLICE · PS ALLAHABAD CIVIL LINES · Accused Shailendra Singh deposited extortion amount in account 401928374652.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Shailendra Singh",
+      "start": 47,
+      "end": 63
+    },
+    {
+      "type": "Account",
+      "raw": "401928374652",
+      "start": 102,
+      "end": 114
+    }
+  ]
+}

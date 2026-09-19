@@ -1,0 +1,22 @@
+{
+  "id": "test-006",
+  "state": "Maharashtra Police",
+  "noiseTypes": [
+    "standard"
+  ],
+  "text": "MAHARASHTRA POLICE · PS COLABA · Arrested accused Vijay More with fake identity card at Navapur Sector 6.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Vijay More",
+      "start": 50,
+      "end": 60
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Sector 6",
+      "start": 88,
+      "end": 104
+    }
+  ]
+}

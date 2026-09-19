@@ -78,6 +78,26 @@ export default function Inspector({
         {n.type}
       </span>
       <h2>{n.label}</h2>
+      {metric?.roleTitle ? (
+        <div className="role-pattern-card" style={{ marginBottom: 10, padding: "8px 10px", background: "#132c33", borderRadius: 6, border: "1px solid #2f5a4e" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, flexWrap: "wrap" }}>
+            <span className="pill" style={{ background: "#214a3e", color: "#a5f0cd", border: "1px solid #3d806a", fontSize: 10, fontWeight: 600 }}>
+              {metric.roleTitle}
+            </span>
+            <span style={{ fontSize: 9, color: "#8ab4a3", fontStyle: "italic" }}>
+              Pattern hypothesis — for investigator review
+            </span>
+          </div>
+          <div style={{ fontSize: 9.5, color: "#a1cbba", marginTop: 4, fontFamily: "monospace" }}>
+            {metric.roleCriteria ? `Criteria: ${metric.roleCriteria}` : `Criteria: Degree=${(metric.degree * 100).toFixed(1)}%, Betw=${(metric.betweenness * 100).toFixed(1)}%, Inf=${metric.influence.toFixed(1)}`}
+          </div>
+          {(metric.tacticalRole === "PASS_THROUGH_ACCOUNT" || metric.roleTitle?.toLowerCase().includes("pass-through")) ? (
+            <div style={{ fontSize: 9, color: "#f2d385", marginTop: 5, background: "#332b12", padding: "4px 6px", borderRadius: 4, borderLeft: "2px solid #e0b443" }}>
+              Notice: Account holders may be unwitting participants or victims.
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <div className="tags">
         {n.properties.caseIds.map((c) => (
           <span key={c}>{c}</span>

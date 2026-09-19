@@ -1,0 +1,28 @@
+{
+  "id": "dev-015",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "ifsc_account"
+  ],
+  "text": "DELHI POLICE · PS ROHINI · Accused Tarun Kapoor requested wire transfer to account 502918273645 with IFSC SBIN0001234.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Tarun Kapoor",
+      "start": 35,
+      "end": 47
+    },
+    {
+      "type": "Account",
+      "raw": "502918273645",
+      "start": 83,
+      "end": 95
+    },
+    {
+      "type": "IFSC",
+      "raw": "SBIN0001234",
+      "start": 106,
+      "end": 117
+    }
+  ]
+}

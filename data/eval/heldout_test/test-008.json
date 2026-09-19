@@ -1,0 +1,34 @@
+{
+  "id": "test-008",
+  "state": "UP Police",
+  "noiseTypes": [
+    "hinglish_khata"
+  ],
+  "text": "UP POLICE · PS KANPUR KOTWALI · Shikayatkarta Manoj Shukla deposited Rs. 90,000 into khata 601928374829 for accused Brijesh Yadav.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Manoj Shukla",
+      "start": 46,
+      "end": 58
+    },
+    {
+      "type": "Amount",
+      "raw": "Rs. 90,000",
+      "start": 69,
+      "end": 79
+    },
+    {
+      "type": "Account",
+      "raw": "601928374829",
+      "start": 91,
+      "end": 103
+    },
+    {
+      "type": "Person",
+      "raw": "Brijesh Yadav",
+      "start": 116,
+      "end": 129
+    }
+  ]
+}

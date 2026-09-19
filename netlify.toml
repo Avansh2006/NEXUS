@@ -1,0 +1,21 @@
+[build]
+  base = "frontend"
+  publish = "dist"
+  command = "pnpm build"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Reverse proxy /api to the Render backend (can also be configured via VITE_API_URL environment variable)
+[[redirects]]
+  from = "/api/*"
+  to = "https://nexus-app.onrender.com/api/:splat"
+  status = 200
+  force = false
+  headers = {X-Proxied-By = "NEXUS-Netlify"}
+
+# Single Page App routing fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

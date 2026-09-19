@@ -91,6 +91,9 @@ On macOS/Linux, use `export NAME=value`, `.venv/bin/python`, and ordinary `cd`; 
 | Extra filters | Filter a crime type, `Navapur Exchange`, or date `2026-09-02`; clear restores results |
 | Focus | Select entity, click 1 hop / 2 hops: unrelated nodes dim; Off restores opacity |
 | Graph controls | Zoom in/out, Fit network, Expand all/Top entities work; selecting existing nodes does not randomly relayout the graph |
+| Tactical HUD | Floating glass bar shows live system beacon ("DETERMINISTIC AI"), node/edge count chips, and view toggle |
+| 3D Holo Sphere | Click "3D Holo Sphere" in Tactical HUD: interactive Three.js WebGL sphere renders with coordinate telemetry, drag-to-rotate, node inspection, and orbiting entity nodes; click "2D Graph" returns cleanly |
+| Spotlight Cards | Dashboard cards and callouts feature cursor-following radial glowing spotlight borders on hover |
 | FIR evidence | Inspector → supporting FIR record; original text contains colored spans; hover exposes type/confidence |
 | Account patterns | SYN-ACCOUNT-001 shows fan-in, repeated transfers, rapid pass-through with actual counts and evidence IDs |
 | Suppression | Alerts → public/service entry explicitly explains SYN-PHONE-999 suppression |

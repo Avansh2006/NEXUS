@@ -13,12 +13,14 @@
   "dependencies": {
     "@fontsource/inter": "5.2.5",
     "@fontsource/space-grotesk": "5.2.5",
+    "@types/three": "^0.186.0",
     "cytoscape": "3.31.0",
     "cytoscape-fcose": "2.2.0",
     "lucide-react": "0.468.0",
     "motion": "12.4.7",
     "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react-dom": "19.0.0",
+    "three": "^0.186.0"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2",

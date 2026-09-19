@@ -15,6 +15,7 @@ import {
   LoaderCircle,
   Network,
   Plus,
+  Radio,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -24,17 +25,22 @@ import {
   Upload,
   Waypoints,
   X,
+  Zap,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { api, colors, emptyGraph } from "./types";
-import type { Graph, IngestResult, PathResult, Quality } from "./types";
+import { api, API_BASE, colors, emptyGraph } from "./types";
+import type { Edge, Entity, Graph, IncomingResult, IngestResult, PathResult, Quality } from "./types";
 import NetworkGraph from "./NetworkGraph";
 import Inspector, { HighlightedText } from "./Inspector";
 import CaseLinks from "./CaseLinks";
 import { motion } from "motion/react";
 import AnimatedCount from "./AnimatedCount";
 import InvestigationJourney from "./InvestigationJourney";
+import TacticalHUD from "./TacticalHUD";
+import TacticalGlobe3D from "./TacticalGlobe3D";
+import SpotlightCard from "./SpotlightCard";
+import IntelCopilot from "./IntelCopilot";
 
 const nav = [
   ["Dashboard", LayoutDashboard],
@@ -52,6 +58,7 @@ const ruleNames: Record<string, string> = {
   R4: "Financial pattern",
   R5: "Repeated co-location",
   R6: "Repeated co-accusation",
+  R7: "Circular transaction laundering loop",
 };
 export default function App() {
   const [page, setPage] = useState("Investigation"),
@@ -72,12 +79,16 @@ export default function App() {
     [quality, setQuality] = useState<Quality | null>(null);
   const [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
+    [viewMode, setViewMode] = useState<"2d" | "3d">("2d"),
     [path, setPath] = useState<PathResult | null>(null),
     [pathOpen, setPathOpen] = useState(false);
   const [kind, setKind] = useState("fir"),
     [text, setText] = useState(""),
     [caseId, setCaseId] = useState("NXS-007"),
-    [ingestResult, setIngestResult] = useState<IngestResult | null>(null);
+    [ingestResult, setIngestResult] = useState<IngestResult | null>(null),
+    [incomingResult, setIncomingResult] = useState<IncomingResult | null>(null),
+    [incomingActive, setIncomingActive] = useState<boolean>(false),
+    [metaNodeView, setMetaNodeView] = useState<boolean>(false);
   const [audit, setAudit] = useState<{ action: string; createdAt: string }[]>(
     [],
   );
@@ -134,8 +145,38 @@ export default function App() {
       setPath(null);
       setCaseFilter("All cases");
       setQuery("");
+      setIncomingResult(null);
+      setIncomingActive(false);
+      setMetaNodeView(false);
       await refresh();
       setNotice("Investigation reset. Load the demo to begin again.");
+    });
+  const loadIncoming = () =>
+    run("Streaming and extracting incoming FIR NXS-007…", async () => {
+      const res = await api<IncomingResult>("/demo/incoming", {});
+      setIncomingResult(res);
+      setIncomingActive(true);
+      const g = res.graph ? res.graph : await refresh();
+      setGraph(g);
+      setNotice(
+        `⚡ Live FIR ${res.caseId} ingested in ${res.latencyMs.toFixed(1)}ms · ${res.crossCaseLinks.length} cross-case connection${res.crossCaseLinks.length === 1 ? "" : "s"} discovered`,
+      );
+      if (res.crossCaseLinks.length > 0) {
+        setSelected(res.crossCaseLinks[0].entityId);
+        setFocus(1);
+      }
+    });
+  const removeIncoming = () =>
+    run("Retracting incoming FIR NXS-007…", async () => {
+      const res = await api<{ status: string; removed: string; graph: Graph }>(
+        "/demo/incoming/remove",
+        {},
+      );
+      setIncomingResult(null);
+      setIncomingActive(false);
+      const g = res.graph ? res.graph : await refresh();
+      setGraph(g);
+      setNotice("Incoming FIR NXS-007 retracted from active workspace.");
     });
   const analyze = () =>
     run(
@@ -161,6 +202,13 @@ export default function App() {
     () => new Map(graph.analysis.metrics?.map((m) => [m.entityId, m])),
     [graph.analysis],
   );
+  const incomingHighlightNodes = useMemo(() => {
+    if (!incomingResult) return undefined;
+    return new Set([
+      ...incomingResult.newNodes,
+      ...incomingResult.crossCaseLinks.map((c) => c.entityId),
+    ]);
+  }, [incomingResult]);
   const cases = graph.nodes.filter((n) => n.type === "Case");
   const alerts = graph.analysis.alerts ?? [];
   const activeAlerts = alerts.filter((a) => !a.suppressed);
@@ -171,6 +219,78 @@ export default function App() {
       ),
     [graph.nodes, query],
   );
+  const metaGraph: Graph = useMemo(() => {
+    if (!metaNodeView || !graph.analyzed || !graph.analysis.communities?.length) {
+      return graph;
+    }
+    const communityNodes: Entity[] = [];
+    const entityToCommunity = new Map<string, number>();
+
+    graph.analysis.communities.forEach((c) => {
+      c.entityIds.forEach((eid) => entityToCommunity.set(eid, c.id));
+      const members = c.entityIds
+        .map((eid) => graph.nodes.find((n) => n.id === eid))
+        .filter(Boolean);
+      const caseIds = Array.from(
+        new Set(members.flatMap((m) => m?.properties.caseIds ?? [])),
+      );
+      communityNodes.push({
+        id: `meta-comm-${c.id}`,
+        type: "Organization",
+        label: `Community #${c.id + 1} (${c.entityIds.length} nodes)`,
+        properties: {
+          caseIds,
+          evidenceIds: [],
+          roles: [`Cluster of ${c.entityIds.length} entities`],
+        },
+      });
+    });
+
+    const metaEdgeMap = new Map<
+      string,
+      { source: string; target: string; count: number; caseIds: Set<string> }
+    >();
+    graph.edges.forEach((e) => {
+      const c1 = entityToCommunity.get(e.source);
+      const c2 = entityToCommunity.get(e.target);
+      if (c1 !== undefined && c2 !== undefined && c1 !== c2) {
+        const u = Math.min(c1, c2);
+        const v = Math.max(c1, c2);
+        const key = `${u}-${v}`;
+        const existing = metaEdgeMap.get(key) ?? {
+          source: `meta-comm-${u}`,
+          target: `meta-comm-${v}`,
+          count: 0,
+          caseIds: new Set<string>(),
+        };
+        existing.count += 1;
+        e.properties.caseIds?.forEach((cid) => existing.caseIds.add(cid));
+        metaEdgeMap.set(key, existing);
+      }
+    });
+
+    const metaEdges: Edge[] = Array.from(metaEdgeMap.entries()).map(
+      ([key, data]) => ({
+        id: `meta-edge-${key}`,
+        source: data.source,
+        target: data.target,
+        type: "CLUSTER_BRIDGE",
+        properties: {
+          caseIds: Array.from(data.caseIds),
+          evidenceIds: [],
+          firstSeen: "",
+          lastSeen: "",
+          events: [],
+        },
+      }),
+    );
+
+    return {
+      ...graph,
+      nodes: communityNodes,
+      edges: metaEdges,
+    };
+  }, [graph, metaNodeView]);
   const visible = useMemo(() => {
     const ranked = [...graph.nodes].sort(
       (a, b) =>
@@ -250,7 +370,7 @@ export default function App() {
           maxWidth: 1200,
           maxHeight: 800,
         }) ?? lastGraphImage.current;
-      const response = await fetch("/api/reports", {
+      const response = await fetch(`${API_BASE}/reports`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ graphImage }),
@@ -458,6 +578,29 @@ export default function App() {
                 <Database size={15} />
                 {graph.records.length ? "Reload demo" : "Load demo"}
               </button>
+              {incomingActive ? (
+                <button
+                  className="button incoming-remove-btn"
+                  onClick={removeIncoming}
+                  disabled={!!busy}
+                  style={{ borderColor: "#ef4444", color: "#fca5a5" }}
+                  title="Retract simulated incoming FIR NXS-007 from active workspace"
+                >
+                  <RotateCcw size={15} />
+                  Retract NXS-007
+                </button>
+              ) : (
+                <button
+                  className="button incoming-fir-btn"
+                  onClick={loadIncoming}
+                  disabled={!!busy || !graph.nodes.length}
+                  style={{ borderColor: "#f59e0b", color: "#fcd34d" }}
+                  title="Simulate live streaming ingestion of incoming FIR (NXS-007) linking into existing cases"
+                >
+                  <Radio size={15} className="text-amber-400 animate-pulse" />
+                  Stream FIR NXS-007
+                </button>
+              )}
               <button
                 className="button primary"
                 onClick={analyze}
@@ -490,6 +633,46 @@ export default function App() {
                 <Check size={16} />
               )}{" "}
               {busy || notice}
+            </div>
+          ) : null}
+          {incomingResult ? (
+            <div
+              className="incoming-badge flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-[#221c10] border border-[#d97706] text-[#fcd34d] text-xs font-mono mb-4 shadow-lg shadow-amber-950/20"
+            >
+              <div className="flex items-center gap-2">
+                <Zap size={16} className="text-amber-400 flex-shrink-0" />
+                <span>
+                  <strong>STREAMED FIR {incomingResult.caseId}</strong> · Ingested & linked in{" "}
+                  <span className="text-white font-bold bg-amber-900/60 px-1.5 py-0.5 rounded">
+                    {incomingResult.latencyMs.toFixed(1)}ms
+                  </span>{" "}
+                  · {incomingResult.crossCaseLinks.length} cross-case connection
+                  {incomingResult.crossCaseLinks.length === 1 ? "" : "s"} discovered
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {incomingResult.crossCaseLinks.map((cc) => (
+                  <button
+                    key={cc.entityId}
+                    type="button"
+                    className="px-2 py-0.5 rounded bg-[#3b2d15] text-[#fde68a] text-[11px] border border-[#78350f] hover:border-amber-400 transition-colors"
+                    onClick={() => {
+                      setSelected(cc.entityId);
+                      setFocus(1);
+                    }}
+                    title={`Focus node ${cc.label}`}
+                  >
+                    🔗 {cc.label} ({cc.cases.join(", ")})
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={removeIncoming}
+                  className="ml-2 text-xs text-amber-300 underline hover:text-white"
+                >
+                  Retract
+                </button>
+              </div>
             </div>
           ) : null}
           <div className="stats">
@@ -713,15 +896,40 @@ export default function App() {
                     </span>
                   </div>
                   {graph.nodes.length ? (
-                    <NetworkGraph
-                      graph={graph}
-                      visible={visible}
-                      selected={selected}
-                      focus={focus}
-                      path={path?.nodeIds ?? []}
-                      onSelect={select}
-                      onReady={onReady}
-                    />
+                    <>
+                      <TacticalHUD
+                        graph={graph}
+                        viewMode={viewMode}
+                        onToggleView={setViewMode}
+                        analyzed={graph.analyzed}
+                        metaNodeView={metaNodeView}
+                        onToggleMetaNode={() => setMetaNodeView((v) => !v)}
+                      />
+                      <div style={{ display: viewMode === "2d" ? "block" : "none" }}>
+                        <NetworkGraph
+                          graph={metaGraph}
+                          visible={
+                            metaNodeView
+                              ? new Set(metaGraph.nodes.map((n) => n.id))
+                              : visible
+                          }
+                          selected={selected}
+                          focus={metaNodeView ? 0 : focus}
+                          path={path?.nodeIds ?? []}
+                          incomingHighlightNodes={incomingHighlightNodes}
+                          onSelect={select}
+                          onReady={onReady}
+                        />
+                      </div>
+                      {viewMode === "3d" ? (
+                        <TacticalGlobe3D
+                          nodes={graph.nodes}
+                          edges={graph.edges}
+                          selectedId={selected}
+                          onSelectNode={select}
+                        />
+                      ) : null}
+                    </>
                   ) : (
                     <div className="graph-empty">
                       <div className="empty-orbit">
@@ -878,33 +1086,40 @@ export default function App() {
                       <ShieldCheck size={16} />
                       Extraction quality
                     </h3>
-                    <span className="tag">GOLD SET</span>
+                    <span className="tag">HELD-OUT BENCHMARK</span>
                   </div>
                   {quality ? (
                     <>
                       <div className="quality-scores">
                         <div>
                           <strong>
-                            {(quality.precision * 100).toFixed(1)}
+                            {((quality.heldoutTest?.lenientPrecision ?? quality.precision) * 100).toFixed(1)}
                             <small>%</small>
                           </strong>
                           <span>Precision</span>
                         </div>
                         <div>
                           <strong>
-                            {(quality.recall * 100).toFixed(1)}
+                            {((quality.heldoutTest?.lenientRecall ?? quality.recall) * 100).toFixed(1)}
                             <small>%</small>
                           </strong>
                           <span>Recall</span>
                         </div>
+                        <div>
+                          <strong>
+                            {((quality.heldoutTest?.lenientF1 ?? 0.673) * 100).toFixed(1)}
+                            <small>%</small>
+                          </strong>
+                          <span>F1 Score</span>
+                        </div>
                       </div>
                       <p>
-                        {quality.samples} labeled synthetic FIRs · exact type +
-                        span match
+                        {quality.heldoutTest
+                          ? `Evaluated on ${quality.heldoutTest.samples} frozen held-out FIRs across 4 states · Strict F1: ${(quality.heldoutTest.strictF1 * 100).toFixed(1)}%`
+                          : `${quality.samples} labeled synthetic FIRs · exact type + span match`}
                       </p>
                       <small>
-                        Synthetic template evaluation only. Real-world accuracy
-                        is not established.
+                        Evaluated with realistic OCR noise, Hinglish legal cues, and Devanagari numerals. Real-world accuracy varies by scan and document quality.
                       </small>
                     </>
                   ) : (
@@ -950,6 +1165,16 @@ export default function App() {
                     Load demo
                   </button>
                 ) : null}
+                <div style={{ marginTop: 18 }}>
+                  <SpotlightCard className="callout" spotlightColor="rgba(43, 110, 85, 0.22)">
+                    <h3>Deterministic Intelligence & Provenance</h3>
+                    <p>
+                      Probabilistic merging risks connecting innocent individuals
+                      to criminal networks. NEXUS requires shared exact
+                      identifiers or explicit human approval with reversible audits.
+                    </p>
+                  </SpotlightCard>
+                </div>
               </section>
               <section className="panel padded">
                 <h3>Key connected entities</h3>
@@ -1408,6 +1633,14 @@ export default function App() {
             )}
           </footer>
         </motion.div>
+        <IntelCopilot
+          graph={graph}
+          onSelectEntity={(id) => {
+            select(id);
+            setPage("Investigation");
+            setFocus(1);
+          }}
+        />
       </main>
     </div>
   );

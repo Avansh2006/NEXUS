@@ -1,0 +1,34 @@
+{
+  "id": "test-010",
+  "state": "Maharashtra Police",
+  "noiseTypes": [
+    "vehicle_unspaced"
+  ],
+  "text": "MAHARASHTRA POLICE · PS CHEMBUR · Witness Pooja Shinde saw accused Dilip Sawant in vehicle MH03BQ7711 near Navapur Sector 7.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Pooja Shinde",
+      "start": 42,
+      "end": 54
+    },
+    {
+      "type": "Person",
+      "raw": "Dilip Sawant",
+      "start": 67,
+      "end": 79
+    },
+    {
+      "type": "Vehicle",
+      "raw": "MH03BQ7711",
+      "start": 91,
+      "end": 101
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Sector 7",
+      "start": 107,
+      "end": 123
+    }
+  ]
+}

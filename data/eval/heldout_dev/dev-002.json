@@ -1,0 +1,41 @@
+{
+  "id": "dev-002",
+  "state": "Maharashtra Police",
+  "noiseTypes": [
+    "hinglish_cues",
+    "devanagari_digits"
+  ],
+  "text": "MAHARASHTRA POLICE · PS BANDRA WEST · प्रथम खबरी अहवाल. Shikayatkarta Sunita Deshmukh registered complaint against aaropi Rajesh Varma. Aaropi used phone ९८२१०१२३४५ and vehicle MH-02-AB-1234 near Navapur Sector 1.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Sunita Deshmukh",
+      "start": 70,
+      "end": 85
+    },
+    {
+      "type": "Person",
+      "raw": "Rajesh Varma",
+      "start": 122,
+      "end": 134
+    },
+    {
+      "type": "Phone",
+      "raw": "९८२१०१२३४५",
+      "start": 154,
+      "end": 164
+    },
+    {
+      "type": "Vehicle",
+      "raw": "MH-02-AB-1234",
+      "start": 177,
+      "end": 190
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Sector 1",
+      "start": 196,
+      "end": 212
+    }
+  ]
+}

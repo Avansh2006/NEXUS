@@ -63,6 +63,9 @@ test('clean investigation: evidence → network → review → report',async({pa
   expect(report).toContain('Supporting evidence');
   expect(report).toContain('data:image/png;base64,');
   expect(report).toContain('SYN-ACCOUNT-001');
+  expect(report).toContain('Electronic Record Provenance Statement');
+  expect(report).toContain('Bharatiya Sakshya Adhiniyam, 2023, Section 63');
+  expect(report).toContain('BSA 2023');
   await page.getByRole('button',{name:'Refresh',exact:true}).click();
   await expect(page.locator('.audit-row').first()).toBeVisible();
   expect(errors).toEqual([]);
@@ -99,3 +102,61 @@ test('mobile and reduced-motion layout remains usable',async({page},testInfo)=>{
   await expect(page.getByRole('button',{name:'Generate Investigation Report',exact:true})).toBeVisible();
   await page.screenshot({path:testInfo.outputPath('mobile-reduced-motion.png'),fullPage:true});
 });
+
+test('tactical extensions: 3D canvas toggle, Intel Copilot queries, and BSA 2023 provenance statement', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Reset demo data', exact: true }).click();
+  await page.getByRole('button', { name: 'Load demo', exact: true }).click();
+  await page.getByRole('button', { name: 'Analyze Network', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('3 cases linked');
+
+  // Verify Tactical HUD and 3D WebGL Sphere
+  await expect(page.getByText('DETERMINISTIC, GRAPH-GROUNDED ENGINE')).toBeVisible();
+  await page.getByLabel('3D Tactical Holo Sphere').click();
+  await expect(page.getByText('TACTICAL 3D HOLO SPHERE')).toBeVisible();
+  await page.getByLabel('2D Network View').click();
+
+  // Verify Intel Copilot drawer
+  await page.getByLabel('Open NEXUS Intel Copilot').click();
+  await expect(page.getByText('DETERMINISTIC, GRAPH-GROUNDED', { exact: true })).toBeVisible();
+
+  // Execute an investigative prompt
+  await page.getByRole('button', { name: 'Which entities have the highest betweenness centrality?' }).click();
+  await expect(page.getByText('exhibits the highest betweenness centrality')).toBeVisible();
+
+  // Inspect entity from copilot chip
+  await page.locator('button').filter({ hasText: 'Veyra Services' }).last().click();
+  await expect(page.locator('.inspector h2')).toHaveText('Veyra Services');
+
+  // Close copilot
+  await page.getByLabel('Close Copilot').click();
+  await expect(page.getByText('DETERMINISTIC, GRAPH-GROUNDED', { exact: true })).toBeHidden();
+});
+
+test('live incoming FIR: streaming ingestion, cross-case linkage, latency telemetry, and retraction', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Reset demo data', exact: true }).click();
+  await page.getByRole('button', { name: 'Load demo', exact: true }).click();
+  await page.getByRole('button', { name: 'Analyze Network', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('3 cases linked');
+
+  // Stream incoming FIR NXS-007
+  await page.getByRole('button', { name: 'Stream FIR NXS-007', exact: true }).click();
+
+  // Verify latency badge & cross-case link
+  const badge = page.locator('.incoming-badge');
+  await expect(badge).toBeVisible();
+  await expect(badge).toContainText('STREAMED FIR NXS-007');
+  await expect(badge).toContainText('SYN-PHONE-001');
+
+  // Click the cross-case link badge to focus node
+  await badge.getByRole('button', { name: /SYN-PHONE-001/ }).click();
+  await expect(page.locator('.inspector h2')).toHaveText('SYN-PHONE-001');
+
+  // Verify retract button removes the incoming FIR cleanly
+  await page.getByRole('button', { name: 'Retract NXS-007', exact: true }).click();
+  await expect(page.locator('.incoming-badge')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Stream FIR NXS-007', exact: true })).toBeVisible();
+});
+
+

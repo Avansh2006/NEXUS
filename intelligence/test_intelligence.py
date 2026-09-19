@@ -101,3 +101,76 @@ def test_api_contract():
     assert client.post('/extract',json={'text':'No data'}).json()=={'entities':[]}
     assert client.post('/extract',json={'text':'x'*10001}).status_code==422
     assert client.post('/analyze',json={'nodes':[],'edges':[]}).status_code==200
+
+
+def test_circular_transaction_r7_and_roles():
+    ns = [node('acc1', 'Account', ['A']), node('acc2', 'Account', ['A']), node('acc3', 'Account', ['A'])]
+    es = [edge('acc1', 'acc2', 'TRANSFERRED_TO'), edge('acc2', 'acc3', 'TRANSFERRED_TO'), edge('acc3', 'acc1', 'TRANSFERRED_TO')]
+    res = analyze(dict(nodes=ns, edges=es))
+    r7 = [a for a in res['alerts'] if a['ruleId'] == 'R7']
+    assert len(r7) == 1
+    assert 'Circular fund transaction loop' in r7[0]['explanation']
+    assert set(r7[0]['entityIds']) == {'acc1', 'acc2', 'acc3'}
+    assert all('tacticalRole' in m and 'roleHypothesis' in m for m in res['metrics'])
+    assert any(m['tacticalRole'] in ('PASS_THROUGH_ACCOUNT', 'FINANCIAL_NODE') for m in res['metrics'])
+
+
+def test_copilot_intent_mapping_valid():
+    from intent import map_intent
+    # Shared identifiers
+    r1 = map_intent("Who links Case NXS-001 to NXS-003?")
+    assert r1.intent == "shared_identifiers"
+    assert "NXS-001" in r1.parameters.get("case_ids", [])
+
+    # Highest betweenness
+    r2 = map_intent("Which entities have the highest betweenness centrality?")
+    assert r2.intent == "highest_betweenness"
+
+    # Pass-through accounts
+    r3 = map_intent("Find accounts matching the pass-through pattern with high fan-in")
+    assert r3.intent == "pass_through_accounts"
+
+    # Logistics entities
+    r4 = map_intent("What vehicles or front organizations are in the graph?")
+    assert r4.intent == "logistics_entities"
+
+    # Suppression reason
+    r5 = map_intent("Why was SYN-PHONE-999 suppressed?")
+    assert r5.intent == "suppression_reason"
+
+    # Circular flows
+    r6 = map_intent("Show circular fund flow loops and R7 alerts")
+    assert r6.intent == "circular_flows"
+
+
+def test_copilot_out_of_scope_and_suggestions():
+    from intent import map_intent
+    out_queries = [
+        "What is the penalty for section 420?",
+        "Who is the Prime Minister of India?",
+        "What is the weather in Delhi?",
+        "Write a poem about crime"
+    ]
+    for q in out_queries:
+        r = map_intent(q)
+        assert r.intent == "out_of_scope"
+        assert "can't answer that from the graph data" in r.explanation
+        assert len(r.suggestions) >= 2
+
+
+def test_copilot_intent_endpoint_and_schema():
+    client = TestClient(app)
+    # Valid intent
+    resp = client.post('/copilot/intent', json={'query': 'Who links NXS-001 and NXS-002?'})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data['intent'] == 'shared_identifiers'
+    assert 'NXS-001' in data['parameters']['case_ids']
+
+    # Out of scope intent
+    resp_out = client.post('/copilot/intent', json={'query': 'What is the punishment under section 302 IPC?'})
+    assert resp_out.status_code == 200
+    data_out = resp_out.json()
+    assert data_out['intent'] == 'out_of_scope'
+    assert len(data_out['suggestions']) >= 2
+

@@ -13,7 +13,10 @@ public class ApiErrors {
     @ExceptionHandler({IllegalArgumentException.class,HttpMessageNotReadableException.class})
     public ResponseEntity<Map<String,Object>> invalid(Exception e) {return error(400,"INVALID_INPUT",e instanceof HttpMessageNotReadableException?"Malformed request body":e.getMessage());}
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<Map<String,Object>> status(ResponseStatusException e) {return error(e.getStatusCode().value(),"REQUEST_FAILED",e.getReason()==null?"Request failed":e.getReason());}
+    public ResponseEntity<Map<String,Object>> status(ResponseStatusException e) {
+        String code = e.getStatusCode().value() == 401 ? "UNAUTHORIZED" : e.getStatusCode().value() == 403 ? "FORBIDDEN" : "REQUEST_FAILED";
+        return error(e.getStatusCode().value(), code, e.getReason() == null ? "Request failed" : e.getReason());
+    }
     @ExceptionHandler(RestClientException.class)
     public ResponseEntity<Map<String,Object>> sidecar(RestClientException e) {return error(503,"ENGINE_UNAVAILABLE","Intelligence engine unavailable. Retry when its health check passes.");}
     @ExceptionHandler(Exception.class)

@@ -1,0 +1,35 @@
+{
+  "id": "dev-008",
+  "state": "UP Police",
+  "noiseTypes": [
+    "devanagari_account",
+    "hinglish_cues"
+  ],
+  "text": "UP POLICE · PS NOIDA SECTOR 20 · Shikayatkarta Rahul Verma transferred INR 75000 to khata sankhya १०२९३८४७५६१२ of accused Nitin Tyagi.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Rahul Verma",
+      "start": 47,
+      "end": 58
+    },
+    {
+      "type": "Amount",
+      "raw": "INR 75000",
+      "start": 71,
+      "end": 80
+    },
+    {
+      "type": "Account",
+      "raw": "१०२९३८४७५६१२",
+      "start": 98,
+      "end": 110
+    },
+    {
+      "type": "Person",
+      "raw": "Nitin Tyagi",
+      "start": 122,
+      "end": 133
+    }
+  ]
+}
