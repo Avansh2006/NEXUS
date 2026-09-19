@@ -27,11 +27,11 @@ with `-Djdk.net.unixdomain.tmpdir=<short-existing-directory>` before `-jar`.
    Choose SYN-PHONE-001 and SYN-ACCOUNT-001; **Trace path**. Show evidence per hop.
 9. Click **3D Holo Sphere** on the Tactical HUD to display the interactive 3D WebGL
    force-directed evidence sphere (Three.js) with real-time rotational telemetry.
-10. Click the floating **NEXUS Intel Copilot** button (bottom right) to open the deterministic
-    AI query assistant. Click investigative prompt chips like *"Identify the kingpin with highest betweenness centrality"*,
-    inspect the zero-hallucination explanation citing exact graph metrics, and click the entity badge
+10. Click the floating **NEXUS Intel Copilot** button (bottom right) to open the deterministic,
+    graph-grounded query assistant. Click investigative prompt chips like *"Which entities have the highest betweenness centrality?"*,
+    inspect the deterministic explanation citing exact graph metrics, and click the entity badge
     to navigate directly to that node in the inspector.
-11. Point out the **Syndicate Hierarchy & Tactical Role Badge** in the Inspector (e.g., Kingpin, Mule, Broker).
+11. Point out the **Syndicate Hierarchy & Pattern Hypothesis Badge** in the Inspector (e.g., Central Hub, Pass-Through Account, Broker).
 12. Click **Generate Investigation Report**. Open downloaded HTML and print/save PDF.
     Includes the graph visual, cases, metrics, alerts, timeline ranges, evidence IDs, original source records,
     and an **Electronic Record Provenance Statement** with automated SHA-256 digests plus a human-officer template certificate under Section 63 of the Bharatiya Sakshya Adhiniyam, 2023 (BSA 2023).

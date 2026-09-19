@@ -20,9 +20,11 @@ interface IntelCopilotProps {
 interface CopilotResponse {
   query: string;
   summary: string;
+  intent?: string;
   entities: { id: string; label: string; type: string; role?: string }[];
   evidenceIds: string[];
   ruleCitations: string[];
+  suggestions?: string[];
 }
 
 export default function IntelCopilot({
@@ -31,6 +33,7 @@ export default function IntelCopilot({
 }: IntelCopilotProps) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [llmEnabled, setLlmEnabled] = useState(false);
   const [history, setHistory] = useState<CopilotResponse[]>([]);
 
   const sampleQueries = [
@@ -42,20 +45,38 @@ export default function IntelCopilot({
     "Show circular fund flow loops and R7 alerts",
   ];
 
+  const defaultSuggestions = [
+    "Which entities have the highest betweenness centrality?",
+    "Find accounts matching the pass-through pattern with high fan-in",
+    "Who links Case NXS-001 to NXS-003?",
+  ];
+
   const handleExecute = (queryText: string) => {
     const q = queryText.toLowerCase().trim();
     if (!q) return;
 
     let summary = "";
+    let mappedIntent = "entity_lookup";
     const matchedEntities: { id: string; label: string; type: string; role?: string }[] = [];
     const evidence: string[] = [];
     const rules: string[] = [];
+    let suggestions: string[] | undefined = undefined;
 
     const nodes = graph.nodes;
     const metrics = graph.analysis?.metrics ?? [];
     const alerts = graph.analysis?.alerts ?? [];
 
-    if (q.includes("nxs-001") || q.includes("nxs-003") || (q.includes("link") && q.includes("case"))) {
+    // Check for out-of-scope query
+    const outOfScopePatterns = [
+      "penalty", "punishment", "section", "ipc", "bns", "prime minister",
+      "president", "weather", "poem", "joke", "capital of", "who invented", "recipe"
+    ];
+    if (outOfScopePatterns.some((pat) => q.includes(pat))) {
+      mappedIntent = "out_of_scope";
+      summary = "I can't answer that from the graph data. I can help you query suspects, communication hubs, pass-through accounts, or shared identifiers in the active cases.";
+      suggestions = defaultSuggestions;
+    } else if (q.includes("nxs-001") || q.includes("nxs-003") || (q.includes("link") && q.includes("case"))) {
+      mappedIntent = "shared_identifiers";
       const shared = nodes.find((n) => n.label === "SYN-PHONE-001");
       if (shared) {
         matchedEntities.push({
@@ -69,6 +90,7 @@ export default function IntelCopilot({
         summary = `Cross-case analysis indicates that ${shared.label} is an identifier linking Cases NXS-001, NXS-002, and NXS-003 across independent police FIRs with source text provenance.`;
       }
     } else if (q.includes("mule") || q.includes("fan-in") || q.includes("pass-through") || q.includes("account")) {
+      mappedIntent = "pass_through_accounts";
       const mule = nodes.find((n) => n.label === "SYN-ACCOUNT-001");
       if (mule) {
         matchedEntities.push({
@@ -82,6 +104,7 @@ export default function IntelCopilot({
         summary = `Account ${mule.label} exhibits the pass-through account pattern (fan-in and rapid pass-through structuring). Note: Account holders may be unwitting participants or victims.`;
       }
     } else if (q.includes("kingpin") || q.includes("coordinator") || q.includes("betweenness") || q.includes("central")) {
+      mappedIntent = "highest_betweenness";
       const topMetric = [...metrics].sort((a, b) => b.betweenness - a.betweenness)[0];
       const kingpin = topMetric ? nodes.find((n) => n.id === topMetric.entityId) : null;
       if (kingpin) {
@@ -96,6 +119,7 @@ export default function IntelCopilot({
         summary = `${kingpin.label} (${kingpin.type}) exhibits the highest betweenness centrality (${topMetric.betweenness.toFixed(3)}) and influence index (${topMetric.influence}), functioning as a central bridge connecting separate network communities.`;
       }
     } else if (q.includes("vehicle") || q.includes("organization") || q.includes("front") || q.includes("business")) {
+      mappedIntent = "logistics_entities";
       const vehs = nodes.filter((n) => n.type === "Vehicle" || n.type === "Organization");
       vehs.forEach((v) => {
         matchedEntities.push({ id: v.id, label: v.label, type: v.type });
@@ -103,6 +127,7 @@ export default function IntelCopilot({
       });
       summary = `Identified ${vehs.length} transport and business entities: ${vehs.map((v) => `${v.label} (${v.type})`).join(", ")}. In Case NXS-005, vehicle ZZ00NX0001 is recorded in the report narrative; Veyra Services appears as a recurring business entity across multiple records.`;
     } else if (q.includes("suppress") || q.includes("999") || q.includes("public")) {
+      mappedIntent = "suppression_reason";
       const pub = nodes.find((n) => n.label === "SYN-PHONE-999");
       if (pub) {
         matchedEntities.push({ id: pub.id, label: pub.label, type: pub.type, role: "Public Helpline" });
@@ -110,6 +135,7 @@ export default function IntelCopilot({
         summary = `SYN-PHONE-999 is recognized as a legitimate public/courier helpline. The intelligence engine explicitly suppresses cross-case alerts on this node to avoid false linkages to public service channels.`;
       }
     } else if (q.includes("circle") || q.includes("loop") || q.includes("r7") || q.includes("hawala") || q.includes("transaction")) {
+      mappedIntent = "circular_flows";
       rules.push("R7");
       const r7Alerts = alerts.filter((a) => a.ruleId === "R7");
       if (r7Alerts.length > 0) {
@@ -119,6 +145,7 @@ export default function IntelCopilot({
       }
     } else {
       // General entity search
+      mappedIntent = "entity_lookup";
       const matches = nodes.filter((n) => n.label.toLowerCase().includes(q));
       if (matches.length > 0) {
         matches.slice(0, 3).forEach((m) => {
@@ -127,16 +154,20 @@ export default function IntelCopilot({
         });
         summary = `Found ${matches.length} matching entities in the active graph. Top result: ${matches[0].label} (${matches[0].type}) associated with ${matches[0].properties.caseIds.join(", ")}.`;
       } else {
-        summary = `I can't answer that from the graph data. Did you mean to ask about high-betweenness bridges ("Which entities have the highest betweenness centrality?"), pass-through accounts ("SYN-ACCOUNT-001"), or communication hubs ("SYN-PHONE-001")?`;
+        mappedIntent = "out_of_scope";
+        summary = `I can't answer that from the graph data. Did you mean to ask about high-betweenness bridges, pass-through accounts, or communication hubs?`;
+        suggestions = defaultSuggestions;
       }
     }
 
     const newResponse: CopilotResponse = {
       query: queryText,
       summary,
+      intent: mappedIntent,
       entities: matchedEntities,
       evidenceIds: evidence.slice(0, 4),
       ruleCitations: rules,
+      suggestions,
     };
     setHistory((prev) => [newResponse, ...prev]);
     setInput("");
@@ -163,7 +194,7 @@ export default function IntelCopilot({
 
       {/* Expanded Copilot Panel */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-2rem)] max-h-[580px] flex flex-col rounded-xl bg-[#0e2229fa] backdrop-blur-xl border border-[#3b6d5f77] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden font-sans text-[#cfdfd8] animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-6 right-6 z-50 w-[430px] max-w-[calc(100vw-2rem)] max-h-[600px] flex flex-col rounded-xl bg-[#0e2229fa] backdrop-blur-xl border border-[#3b6d5f77] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden font-sans text-[#cfdfd8] animate-in fade-in slide-in-from-bottom-5 duration-300">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-[#132c33] border-b border-[#2d564b]">
             <div className="flex items-center gap-2">
@@ -173,14 +204,33 @@ export default function IntelCopilot({
                 <span className="text-[9px] font-mono text-[#76a896]">DETERMINISTIC, GRAPH-GROUNDED</span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="p-1 rounded-md text-[#88b09f] hover:text-white hover:bg-[#20444c] transition"
-              aria-label="Close Copilot"
-            >
-              <X size={16} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setLlmEnabled((prev) => !prev)}
+                className={`text-[9px] px-2 py-0.5 rounded font-mono border transition cursor-pointer ${
+                  llmEnabled
+                    ? "bg-[#1f5643] text-[#7ef4c2] border-[#4bb08a]"
+                    : "bg-[#0b1c20] text-[#719889] border-[#22483d]"
+                }`}
+                title="Toggle LLM Intent Mapper (Feature Flag, OFF by default)"
+              >
+                {llmEnabled ? "LLM: ON" : "RULE-BASED (LLM: OFF)"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="p-1 rounded-md text-[#88b09f] hover:text-white hover:bg-[#20444c] transition"
+                aria-label="Close Copilot"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Architecture Pipeline Banner */}
+          <div className="px-3 py-1.5 bg-[#0a181e] border-b border-[#21433b] flex items-center justify-between text-[8.5px] font-mono text-[#6c9183]">
+            <span>PIPELINE: NL QUERY → INTENT MAPPER → GRAPH QUERY → GROUNDED TEMPLATE</span>
           </div>
 
           {/* Quick Smart Prompt Chips */}
@@ -205,17 +255,41 @@ export default function IntelCopilot({
                 <ShieldCheck size={28} className="mx-auto mb-2 text-[#469e7b] opacity-60" />
                 <p className="font-medium text-[#c4e3d6]">Ask any investigative question</p>
                 <p className="text-[11px] mt-1 text-[#86a89a]">
-                  Answers query the graph topology directly and cite verified evidence.
+                  NL intent mapped strictly to deterministic graph query templates.
                 </p>
               </div>
             ) : (
               history.map((h, i) => (
                 <div key={i} className="p-3 rounded-lg bg-[#142e36] border border-[#2e594d] text-xs space-y-2">
-                  <div className="font-semibold text-[#a5e0cb] flex items-center gap-1.5">
-                    <Search size={13} className="text-[#51b88e]" />
-                    <span>{h.query}</span>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="font-semibold text-[#a5e0cb] flex items-center gap-1.5">
+                      <Search size={13} className="text-[#51b88e]" />
+                      <span>{h.query}</span>
+                    </div>
+                    {h.intent && (
+                      <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-[#10272e] text-[#6cb597] border border-[#234b3f]">
+                        {h.intent}
+                      </span>
+                    )}
                   </div>
                   <p className="text-[#e2f0ea] leading-relaxed text-[11.5px]">{h.summary}</p>
+
+                  {/* Suggestion Chips */}
+                  {h.suggestions && h.suggestions.length > 0 && (
+                    <div className="pt-1.5 flex flex-wrap gap-1.5">
+                      <span className="text-[9px] font-mono text-[#6ba491] w-full">SUGGESTIONS:</span>
+                      {h.suggestions.map((sug, si) => (
+                        <button
+                          key={si}
+                          type="button"
+                          onClick={() => handleExecute(sug)}
+                          className="text-[10px] px-2 py-1 rounded bg-[#16363f] hover:bg-[#235360] text-[#aae8d4] border border-[#346255] transition text-left cursor-pointer"
+                        >
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Entity Badges with Click-to-Inspect */}
                   {h.entities.length > 0 && (

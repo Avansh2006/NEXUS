@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from analysis import analyze
 from extraction import extract
+from intent import map_intent, IntentModel
 
 app = FastAPI(title='NEXUS intelligence', docs_url=None, redoc_url=None)
 
@@ -16,9 +17,20 @@ class ExtractRequest(BaseModel):
     recordId: str = Field(default='', max_length=100)
 
 
+class IntentRequest(BaseModel):
+    query: str = Field(max_length=500)
+    useLlm: bool = Field(default=False)
+
+
 @app.get('/health')
 def health():
     return {'status': 'ok'}
+
+
+@app.post('/copilot/intent')
+def copilot_intent(request: IntentRequest):
+    result = map_intent(request.query, use_llm=request.useLlm)
+    return result.model_dump()
 
 
 @app.post('/extract')

@@ -7,10 +7,10 @@
   animated measured counters, a state-aware workflow bar, and reduced-motion support.
 - Tactical HUD overlay with live deterministic AI telemetry, entity distribution chips,
   and an interactive 3D WebGL tactical intelligence sphere (Three.js) toggle.
-- NEXUS Intel Copilot: interactive deterministic AI query copilot with natural-language
-  investigative prompts, graph topology analysis, zero-hallucination answers, and click-to-inspect entity chips.
-- Syndicate Hierarchy & Tactical Role Classifier: classifies entities into tactical roles
-  (KINGPIN, BROKER, MONEY_MULE, DISPATCHER, OPERATIVE, LOGISTICS, FRONT_ENTITY, HOTSPOT) with badges in inspector.
+- NEXUS Intel Copilot: deterministic, graph-grounded query assistant with natural-language
+  investigative prompts, graph topology analysis, grounded template answers, and click-to-inspect entity chips.
+- Syndicate Hierarchy & Pattern Classifier: classifies entities into pattern hypotheses
+  (Central Hub, Cross-Cluster Broker, Pass-Through Account, Outbound Hub, High-Activity Node, Business Entity, Transport Asset, Location Nexus) with criteria values and review disclaimers in inspector.
 - Rule R7 (Circular Transaction Laundering Loops): detects directed cycles (hawala / round-tripping)
   in account transaction graphs.
 - Electronic Record Provenance Statement (with SHA-256 digests and deterministic derivation notice)
