@@ -33,6 +33,22 @@ public class ApiController {
     @PostMapping("/link-suggestions/{id}/{action:accept|reject}") public Graph review(@PathVariable String id,@PathVariable String action) {return service.review(id,action.equals("accept"));}
     @GetMapping("/quality") public JsonNode quality() {return engine.quality();}
     @GetMapping("/audit") public List<Map<String,Object>> audit() {return store.audit();}
+    @GetMapping("/audit/verify") public Map<String,Object> verifyAudit() {return store.verifyAuditChain();}
+    @PostMapping("/auth/login") public Map<String,Object> login(@RequestBody Map<String,String> creds) {
+        String u = creds.getOrDefault("username","").trim().toLowerCase(Locale.ROOT);
+        String p = creds.getOrDefault("password","");
+        String expected = Auth.PASSWORDS.get(u);
+        if(expected == null || !expected.equals(p)) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        var principal = Auth.SYNTHETIC_USERS.get(u);
+        String token = Auth.createToken(principal.username(), principal.role());
+        store.audit("auth:login", principal.username(), "", "");
+        return Map.of("token", token, "username", principal.username(), "role", principal.role());
+    }
+    @GetMapping("/auth/me") public Map<String,Object> me(jakarta.servlet.http.HttpServletRequest req) {
+        String u = (String) req.getAttribute("nexus.user");
+        String r = (String) req.getAttribute("nexus.role");
+        return Map.of("username", u != null ? u : "admin@nexus.internal", "role", r != null ? r : "ADMIN");
+    }
     @PostMapping(value="/reports",produces=MediaType.TEXT_HTML_VALUE) public String report(@RequestBody(required=false) ReportRequest request) {
         String image=request==null?null:request.graphImage();
         if(image!=null&&(!image.matches("data:image/png;base64,[A-Za-z0-9+/=]+")||image.length()>1500000)) throw new IllegalArgumentException("Report image must be a PNG data URL below 1.5 MB");

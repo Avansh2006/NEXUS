@@ -50,8 +50,17 @@ If the engine is unavailable, restore it and retry. No fabricated cached analysi
 displayed. A report/screenshots/recording are the presentation fallback.
 Do not claim real-world integrations, production security, crime prediction, or guilt.
 
+## Synthetic Credentials & Security Controls
+NEXUS ships with synthetic RBAC authentication and tamper-evident audit logging for demonstration:
+- **Admin**: `username: admin`, `password: AdminPass123!`, token: `synthetic-admin-token` (Full access).
+- **Investigator**: `username: investigator`, `password: Investigator123!`, token: `synthetic-investigator-token` (Full access).
+- **Viewer**: `username: viewer`, `password: Viewer123!`, token: `synthetic-viewer-token` (Read-only; POST mutations rejected with 403 Forbidden).
+- **Audit Verification**: Run `curl http://localhost:8080/api/audit/verify` to verify the SHA-256 hash-chain across all recorded transactions and actions.
+- **Rate Limit Headers**: Requests exceeding 30 mutations/minute receive HTTP 429 with standard `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers.
+
 ## Practical limits
 30 mutations/minute/client; avoid repeatedly hammering reset/analyze during rehearsal.
 Default graph shows top 80 + alert entities; **Expand all** shows the bounded network.
 Filters can hide selected nodes; clear filters when exploring another case.
 The Reports screen offers an HTML download; browser print is the PDF fallback.
+
