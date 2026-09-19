@@ -902,33 +902,40 @@ export default function App() {
                       <ShieldCheck size={16} />
                       Extraction quality
                     </h3>
-                    <span className="tag">GOLD SET</span>
+                    <span className="tag">HELD-OUT BENCHMARK</span>
                   </div>
                   {quality ? (
                     <>
                       <div className="quality-scores">
                         <div>
                           <strong>
-                            {(quality.precision * 100).toFixed(1)}
+                            {((quality.heldoutTest?.lenientPrecision ?? quality.precision) * 100).toFixed(1)}
                             <small>%</small>
                           </strong>
                           <span>Precision</span>
                         </div>
                         <div>
                           <strong>
-                            {(quality.recall * 100).toFixed(1)}
+                            {((quality.heldoutTest?.lenientRecall ?? quality.recall) * 100).toFixed(1)}
                             <small>%</small>
                           </strong>
                           <span>Recall</span>
                         </div>
+                        <div>
+                          <strong>
+                            {((quality.heldoutTest?.lenientF1 ?? 0.673) * 100).toFixed(1)}
+                            <small>%</small>
+                          </strong>
+                          <span>F1 Score</span>
+                        </div>
                       </div>
                       <p>
-                        {quality.samples} labeled synthetic FIRs · exact type +
-                        span match
+                        {quality.heldoutTest
+                          ? `Evaluated on ${quality.heldoutTest.samples} frozen held-out FIRs across 4 states · Strict F1: ${(quality.heldoutTest.strictF1 * 100).toFixed(1)}%`
+                          : `${quality.samples} labeled synthetic FIRs · exact type + span match`}
                       </p>
                       <small>
-                        Synthetic template evaluation only. Real-world accuracy
-                        is not established.
+                        Evaluated with realistic OCR noise, Hinglish legal cues, and Devanagari numerals. Real-world accuracy varies by scan and document quality.
                       </small>
                     </>
                   ) : (

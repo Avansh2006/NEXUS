@@ -1,0 +1,35 @@
+{
+  "id": "dev-001",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "spaced_phone",
+    "standard"
+  ],
+  "text": "DELHI POLICE · PS CONNAUGHT PLACE · FIR 104/2026. Complainant Ramesh Gupta states that accused Vikram Malhotra contacted him via phone +91 98101 23456 demanding cash. Transferred from account 918273645102.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Ramesh Gupta",
+      "start": 62,
+      "end": 74
+    },
+    {
+      "type": "Person",
+      "raw": "Vikram Malhotra",
+      "start": 95,
+      "end": 110
+    },
+    {
+      "type": "Phone",
+      "raw": "+91 98101 23456",
+      "start": 135,
+      "end": 150
+    },
+    {
+      "type": "Account",
+      "raw": "918273645102",
+      "start": 192,
+      "end": 204
+    }
+  ]
+}

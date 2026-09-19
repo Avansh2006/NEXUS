@@ -1,0 +1,28 @@
+{
+  "id": "dev-011",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "standard"
+  ],
+  "text": "DELHI POLICE · PS HAUZ KHAS · Complainant Arvind Joshi was defrauded by accused Pankaj Bansal who gave account 301928475610.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Arvind Joshi",
+      "start": 42,
+      "end": 54
+    },
+    {
+      "type": "Person",
+      "raw": "Pankaj Bansal",
+      "start": 80,
+      "end": 93
+    },
+    {
+      "type": "Account",
+      "raw": "301928475610",
+      "start": 111,
+      "end": 123
+    }
+  ]
+}

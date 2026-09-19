@@ -1,0 +1,35 @@
+{
+  "id": "dev-004",
+  "state": "UP Police",
+  "noiseTypes": [
+    "hinglish_cues",
+    "standard_phone"
+  ],
+  "text": "UTTAR PRADESH POLICE · PS HAZRATGANJ LUCKNOW · Gawah Amit Srivastava observed accused Deepak Pandey fleeing in vehicle UP-32-CD-5678 after receiving call on 9415012345.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Amit Srivastava",
+      "start": 53,
+      "end": 68
+    },
+    {
+      "type": "Person",
+      "raw": "Deepak Pandey",
+      "start": 86,
+      "end": 99
+    },
+    {
+      "type": "Vehicle",
+      "raw": "UP-32-CD-5678",
+      "start": 119,
+      "end": 132
+    },
+    {
+      "type": "Phone",
+      "raw": "9415012345",
+      "start": 157,
+      "end": 167
+    }
+  ]
+}

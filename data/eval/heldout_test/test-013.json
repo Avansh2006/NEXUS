@@ -1,0 +1,28 @@
+{
+  "id": "test-013",
+  "state": "UP Police",
+  "noiseTypes": [
+    "naamzad_hinglish"
+  ],
+  "text": "UP POLICE · PS MEERUT SADAR · Naamzad Monu Tyagi fled scene in vehicle UP-15-GH-3344 after taking Rs. 35,000.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Monu Tyagi",
+      "start": 38,
+      "end": 48
+    },
+    {
+      "type": "Vehicle",
+      "raw": "UP-15-GH-3344",
+      "start": 71,
+      "end": 84
+    },
+    {
+      "type": "Amount",
+      "raw": "Rs. 35,000",
+      "start": 98,
+      "end": 108
+    }
+  ]
+}

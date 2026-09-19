@@ -1,0 +1,28 @@
+{
+  "id": "test-003",
+  "state": "Karnataka Police",
+  "noiseTypes": [
+    "ocr_noise_letter_o"
+  ],
+  "text": "KARNATAKA POLICE · PS MALLESHWARAM · Accused Rohan Deshpande instructed victim to transfer cash to account 7182O3948512 at Navapur Exchange.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Rohan Deshpande",
+      "start": 45,
+      "end": 60
+    },
+    {
+      "type": "Account",
+      "raw": "7182O3948512",
+      "start": 107,
+      "end": 119
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Exchange",
+      "start": 123,
+      "end": 139
+    }
+  ]
+}

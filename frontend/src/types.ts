@@ -139,6 +139,24 @@ export interface Quality {
   falseNegatives: number;
   samples: number;
   scope: string;
+  heldoutTest?: {
+    samples: number;
+    strictPrecision: number;
+    strictRecall: number;
+    strictF1: number;
+    lenientPrecision: number;
+    lenientRecall: number;
+    lenientF1: number;
+  };
+  heldoutDev?: {
+    samples: number;
+    strictPrecision: number;
+    strictRecall: number;
+    strictF1: number;
+    lenientPrecision: number;
+    lenientRecall: number;
+    lenientF1: number;
+  };
 }
 export interface IngestResult {
   accepted: number;

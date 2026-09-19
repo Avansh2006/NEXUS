@@ -1,0 +1,28 @@
+{
+  "id": "dev-013",
+  "state": "Maharashtra Police",
+  "noiseTypes": [
+    "hinglish_cues"
+  ],
+  "text": "MAHARASHTRA POLICE · PS DADAR · Gawah Sachin Shinde identified aaropi Mahesh Patil escaping towards Navapur Sector 2.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Sachin Shinde",
+      "start": 38,
+      "end": 51
+    },
+    {
+      "type": "Person",
+      "raw": "Mahesh Patil",
+      "start": 70,
+      "end": 82
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Sector 2",
+      "start": 100,
+      "end": 116
+    }
+  ]
+}

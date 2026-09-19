@@ -1,0 +1,28 @@
+{
+  "id": "dev-009",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "irregular_phone_dashes"
+  ],
+  "text": "DELHI POLICE · PS DWARKA NORTH · Witness Kavita Mehra confirmed co-accused Manoj Tiwari operated number 98-1111-2233 during the transaction.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Kavita Mehra",
+      "start": 41,
+      "end": 53
+    },
+    {
+      "type": "Person",
+      "raw": "Manoj Tiwari",
+      "start": 75,
+      "end": 87
+    },
+    {
+      "type": "Phone",
+      "raw": "98-1111-2233",
+      "start": 104,
+      "end": 116
+    }
+  ]
+}

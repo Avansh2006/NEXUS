@@ -1,0 +1,388 @@
+{
+  "dev": {
+    "name": "Held-Out Dev",
+    "samples": 22,
+    "strict": {
+      "precision": 1.0,
+      "recall": 0.5541,
+      "f1": 0.713,
+      "tp": 41,
+      "fp": 0,
+      "fn": 33
+    },
+    "lenient": {
+      "precision": 1.0,
+      "recall": 0.5541,
+      "f1": 0.713,
+      "tp": 41,
+      "fp": 0,
+      "fn": 33
+    },
+    "by_type": {
+      "Account": {
+        "gold": 8,
+        "pred": 7,
+        "strict_f1": 0.9333,
+        "lenient_precision": 1.0,
+        "lenient_recall": 0.875,
+        "lenient_f1": 0.9333
+      },
+      "Amount": {
+        "gold": 3,
+        "pred": 3,
+        "strict_f1": 1.0,
+        "lenient_precision": 1.0,
+        "lenient_recall": 1.0,
+        "lenient_f1": 1.0
+      },
+      "IFSC": {
+        "gold": 1,
+        "pred": 1,
+        "strict_f1": 1.0,
+        "lenient_precision": 1.0,
+        "lenient_recall": 1.0,
+        "lenient_f1": 1.0
+      },
+      "Location": {
+        "gold": 6,
+        "pred": 6,
+        "strict_f1": 1.0,
+        "lenient_precision": 1.0,
+        "lenient_recall": 1.0,
+        "lenient_f1": 1.0
+      },
+      "Organization": {
+        "gold": 3,
+        "pred": 3,
+        "strict_f1": 1.0,
+        "lenient_precision": 1.0,
+        "lenient_recall": 1.0,
+        "lenient_f1": 1.0
+      },
+      "Person": {
+        "gold": 36,
+        "pred": 6,
+        "strict_f1": 0.2857,
+        "lenient_precision": 1.0,
+        "lenient_recall": 0.1667,
+        "lenient_f1": 0.2857
+      },
+      "Phone": {
+        "gold": 10,
+        "pred": 8,
+        "strict_f1": 0.8889,
+        "lenient_precision": 1.0,
+        "lenient_recall": 0.8,
+        "lenient_f1": 0.8889
+      },
+      "Vehicle": {
+        "gold": 7,
+        "pred": 7,
+        "strict_f1": 1.0,
+        "lenient_precision": 1.0,
+        "lenient_recall": 1.0,
+        "lenient_f1": 1.0
+      }
+    },
+    "by_noise": {
+      "spaced_phone": {
+        "gold": 4,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "standard": {
+        "gold": 7,
+        "strict_hits": 3,
+        "lenient_hits": 3
+      },
+      "hinglish_cues": {
+        "gold": 16,
+        "strict_hits": 10,
+        "lenient_hits": 10
+      },
+      "devanagari_digits": {
+        "gold": 5,
+        "strict_hits": 4,
+        "lenient_hits": 4
+      },
+      "ocr_noise_letter_o": {
+        "gold": 3,
+        "strict_hits": 1,
+        "lenient_hits": 1
+      },
+      "standard_phone": {
+        "gold": 4,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "ocr_noise_letter_l": {
+        "gold": 4,
+        "strict_hits": 1,
+        "lenient_hits": 1
+      },
+      "synthetic_token": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "account_label": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "standard_format": {
+        "gold": 8,
+        "strict_hits": 6,
+        "lenient_hits": 6
+      },
+      "devanagari_account": {
+        "gold": 4,
+        "strict_hits": 3,
+        "lenient_hits": 3
+      },
+      "irregular_phone_dashes": {
+        "gold": 3,
+        "strict_hits": 0,
+        "lenient_hits": 0
+      },
+      "upi_id": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "devanagari_phone": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "ifsc_account": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "vehicle_unspaced": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "multiple_entities": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "naamzad_accused": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "ocr_broken_word": {
+        "gold": 4,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "org_entity": {
+        "gold": 2,
+        "strict_hits": 1,
+        "lenient_hits": 1
+      },
+      "phone_hyphenated": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "mixed_cues": {
+        "gold": 3,
+        "strict_hits": 1,
+        "lenient_hits": 1
+      }
+    }
+  },
+  "test": {
+    "name": "Held-Out Test",
+    "samples": 22,
+    "strict": {
+      "precision": 1.0,
+      "recall": 0.5075,
+      "f1": 0.6733,
+      "tp": 34,
+      "fp": 0,
+      "fn": 33
+    },
+    "lenient": {
+      "precision": 1.0,
+      "recall": 0.5075,
+      "f1": 0.6733,
+      "tp": 34,
+      "fp": 0,
+      "fn": 33
+    },
+    "by_type": {
+      "Account": {
+        "gold": 9,
+        "pred": 8,
+        "strict_f1": 0.9412,
+        "lenient_precision": 1.0,
+        "lenient_recall": 0.8889,
+        "lenient_f1": 0.9412
+      },
+      "Amount": {
+        "gold": 3,
+        "pred": 3,
+        "strict_f1": 1.0,
+        "lenient_precision": 1.0,
+        "lenient_recall": 1.0,
+        "lenient_f1": 1.0
+      },
+      "IFSC": {
+        "gold": 1,
+        "pred": 1,
+        "strict_f1": 1.0,
+        "lenient_precision": 1.0,
+        "lenient_recall": 1.0,
+        "lenient_f1": 1.0
+      },
+      "Location": {
+        "gold": 5,
+        "pred": 5,
+        "strict_f1": 1.0,
+        "lenient_precision": 1.0,
+        "lenient_recall": 1.0,
+        "lenient_f1": 1.0
+      },
+      "Organization": {
+        "gold": 2,
+        "pred": 2,
+        "strict_f1": 1.0,
+        "lenient_precision": 1.0,
+        "lenient_recall": 1.0,
+        "lenient_f1": 1.0
+      },
+      "Person": {
+        "gold": 34,
+        "pred": 4,
+        "strict_f1": 0.2105,
+        "lenient_precision": 1.0,
+        "lenient_recall": 0.1176,
+        "lenient_f1": 0.2105
+      },
+      "Phone": {
+        "gold": 8,
+        "pred": 6,
+        "strict_f1": 0.8571,
+        "lenient_precision": 1.0,
+        "lenient_recall": 0.75,
+        "lenient_f1": 0.8571
+      },
+      "Vehicle": {
+        "gold": 5,
+        "pred": 5,
+        "strict_f1": 1.0,
+        "lenient_precision": 1.0,
+        "lenient_recall": 1.0,
+        "lenient_f1": 1.0
+      }
+    },
+    "by_noise": {
+      "mixed_case_person": {
+        "gold": 2,
+        "strict_hits": 1,
+        "lenient_hits": 1
+      },
+      "devanagari_digits": {
+        "gold": 4,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "ocr_noise_letter_o": {
+        "gold": 3,
+        "strict_hits": 1,
+        "lenient_hits": 1
+      },
+      "devanagari_phone": {
+        "gold": 3,
+        "strict_hits": 1,
+        "lenient_hits": 1
+      },
+      "ocr_noise_letter_l": {
+        "gold": 3,
+        "strict_hits": 0,
+        "lenient_hits": 0
+      },
+      "standard": {
+        "gold": 7,
+        "strict_hits": 4,
+        "lenient_hits": 4
+      },
+      "org_vehicle": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "hinglish_khata": {
+        "gold": 4,
+        "strict_hits": 3,
+        "lenient_hits": 3
+      },
+      "parentheses_phone": {
+        "gold": 3,
+        "strict_hits": 0,
+        "lenient_hits": 0
+      },
+      "vehicle_unspaced": {
+        "gold": 4,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "upi_id": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "naamzad_hinglish": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "devanagari_account": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "synthetic_account": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "phone_spaced": {
+        "gold": 3,
+        "strict_hits": 1,
+        "lenient_hits": 1
+      },
+      "hinglish_gawah": {
+        "gold": 4,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "ifsc_account": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "ocr_broken_word": {
+        "gold": 3,
+        "strict_hits": 1,
+        "lenient_hits": 1
+      },
+      "multiple_phones": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      },
+      "org_phone": {
+        "gold": 3,
+        "strict_hits": 2,
+        "lenient_hits": 2
+      }
+    }
+  }
+}

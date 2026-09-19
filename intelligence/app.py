@@ -44,6 +44,34 @@ def quality():
         tp += len(expected & actual)
         fp += len(actual - expected)
         fn += len(expected - actual)
-    return dict(precision=tp/(tp+fp) if tp+fp else 0, recall=tp/(tp+fn) if tp+fn else 0,
-                truePositives=tp, falsePositives=fp, falseNegatives=fn, samples=len(gold),
-                scope='Synthetic template gold set; not a real-world accuracy claim')
+    res = dict(precision=tp/(tp+fp) if tp+fp else 0, recall=tp/(tp+fn) if tp+fn else 0,
+               truePositives=tp, falsePositives=fp, falseNegatives=fn, samples=len(gold),
+               scope='Synthetic template gold set; not a real-world accuracy claim')
+
+    eval_path = Path(__file__).resolve().parents[1] / 'data' / 'eval' / 'evaluation_results.json'
+    if eval_path.exists():
+        try:
+            eval_data = json.loads(eval_path.read_text(encoding='utf-8'))
+            test_info = eval_data.get('test', {})
+            dev_info = eval_data.get('dev', {})
+            res['heldoutTest'] = {
+                'samples': test_info.get('samples', 22),
+                'strictPrecision': test_info.get('strict', {}).get('precision', 0),
+                'strictRecall': test_info.get('strict', {}).get('recall', 0),
+                'strictF1': test_info.get('strict', {}).get('f1', 0),
+                'lenientPrecision': test_info.get('lenient', {}).get('precision', 0),
+                'lenientRecall': test_info.get('lenient', {}).get('recall', 0),
+                'lenientF1': test_info.get('lenient', {}).get('f1', 0)
+            }
+            res['heldoutDev'] = {
+                'samples': dev_info.get('samples', 22),
+                'strictPrecision': dev_info.get('strict', {}).get('precision', 0),
+                'strictRecall': dev_info.get('strict', {}).get('recall', 0),
+                'strictF1': dev_info.get('strict', {}).get('f1', 0),
+                'lenientPrecision': dev_info.get('lenient', {}).get('precision', 0),
+                'lenientRecall': dev_info.get('lenient', {}).get('recall', 0),
+                'lenientF1': dev_info.get('lenient', {}).get('f1', 0)
+            }
+        except Exception:
+            pass
+    return res

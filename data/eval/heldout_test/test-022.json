@@ -1,0 +1,28 @@
+{
+  "id": "test-022",
+  "state": "UP Police",
+  "noiseTypes": [
+    "org_phone"
+  ],
+  "text": "UP POLICE · PS JHANSI KOTWALI · Accused Ramakant Shukla contacted Veyra Services branch office using phone 9450012345.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Ramakant Shukla",
+      "start": 40,
+      "end": 55
+    },
+    {
+      "type": "Organization",
+      "raw": "Veyra Services",
+      "start": 66,
+      "end": 80
+    },
+    {
+      "type": "Phone",
+      "raw": "9450012345",
+      "start": 107,
+      "end": 117
+    }
+  ]
+}

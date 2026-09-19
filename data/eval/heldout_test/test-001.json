@@ -1,0 +1,22 @@
+{
+  "id": "test-001",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "mixed_case_person"
+  ],
+  "text": "DELHI POLICE · PS CHANAKYAPURI · FIR 88/2026. Accused mohit sharma operated clandestine call center using phone +91 98710 54321.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "mohit sharma",
+      "start": 54,
+      "end": 66
+    },
+    {
+      "type": "Phone",
+      "raw": "+91 98710 54321",
+      "start": 112,
+      "end": 127
+    }
+  ]
+}

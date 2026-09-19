@@ -1,0 +1,28 @@
+{
+  "id": "dev-022",
+  "state": "UP Police",
+  "noiseTypes": [
+    "mixed_cues"
+  ],
+  "text": "UP POLICE · PS GORAKHPUR KOTWALI · Gawah Ashok Mishra testified that co-accused Shivam Dubey parked UP-53-EF-1122 outside the bank.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Ashok Mishra",
+      "start": 41,
+      "end": 53
+    },
+    {
+      "type": "Person",
+      "raw": "Shivam Dubey",
+      "start": 80,
+      "end": 92
+    },
+    {
+      "type": "Vehicle",
+      "raw": "UP-53-EF-1122",
+      "start": 100,
+      "end": 113
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "id": "dev-005",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "ocr_noise_letter_l"
+  ],
+  "text": "DELHI POLICE · PS KASHMERE GATE · Complainant Mohan Lal reports that accused Sanjay Singhania called from 98l0234567 demanding Rs. 50,000 extortion money.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Mohan Lal",
+      "start": 46,
+      "end": 55
+    },
+    {
+      "type": "Person",
+      "raw": "Sanjay Singhania",
+      "start": 77,
+      "end": 93
+    },
+    {
+      "type": "Phone",
+      "raw": "98l0234567",
+      "start": 106,
+      "end": 116
+    },
+    {
+      "type": "Amount",
+      "raw": "Rs. 50,000",
+      "start": 127,
+      "end": 137
+    }
+  ]
+}

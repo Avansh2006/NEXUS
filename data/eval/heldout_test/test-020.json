@@ -1,0 +1,28 @@
+{
+  "id": "test-020",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "ocr_broken_word"
+  ],
+  "text": "DELHI POLICE · PS PATEL NAGAR · Complainant Raman Nanda stated that accusedAlok Gupta escaped on vehicle DL-04-CD-9012.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Raman Nanda",
+      "start": 44,
+      "end": 55
+    },
+    {
+      "type": "Person",
+      "raw": "Alok Gupta",
+      "start": 75,
+      "end": 85
+    },
+    {
+      "type": "Vehicle",
+      "raw": "DL-04-CD-9012",
+      "start": 105,
+      "end": 118
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "id": "dev-010",
+  "state": "Maharashtra Police",
+  "noiseTypes": [
+    "standard_format"
+  ],
+  "text": "MAHARASHTRA POLICE · PS THANE CRIME · Arrested Suresh Parab at Navapur Sector 4 with vehicle MH-04-XY-8821 and phone 9820543210.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Suresh Parab",
+      "start": 47,
+      "end": 59
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Sector 4",
+      "start": 63,
+      "end": 79
+    },
+    {
+      "type": "Vehicle",
+      "raw": "MH-04-XY-8821",
+      "start": 93,
+      "end": 106
+    },
+    {
+      "type": "Phone",
+      "raw": "9820543210",
+      "start": 117,
+      "end": 127
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "dev-021",
+  "state": "Maharashtra Police",
+  "noiseTypes": [
+    "phone_hyphenated"
+  ],
+  "text": "MAHARASHTRA POLICE · PS KALYAN · Complainant Geeta Kadam reported suspicious calls from 98200-55443 by accused Bala Salvi.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Geeta Kadam",
+      "start": 45,
+      "end": 56
+    },
+    {
+      "type": "Phone",
+      "raw": "98200-55443",
+      "start": 88,
+      "end": 99
+    },
+    {
+      "type": "Person",
+      "raw": "Bala Salvi",
+      "start": 111,
+      "end": 121
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "dev-020",
+  "state": "Karnataka Police",
+  "noiseTypes": [
+    "org_entity"
+  ],
+  "text": "KARNATAKA POLICE · PS ELECTRONIC CITY · Accused Chetan Murthy coordinated hawala dispatch via Veyra Services logistics hub.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Chetan Murthy",
+      "start": 48,
+      "end": 61
+    },
+    {
+      "type": "Organization",
+      "raw": "Veyra Services",
+      "start": 94,
+      "end": 108
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "test-019",
+  "state": "Karnataka Police",
+  "noiseTypes": [
+    "ifsc_account"
+  ],
+  "text": "KARNATAKA POLICE · PS RAJAJINAGAR · Accused Anand Murthy requested wire to account 501928374610 with IFSC HDFC0001234.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Anand Murthy",
+      "start": 44,
+      "end": 56
+    },
+    {
+      "type": "Account",
+      "raw": "501928374610",
+      "start": 83,
+      "end": 95
+    },
+    {
+      "type": "IFSC",
+      "raw": "HDFC0001234",
+      "start": 106,
+      "end": 117
+    }
+  ]
+}

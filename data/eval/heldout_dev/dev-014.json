@@ -1,0 +1,28 @@
+{
+  "id": "dev-014",
+  "state": "UP Police",
+  "noiseTypes": [
+    "devanagari_phone"
+  ],
+  "text": "UP POLICE · PS VARANASI CANTT · Shikayatkarta Alok Pandey reported harassment call from मोबाईल ७०११२२३३४४ by accused Rakesh Yadav.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Alok Pandey",
+      "start": 46,
+      "end": 57
+    },
+    {
+      "type": "Phone",
+      "raw": "७०११२२३३४४",
+      "start": 95,
+      "end": 105
+    },
+    {
+      "type": "Person",
+      "raw": "Rakesh Yadav",
+      "start": 117,
+      "end": 129
+    }
+  ]
+}

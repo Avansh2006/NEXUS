@@ -1,0 +1,28 @@
+{
+  "id": "test-005",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "ocr_noise_letter_l"
+  ],
+  "text": "DELHI POLICE · PS LAJPAT NAGAR · Complainant Neha Gupta stated accused Ajay Verma called repeatedly from 98l9012345 demanding extortion.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Neha Gupta",
+      "start": 45,
+      "end": 55
+    },
+    {
+      "type": "Person",
+      "raw": "Ajay Verma",
+      "start": 71,
+      "end": 81
+    },
+    {
+      "type": "Phone",
+      "raw": "98l9012345",
+      "start": 105,
+      "end": 115
+    }
+  ]
+}

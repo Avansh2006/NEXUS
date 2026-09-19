@@ -1,0 +1,28 @@
+{
+  "id": "test-015",
+  "state": "Karnataka Police",
+  "noiseTypes": [
+    "synthetic_account"
+  ],
+  "text": "KARNATAKA POLICE · PS HSR LAYOUT · Accused Girish Bhat transferred illicit cut to SYN-ACCOUNT-006 at Navapur Sector 8.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Girish Bhat",
+      "start": 43,
+      "end": 54
+    },
+    {
+      "type": "Account",
+      "raw": "SYN-ACCOUNT-006",
+      "start": 82,
+      "end": 97
+    },
+    {
+      "type": "Location",
+      "raw": "Navapur Sector 8",
+      "start": 101,
+      "end": 117
+    }
+  ]
+}

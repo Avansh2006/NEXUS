@@ -1,0 +1,28 @@
+{
+  "id": "test-012",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "upi_id"
+  ],
+  "text": "DELHI POLICE · PS PASCHIM VIHAR · Accused Rakesh Chopra demanded digital payment at chopra.secure@icici from complainant Lalit Batra.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Rakesh Chopra",
+      "start": 42,
+      "end": 55
+    },
+    {
+      "type": "Account",
+      "raw": "chopra.secure@icici",
+      "start": 84,
+      "end": 103
+    },
+    {
+      "type": "Person",
+      "raw": "Lalit Batra",
+      "start": 121,
+      "end": 132
+    }
+  ]
+}

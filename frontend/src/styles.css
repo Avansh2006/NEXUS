@@ -1045,8 +1045,9 @@ select {
 }
 .quality-scores {
   display: flex;
+  flex-wrap: wrap;
   padding: 22px 22px 8px;
-  gap: 44px;
+  gap: 20px;
 }
 .quality-scores strong {
   display: block;

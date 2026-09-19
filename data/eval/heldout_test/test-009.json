@@ -1,0 +1,28 @@
+{
+  "id": "test-009",
+  "state": "Delhi Police",
+  "noiseTypes": [
+    "parentheses_phone"
+  ],
+  "text": "DELHI POLICE · PS KAROL BAGH · Complainant Suraj Mal informed that accused Vicky Oberoi rang from (011) 2574 8899 threatening bodily harm.",
+  "entities": [
+    {
+      "type": "Person",
+      "raw": "Suraj Mal",
+      "start": 43,
+      "end": 52
+    },
+    {
+      "type": "Person",
+      "raw": "Vicky Oberoi",
+      "start": 75,
+      "end": 87
+    },
+    {
+      "type": "Phone",
+      "raw": "(011) 2574 8899",
+      "start": 98,
+      "end": 113
+    }
+  ]
+}
