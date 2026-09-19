@@ -90,6 +90,8 @@ export interface Metric {
   community: number;
   tacticalRole?: string;
   roleTitle?: string;
+  roleCriteria?: string;
+  roleHypothesis?: string;
 }
 export interface Community {
   id: number;

@@ -35,11 +35,11 @@ export default function IntelCopilot({
 
   const sampleQueries = [
     "Who links Case NXS-001 to NXS-003?",
-    "Find all suspected money mules with high fan-in",
-    "Identify the kingpin with highest betweenness centrality",
-    "What vehicles or front organizations are recorded?",
+    "Find accounts matching the pass-through pattern with high fan-in",
+    "Which entities have the highest betweenness centrality?",
+    "What vehicles or business entities are recorded?",
     "Why was SYN-PHONE-999 suppressed?",
-    "Show circular laundering loops and R7 alerts",
+    "Show circular fund flow loops and R7 alerts",
   ];
 
   const handleExecute = (queryText: string) => {
@@ -55,33 +55,33 @@ export default function IntelCopilot({
     const metrics = graph.analysis?.metrics ?? [];
     const alerts = graph.analysis?.alerts ?? [];
 
-    if (q.includes("nxs-001") || q.includes("nxs-003") || q.includes("link") && q.includes("case")) {
+    if (q.includes("nxs-001") || q.includes("nxs-003") || (q.includes("link") && q.includes("case"))) {
       const shared = nodes.find((n) => n.label === "SYN-PHONE-001");
       if (shared) {
         matchedEntities.push({
           id: shared.id,
           label: shared.label,
           type: shared.type,
-          role: "Cross-Case Hub",
+          role: "Outbound Communication Hub",
         });
         evidence.push(...(shared.properties.evidenceIds || []));
         rules.push("R1");
-        summary = `Cross-case analysis reveals that ${shared.label} is the single shared identifier bridging Cases NXS-001, NXS-002, and NXS-003. It connects multiple accused suspects across independent police FIRs with 100% verified text provenance.`;
+        summary = `Cross-case analysis indicates that ${shared.label} is an identifier linking Cases NXS-001, NXS-002, and NXS-003 across independent police FIRs with source text provenance.`;
       }
-    } else if (q.includes("mule") || q.includes("fan-in") || q.includes("account")) {
+    } else if (q.includes("mule") || q.includes("fan-in") || q.includes("pass-through") || q.includes("account")) {
       const mule = nodes.find((n) => n.label === "SYN-ACCOUNT-001");
       if (mule) {
         matchedEntities.push({
           id: mule.id,
           label: mule.label,
           type: mule.type,
-          role: "Mule / Layering Account",
+          role: "Pass-Through Account Pattern",
         });
         evidence.push(...(mule.properties.evidenceIds || []));
         rules.push("R4");
-        summary = `Account ${mule.label} is flagged for fan-in and rapid pass-through structuring. It received funds from multiple distinct sources and transferred them within minutes, characteristic of a staging or mule account.`;
+        summary = `Account ${mule.label} exhibits the pass-through account pattern (fan-in and rapid pass-through structuring). Note: Account holders may be unwitting participants or victims.`;
       }
-    } else if (q.includes("kingpin") || q.includes("coordinator") || q.includes("betweenness")) {
+    } else if (q.includes("kingpin") || q.includes("coordinator") || q.includes("betweenness") || q.includes("central")) {
       const topMetric = [...metrics].sort((a, b) => b.betweenness - a.betweenness)[0];
       const kingpin = topMetric ? nodes.find((n) => n.id === topMetric.entityId) : null;
       if (kingpin) {
@@ -89,33 +89,33 @@ export default function IntelCopilot({
           id: kingpin.id,
           label: kingpin.label,
           type: kingpin.type,
-          role: topMetric.roleTitle || "Syndicate Coordinator",
+          role: topMetric.roleTitle || "Central Hub (bridge pattern)",
         });
         evidence.push(...(kingpin.properties.evidenceIds || []));
         rules.push("R3");
-        summary = `${kingpin.label} (${kingpin.type}) has the highest betweenness centrality (${topMetric.betweenness.toFixed(3)}) and influence score (${topMetric.influence}). It serves as the primary bridge connecting separate criminal communities.`;
+        summary = `${kingpin.label} (${kingpin.type}) exhibits the highest betweenness centrality (${topMetric.betweenness.toFixed(3)}) and influence index (${topMetric.influence}), functioning as a central bridge connecting separate network communities.`;
       }
-    } else if (q.includes("vehicle") || q.includes("organization") || q.includes("front")) {
+    } else if (q.includes("vehicle") || q.includes("organization") || q.includes("front") || q.includes("business")) {
       const vehs = nodes.filter((n) => n.type === "Vehicle" || n.type === "Organization");
       vehs.forEach((v) => {
         matchedEntities.push({ id: v.id, label: v.label, type: v.type });
         evidence.push(...(v.properties.evidenceIds || []));
       });
-      summary = `Identified ${vehs.length} logistical and front entities: ${vehs.map((v) => `${v.label} (${v.type})`).join(", ")}. In Case NXS-005, vehicle ZZ00NX0001 was documented in the theft narrative; Veyra Services appears as a common front org across multiple FIRs.`;
+      summary = `Identified ${vehs.length} transport and business entities: ${vehs.map((v) => `${v.label} (${v.type})`).join(", ")}. In Case NXS-005, vehicle ZZ00NX0001 is recorded in the report narrative; Veyra Services appears as a recurring business entity across multiple records.`;
     } else if (q.includes("suppress") || q.includes("999") || q.includes("public")) {
       const pub = nodes.find((n) => n.label === "SYN-PHONE-999");
       if (pub) {
         matchedEntities.push({ id: pub.id, label: pub.label, type: pub.type, role: "Public Helpline" });
         rules.push("R1 Suppression");
-        summary = `SYN-PHONE-999 is recognized as a legitimate public/courier helpline. The intelligence engine explicitly suppresses false-positive syndicate alerts on this node to prevent innocent organizations from being linked to criminal rings.`;
+        summary = `SYN-PHONE-999 is recognized as a legitimate public/courier helpline. The intelligence engine explicitly suppresses cross-case alerts on this node to avoid false linkages to public service channels.`;
       }
-    } else if (q.includes("circle") || q.includes("loop") || q.includes("r7") || q.includes("hawala")) {
+    } else if (q.includes("circle") || q.includes("loop") || q.includes("r7") || q.includes("hawala") || q.includes("transaction")) {
       rules.push("R7");
       const r7Alerts = alerts.filter((a) => a.ruleId === "R7");
       if (r7Alerts.length > 0) {
-        summary = `Rule R7 detected ${r7Alerts.length} circular financial laundering cycle(s). These loops exhibit round-tripping transfer topologies designed to disguise the origin of illegal funds.`;
+        summary = `Rule R7 detected ${r7Alerts.length} circular financial transaction loop(s). These loops exhibit round-tripping transfer topologies across accounts.`;
       } else {
-        summary = `Rule R7 (Circular Fund Laundering Ring Detector) is armed. In the baseline demo, funds follow fan-in and rapid pass-through layering (R4). You can ingest circular transfer payloads in Data Ingestion to trigger closed cycle alerts.`;
+        summary = `Rule R7 (Circular Fund Flow Detector) is active. In the baseline demo, funds follow fan-in and rapid pass-through structuring (R4). You can ingest circular transfer payloads in Data Ingestion to trigger closed cycle alerts.`;
       }
     } else {
       // General entity search
@@ -127,7 +127,7 @@ export default function IntelCopilot({
         });
         summary = `Found ${matches.length} matching entities in the active graph. Top result: ${matches[0].label} (${matches[0].type}) associated with ${matches[0].properties.caseIds.join(", ")}.`;
       } else {
-        summary = `No exact matches for "${queryText}". Try asking about specific suspects (e.g. "Aariv Veylan"), phone hubs ("SYN-PHONE-001"), accounts ("SYN-ACCOUNT-001"), or tactical patterns like "mule accounts".`;
+        summary = `I can't answer that from the graph data. Did you mean to ask about high-betweenness bridges ("Which entities have the highest betweenness centrality?"), pass-through accounts ("SYN-ACCOUNT-001"), or communication hubs ("SYN-PHONE-001")?`;
       }
     }
 
@@ -138,8 +138,7 @@ export default function IntelCopilot({
       evidenceIds: evidence.slice(0, 4),
       ruleCitations: rules,
     };
-
-    setHistory((prev) => [newResponse, ...prev.slice(0, 4)]);
+    setHistory((prev) => [newResponse, ...prev]);
     setInput("");
   };
 
@@ -171,7 +170,7 @@ export default function IntelCopilot({
               <Bot size={18} className="text-[#5ce0a8]" />
               <div>
                 <b className="text-xs text-[#ecfbf4] block">NEXUS Intel Copilot</b>
-                <span className="text-[9px] font-mono text-[#76a896]">DETERMINISTIC AI · ZERO HALLUCINATION</span>
+                <span className="text-[9px] font-mono text-[#76a896]">DETERMINISTIC, GRAPH-GROUNDED</span>
               </div>
             </div>
             <button

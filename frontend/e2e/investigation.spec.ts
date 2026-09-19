@@ -111,18 +111,18 @@ test('tactical extensions: 3D canvas toggle, Intel Copilot queries, and BSA 2023
   await expect(page.getByRole('status')).toContainText('3 cases linked');
 
   // Verify Tactical HUD and 3D WebGL Sphere
-  await expect(page.getByText('ZERO-HALLUCINATION · DETERMINISTIC ENGINE')).toBeVisible();
+  await expect(page.getByText('DETERMINISTIC, GRAPH-GROUNDED ENGINE')).toBeVisible();
   await page.getByLabel('3D Tactical Holo Sphere').click();
   await expect(page.getByText('TACTICAL 3D HOLO SPHERE')).toBeVisible();
   await page.getByLabel('2D Network View').click();
 
   // Verify Intel Copilot drawer
   await page.getByLabel('Open NEXUS Intel Copilot').click();
-  await expect(page.getByText('DETERMINISTIC AI · ZERO HALLUCINATION')).toBeVisible();
+  await expect(page.getByText('DETERMINISTIC, GRAPH-GROUNDED', { exact: true })).toBeVisible();
 
   // Execute an investigative prompt
-  await page.getByRole('button', { name: 'Identify the kingpin with highest betweenness centrality' }).click();
-  await expect(page.getByText('has the highest betweenness centrality')).toBeVisible();
+  await page.getByRole('button', { name: 'Which entities have the highest betweenness centrality?' }).click();
+  await expect(page.getByText('exhibits the highest betweenness centrality')).toBeVisible();
 
   // Inspect entity from copilot chip
   await page.locator('button').filter({ hasText: 'Veyra Services' }).last().click();
@@ -130,6 +130,6 @@ test('tactical extensions: 3D canvas toggle, Intel Copilot queries, and BSA 2023
 
   // Close copilot
   await page.getByLabel('Close Copilot').click();
-  await expect(page.getByText('DETERMINISTIC AI · ZERO HALLUCINATION')).toBeHidden();
+  await expect(page.getByText('DETERMINISTIC, GRAPH-GROUNDED', { exact: true })).toBeHidden();
 });
 

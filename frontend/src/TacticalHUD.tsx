@@ -33,7 +33,7 @@ export default function TacticalHUD({
 
         <div className="hidden sm:flex items-center gap-2 text-[#7ca496] text-[11px]">
           <Shield size={13} className="text-[#51b88e]" />
-          <span>ZERO-HALLUCINATION · DETERMINISTIC ENGINE</span>
+          <span>DETERMINISTIC, GRAPH-GROUNDED ENGINE</span>
         </div>
       </div>
 

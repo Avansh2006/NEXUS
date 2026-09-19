@@ -35,46 +35,54 @@ def analyze(payload, rules=None):
         inf = round(100*(w['degree']*d+w['betweenness']*b+w['cases']*c), 2)
         ntype = node.get('type')
         case_count = len(node.get('properties', {}).get('caseIds', []))
-        tactical_role = 'OPERATIVE'
-        role_title = 'Operative'
+        tactical_role = 'HIGH_ACTIVITY_NODE'
+        role_title = 'High-Activity Node'
+        role_criteria = f"Degree={d}, Normalized Betweenness={b:.3f}, Cases={case_count}, Influence={inf}"
+        role_hypothesis = "Pattern hypothesis — for investigator review."
         if ntype == 'Person':
             if case_count >= 2 and b >= 0.05 and inf >= 25:
-                tactical_role = 'KINGPIN'
-                role_title = 'Syndicate Coordinator'
+                tactical_role = 'CENTRAL_HUB'
+                role_title = 'Central Hub (bridge pattern)'
+                role_criteria = f"Cases={case_count} (>=2), Betweenness={b:.3f} (>=0.05), Influence={inf} (>=25)"
             elif nid in articulation or b >= cfg.get('bridge_betweenness', 0.04):
-                tactical_role = 'BROKER'
-                role_title = 'Cell Liaison / Broker'
+                tactical_role = 'CROSS_CLUSTER_BROKER'
+                role_title = 'Cross-Cluster Broker Pattern'
+                role_criteria = f"Betweenness={b:.3f} (>={cfg.get('bridge_betweenness', 0.04)}) or Articulation Point"
             elif inf >= 20:
-                tactical_role = 'KEY_OPERATIVE'
-                role_title = 'Key Operative'
+                tactical_role = 'HIGH_ACTIVITY_NODE'
+                role_title = 'High-Activity Node'
+                role_criteria = f"Influence={inf} (>=20)"
             else:
-                tactical_role = 'OPERATIVE'
-                role_title = 'Operative'
+                tactical_role = 'ASSOCIATE_NODE'
+                role_title = 'Associated Node'
         elif ntype == 'Account':
             tactical_role = 'FINANCIAL_NODE'
-            role_title = 'Financial Channel'
+            role_title = 'Financial Account'
         elif ntype == 'Phone':
             if case_count >= 2:
-                tactical_role = 'DISPATCHER'
-                role_title = 'Cross-Case Hub'
+                tactical_role = 'OUTBOUND_HUB'
+                role_title = 'Outbound Communication Hub'
+                role_criteria = f"Cases={case_count} (>=2)"
             else:
-                tactical_role = 'DEVICE_NODE'
+                tactical_role = 'COMMUNICATION_NODE'
                 role_title = 'Communication Node'
         elif ntype == 'Vehicle':
-            tactical_role = 'LOGISTICS'
-            role_title = 'Logistics / Mobility'
+            tactical_role = 'TRANSPORT_ASSET'
+            role_title = 'Transport Asset'
         elif ntype == 'Organization':
-            tactical_role = 'FRONT_ENTITY'
-            role_title = 'Front Entity / Shell Org'
+            tactical_role = 'BUSINESS_ENTITY'
+            role_title = 'Business Entity (unverified)'
         elif ntype == 'Location':
-            tactical_role = 'HOTSPOT'
-            role_title = 'Geographic Hotspot'
+            tactical_role = 'LOCATION_NEXUS'
+            role_title = 'Location Nexus'
 
         m_dict = dict(entityId=nid, degree=round(d, 6), betweenness=round(b, 6),
                       caseComponent=round(c, 6), influence=inf,
                       community=membership[nid],
                       tacticalRole=tactical_role,
-                      roleTitle=role_title)
+                      roleTitle=role_title,
+                      roleCriteria=role_criteria,
+                      roleHypothesis=role_hypothesis)
         metrics.append(m_dict)
         metrics_by_id[nid] = m_dict
     alerts = []
@@ -120,8 +128,10 @@ def analyze(payload, rules=None):
         senders = {e['source'] for e in es}
         if len(senders) >= cfg['fan_in_senders']:
             if target in metrics_by_id:
-                metrics_by_id[target]['tacticalRole'] = 'MONEY_MULE'
-                metrics_by_id[target]['roleTitle'] = 'Mule / Layering Account'
+                metrics_by_id[target]['tacticalRole'] = 'PASS_THROUGH_ACCOUNT'
+                metrics_by_id[target]['roleTitle'] = 'Pass-Through Account Pattern'
+                metrics_by_id[target]['roleCriteria'] = f"Fan-in: {len(senders)} senders (>={cfg['fan_in_senders']})"
+                metrics_by_id[target]['roleHypothesis'] = 'Pattern hypothesis — for investigator review. Account holders may be unwitting participants or victims.'
             emit('R4', [target, *senders], es, f'Fan-in: {len(senders)} distinct accounts sent {sum(len(e["properties"].get("events", [])) for e in es)} transfers to {nodes[target]["label"]}.')
         pairs, support = 0, []
         for ein in es:
@@ -134,8 +144,10 @@ def analyze(payload, rules=None):
                             support.append({'properties': {'evidenceIds': [a['evidenceId'], b['evidenceId']]}})
         if pairs:
             if target in metrics_by_id:
-                metrics_by_id[target]['tacticalRole'] = 'MONEY_MULE'
-                metrics_by_id[target]['roleTitle'] = 'Mule / Layering Account'
+                metrics_by_id[target]['tacticalRole'] = 'PASS_THROUGH_ACCOUNT'
+                metrics_by_id[target]['roleTitle'] = 'Pass-Through Account Pattern'
+                metrics_by_id[target]['roleCriteria'] = f"Rapid pass-through: {pairs} pairs within {cfg['pass_through_minutes']}m"
+                metrics_by_id[target]['roleHypothesis'] = 'Pattern hypothesis — for investigator review. Account holders may be unwitting participants or victims.'
             emit('R4', [target], support, f'Rapid pass-through: {pairs} incoming/outgoing transfer pairs within {cfg["pass_through_minutes"]} minutes. Timing alone does not establish the origin of funds.')
     tx_graph = nx.DiGraph()
     tx_lookup = defaultdict(list)
@@ -150,7 +162,7 @@ def analyze(payload, rules=None):
                 cyc_nodes = list(cyc)
                 support = [e for i in range(len(cyc_nodes)) for e in tx_lookup.get((cyc_nodes[i], cyc_nodes[(i+1)%len(cyc_nodes)]), [])]
                 names = ' -> '.join(nodes[n]['label'] for n in cyc_nodes)
-                emit('R7', cyc_nodes, support, f'Circular fund laundering loop detected across {len(cyc_nodes)} accounts: {names} -> {nodes[cyc_nodes[0]]["label"]}. Closed transaction cycles are indicative of round-tripping or layering.')
+                emit('R7', cyc_nodes, support, f'Circular fund transaction loop detected across {len(cyc_nodes)} accounts: {names} -> {nodes[cyc_nodes[0]]["label"]}. Closed transaction cycles represent a round-tripping transfer pattern for review.')
         except Exception:
             pass
     at_location = defaultdict(list)

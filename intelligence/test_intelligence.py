@@ -109,7 +109,8 @@ def test_circular_transaction_r7_and_roles():
     res = analyze(dict(nodes=ns, edges=es))
     r7 = [a for a in res['alerts'] if a['ruleId'] == 'R7']
     assert len(r7) == 1
-    assert 'Circular fund laundering loop' in r7[0]['explanation']
+    assert 'Circular fund transaction loop' in r7[0]['explanation']
     assert set(r7[0]['entityIds']) == {'acc1', 'acc2', 'acc3'}
-    assert all('tacticalRole' in m for m in res['metrics'])
+    assert all('tacticalRole' in m and 'roleHypothesis' in m for m in res['metrics'])
+    assert any(m['tacticalRole'] in ('PASS_THROUGH_ACCOUNT', 'FINANCIAL_NODE') for m in res['metrics'])
 
