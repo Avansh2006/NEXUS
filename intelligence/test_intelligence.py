@@ -101,3 +101,15 @@ def test_api_contract():
     assert client.post('/extract',json={'text':'No data'}).json()=={'entities':[]}
     assert client.post('/extract',json={'text':'x'*10001}).status_code==422
     assert client.post('/analyze',json={'nodes':[],'edges':[]}).status_code==200
+
+
+def test_circular_transaction_r7_and_roles():
+    ns = [node('acc1', 'Account', ['A']), node('acc2', 'Account', ['A']), node('acc3', 'Account', ['A'])]
+    es = [edge('acc1', 'acc2', 'TRANSFERRED_TO'), edge('acc2', 'acc3', 'TRANSFERRED_TO'), edge('acc3', 'acc1', 'TRANSFERRED_TO')]
+    res = analyze(dict(nodes=ns, edges=es))
+    r7 = [a for a in res['alerts'] if a['ruleId'] == 'R7']
+    assert len(r7) == 1
+    assert 'Circular fund laundering loop' in r7[0]['explanation']
+    assert set(r7[0]['entityIds']) == {'acc1', 'acc2', 'acc3'}
+    assert all('tacticalRole' in m for m in res['metrics'])
+

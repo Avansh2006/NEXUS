@@ -78,6 +78,13 @@ export default function Inspector({
         {n.type}
       </span>
       <h2>{n.label}</h2>
+      {metric?.roleTitle ? (
+        <div className="tactical-role-tag" style={{ marginBottom: 8 }}>
+          <span className="pill" style={{ background: "#214a3e", color: "#a5f0cd", border: "1px solid #3d806a" }}>
+            {metric.roleTitle}
+          </span>
+        </div>
+      ) : null}
       <div className="tags">
         {n.properties.caseIds.map((c) => (
           <span key={c}>{c}</span>

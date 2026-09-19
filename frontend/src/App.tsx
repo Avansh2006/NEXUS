@@ -38,6 +38,7 @@ import InvestigationJourney from "./InvestigationJourney";
 import TacticalHUD from "./TacticalHUD";
 import TacticalGlobe3D from "./TacticalGlobe3D";
 import SpotlightCard from "./SpotlightCard";
+import IntelCopilot from "./IntelCopilot";
 
 const nav = [
   ["Dashboard", LayoutDashboard],
@@ -55,6 +56,7 @@ const ruleNames: Record<string, string> = {
   R4: "Financial pattern",
   R5: "Repeated co-location",
   R6: "Repeated co-accusation",
+  R7: "Circular transaction laundering loop",
 };
 export default function App() {
   const [page, setPage] = useState("Investigation"),
@@ -1440,6 +1442,14 @@ export default function App() {
             )}
           </footer>
         </motion.div>
+        <IntelCopilot
+          graph={graph}
+          onSelectEntity={(id) => {
+            select(id);
+            setPage("Investigation");
+            setFocus(1);
+          }}
+        />
       </main>
     </div>
   );

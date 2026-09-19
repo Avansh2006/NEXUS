@@ -63,6 +63,7 @@ test('clean investigation: evidence → network → review → report',async({pa
   expect(report).toContain('Supporting evidence');
   expect(report).toContain('data:image/png;base64,');
   expect(report).toContain('SYN-ACCOUNT-001');
+  expect(report).toContain('SECTION 65B');
   await page.getByRole('button',{name:'Refresh',exact:true}).click();
   await expect(page.locator('.audit-row').first()).toBeVisible();
   expect(errors).toEqual([]);
@@ -99,3 +100,40 @@ test('mobile and reduced-motion layout remains usable',async({page},testInfo)=>{
   await expect(page.getByRole('button',{name:'Generate Investigation Report',exact:true})).toBeVisible();
   await page.screenshot({path:testInfo.outputPath('mobile-reduced-motion.png'),fullPage:true});
 });
+
+test('tactical extensions: 3D canvas toggle, Intel Copilot queries, and Section 65B report certificate', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Reset demo data', exact: true }).click();
+  await page.getByRole('button', { name: 'Load demo', exact: true }).click();
+  await page.getByRole('button', { name: 'Analyze Network', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('3 cases linked');
+
+  // Verify Tactical HUD and 3D WebGL Sphere
+  await expect(page.getByText('ZERO-HALLUCINATION · DETERMINISTIC ENGINE')).toBeVisible();
+  await page.getByLabel('3D Tactical Holo Sphere').click();
+  await expect(page.getByText('TACTICAL 3D HOLO SPHERE')).toBeVisible();
+  await page.getByLabel('2D Network View').click();
+
+  // Verify Intel Copilot drawer
+  await page.getByLabel('Open NEXUS Intel Copilot').click();
+  await expect(page.getByText('DETERMINISTIC AI · ZERO HALLUCINATION')).toBeVisible();
+
+  // Execute an investigative prompt
+  await page.getByRole('button', { name: 'Identify the kingpin with highest betweenness centrality' }).click();
+  await expect(page.getByText('has the highest betweenness centrality')).toBeVisible();
+
+  // Inspect entity from copilot chip
+  await page.locator('button').filter({ hasText: 'Veyra Services' }).last().click();
+  await expect(page.locator('.inspector h2')).toHaveText('Veyra Services');
+
+  // Close copilot
+  await page.getByLabel('Close Copilot').click();
+  await expect(page.getByText('DETERMINISTIC AI · ZERO HALLUCINATION')).toBeHidden();
+
+  // Leave demo in clean analyzed pitch state
+  await page.getByRole('button', { name: 'Reset demo data', exact: true }).click();
+  await page.getByRole('button', { name: 'Load demo', exact: true }).click();
+  await page.getByRole('button', { name: 'Analyze Network', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('3 cases linked');
+});
+

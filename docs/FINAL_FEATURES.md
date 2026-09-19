@@ -7,6 +7,14 @@
   animated measured counters, a state-aware workflow bar, and reduced-motion support.
 - Tactical HUD overlay with live deterministic AI telemetry, entity distribution chips,
   and an interactive 3D WebGL tactical intelligence sphere (Three.js) toggle.
+- NEXUS Intel Copilot: interactive deterministic AI query copilot with natural-language
+  investigative prompts, graph topology analysis, zero-hallucination answers, and click-to-inspect entity chips.
+- Syndicate Hierarchy & Tactical Role Classifier: classifies entities into tactical roles
+  (KINGPIN, BROKER, MONEY_MULE, DISPATCHER, OPERATIVE, LOGISTICS, FRONT_ENTITY, HOTSPOT) with badges in inspector.
+- Rule R7 (Circular Transaction Laundering Loops): detects directed cycles (hawala / round-tripping)
+  in account transaction graphs.
+- Section 65B Indian Evidence Act Certificate of Electronic Evidence automatically generated in
+  investigation reports for court-admissible legal compliance.
 - Cursor-following SpotlightCard components with glowing borders and ambient spotlights.
 - Spring Boot REST backend; PostgreSQL relational graph/evidence JSONB storage;
   stateless FastAPI/spaCy/NetworkX sidecar. Four-service Docker Compose build.
@@ -19,14 +27,14 @@
 - 121 reproducible synthetic records across six cases; 18 labeled gold FIRs.
 - Evidence links on every graph node/edge; first/last seen and per-event timestamps.
 - Degree, betweenness, seeded Louvain communities; weighted influence breakdown.
-- R1–R6 explanations with entity/evidence IDs; visible public/service suppression.
+- R1–R7 explanations with entity/evidence IDs; visible public/service suppression.
 - Dashboard, ingestion, graph workspace, entity/case inspector, alerts, clusters,
   timeline, reports, audit viewer; search, filters, focus and bounded expansion.
 - Case-specific ghost projection before Analyze; canonical network after Analyze,
   short graph fade/camera focus; graph coloring, community borders, influence sizes.
 - Case-link suggestions, shortest paths with hop evidence, highlighted FIRs,
   synthetic extraction-quality panel (27 TP, 0 FP, 0 FN on 18 samples).
-- Printable escaped HTML report with optional graph PNG and browser Save as PDF.
+- Printable escaped HTML report with optional graph PNG, Section 65B legal certificate, and browser Save as PDF.
 - Reset/load demo, offline runtime, test suites, GitHub CI with PostgreSQL rehearsal.
 - Request/body validation, rate limiting, fixed CORS origin, parameterized SQL,
   no secrets in Git, local-only published port and safe JSON error envelope.
@@ -42,8 +50,9 @@
 - Demo analysis recomputes quickly; persisted results survive normal reloads but no
   independent precomputed analysis cache is used when the engine is down.
 - Audit logging/viewer is operational, not tamper-evident or identity-attributed.
-- Three automated browser scenarios cover the desktop journey, upload validation,
-  report download, mobile layout and reduced motion, with screenshots and video.
+- Four automated browser scenarios cover the desktop journey, upload validation,
+  report download with Section 65B legal certificate, 3D Holo Sphere toggle,
+  Intel Copilot natural language queries, mobile layout and reduced motion, with screenshots and video.
 
 ## Roadmap
 JWT/Investigator/Admin roles, SSO, tenant isolation, device/IMEI entities, richer

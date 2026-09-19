@@ -25,9 +25,16 @@ with `-Djdk.net.unixdomain.tmpdir=<short-existing-directory>` before `-jar`.
    the sources and invalidates analysis. Re-analyze after changes.
 8. Open **Dashboard** to see case-link suggestions, then **Investigation → Find path**.
    Choose SYN-PHONE-001 and SYN-ACCOUNT-001; **Trace path**. Show evidence per hop.
-9. Click **Generate Investigation Report**. Open downloaded HTML and print/save PDF.
-   Includes the current or last-viewed graph if captured, cases, metrics, alerts,
-   timeline ranges, evidence IDs and original source records.
+9. Click **3D Holo Sphere** on the Tactical HUD to display the interactive 3D WebGL
+   force-directed evidence sphere (Three.js) with real-time rotational telemetry.
+10. Click the floating **NEXUS Intel Copilot** button (bottom right) to open the deterministic
+    AI query assistant. Click investigative prompt chips like *"Identify the kingpin with highest betweenness centrality"*,
+    inspect the zero-hallucination explanation citing exact graph metrics, and click the entity badge
+    to navigate directly to that node in the inspector.
+11. Point out the **Syndicate Hierarchy & Tactical Role Badge** in the Inspector (e.g., Kingpin, Mule, Broker).
+12. Click **Generate Investigation Report**. Open downloaded HTML and print/save PDF.
+    Includes the graph visual, cases, metrics, alerts, timeline ranges, evidence IDs, original source records,
+    and a formal **Section 65B Indian Evidence Act Certificate of Electronic Evidence** with automated verification.
 
 ## Rehearsal and fallback
 `python scripts/verify_demo.py` performs a clean API rehearsal and writes

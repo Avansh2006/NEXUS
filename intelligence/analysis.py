@@ -26,14 +26,57 @@ def analyze(payload, rules=None):
     max_b = max(between.values(), default=0) or 1
     max_c = max((len(n.get('properties', {}).get('caseIds', [])) for n in nodes.values()), default=0) or 1
     metrics = []
+    metrics_by_id = {}
     for nid, node in nodes.items():
         d = degree[nid] if len(nodes) > 1 else 0
         b = between[nid] / max_b
         c = len(node.get('properties', {}).get('caseIds', [])) / max_c
         w = cfg['influence_weights']
-        metrics.append(dict(entityId=nid, degree=round(d, 6), betweenness=round(b, 6),
-                            caseComponent=round(c, 6), influence=round(100*(w['degree']*d+w['betweenness']*b+w['cases']*c), 2),
-                            community=membership[nid]))
+        inf = round(100*(w['degree']*d+w['betweenness']*b+w['cases']*c), 2)
+        ntype = node.get('type')
+        case_count = len(node.get('properties', {}).get('caseIds', []))
+        tactical_role = 'OPERATIVE'
+        role_title = 'Operative'
+        if ntype == 'Person':
+            if case_count >= 2 and b >= 0.05 and inf >= 25:
+                tactical_role = 'KINGPIN'
+                role_title = 'Syndicate Coordinator'
+            elif nid in articulation or b >= cfg.get('bridge_betweenness', 0.04):
+                tactical_role = 'BROKER'
+                role_title = 'Cell Liaison / Broker'
+            elif inf >= 20:
+                tactical_role = 'KEY_OPERATIVE'
+                role_title = 'Key Operative'
+            else:
+                tactical_role = 'OPERATIVE'
+                role_title = 'Operative'
+        elif ntype == 'Account':
+            tactical_role = 'FINANCIAL_NODE'
+            role_title = 'Financial Channel'
+        elif ntype == 'Phone':
+            if case_count >= 2:
+                tactical_role = 'DISPATCHER'
+                role_title = 'Cross-Case Hub'
+            else:
+                tactical_role = 'DEVICE_NODE'
+                role_title = 'Communication Node'
+        elif ntype == 'Vehicle':
+            tactical_role = 'LOGISTICS'
+            role_title = 'Logistics / Mobility'
+        elif ntype == 'Organization':
+            tactical_role = 'FRONT_ENTITY'
+            role_title = 'Front Entity / Shell Org'
+        elif ntype == 'Location':
+            tactical_role = 'HOTSPOT'
+            role_title = 'Geographic Hotspot'
+
+        m_dict = dict(entityId=nid, degree=round(d, 6), betweenness=round(b, 6),
+                      caseComponent=round(c, 6), influence=inf,
+                      community=membership[nid],
+                      tacticalRole=tactical_role,
+                      roleTitle=role_title)
+        metrics.append(m_dict)
+        metrics_by_id[nid] = m_dict
     alerts = []
     incident = defaultdict(list)
     for e in edges:
@@ -76,6 +119,9 @@ def analyze(payload, rules=None):
     for target, es in sorted(incoming.items()):
         senders = {e['source'] for e in es}
         if len(senders) >= cfg['fan_in_senders']:
+            if target in metrics_by_id:
+                metrics_by_id[target]['tacticalRole'] = 'MONEY_MULE'
+                metrics_by_id[target]['roleTitle'] = 'Mule / Layering Account'
             emit('R4', [target, *senders], es, f'Fan-in: {len(senders)} distinct accounts sent {sum(len(e["properties"].get("events", [])) for e in es)} transfers to {nodes[target]["label"]}.')
         pairs, support = 0, []
         for ein in es:
@@ -87,7 +133,26 @@ def analyze(payload, rules=None):
                             pairs += 1
                             support.append({'properties': {'evidenceIds': [a['evidenceId'], b['evidenceId']]}})
         if pairs:
+            if target in metrics_by_id:
+                metrics_by_id[target]['tacticalRole'] = 'MONEY_MULE'
+                metrics_by_id[target]['roleTitle'] = 'Mule / Layering Account'
             emit('R4', [target], support, f'Rapid pass-through: {pairs} incoming/outgoing transfer pairs within {cfg["pass_through_minutes"]} minutes. Timing alone does not establish the origin of funds.')
+    tx_graph = nx.DiGraph()
+    tx_lookup = defaultdict(list)
+    for e in edges:
+        if e['type'] == 'TRANSFERRED_TO':
+            tx_graph.add_edge(e['source'], e['target'])
+            tx_lookup[(e['source'], e['target'])].append(e)
+    if tx_graph.number_of_nodes() >= 3:
+        try:
+            cycles = [c for c in nx.simple_cycles(tx_graph) if 3 <= len(c) <= 5]
+            for cyc in sorted(cycles, key=lambda c: (len(c), c[0])):
+                cyc_nodes = list(cyc)
+                support = [e for i in range(len(cyc_nodes)) for e in tx_lookup.get((cyc_nodes[i], cyc_nodes[(i+1)%len(cyc_nodes)]), [])]
+                names = ' -> '.join(nodes[n]['label'] for n in cyc_nodes)
+                emit('R7', cyc_nodes, support, f'Circular fund laundering loop detected across {len(cyc_nodes)} accounts: {names} -> {nodes[cyc_nodes[0]]["label"]}. Closed transaction cycles are indicative of round-tripping or layering.')
+        except Exception:
+            pass
     at_location = defaultdict(list)
     for e in edges:
         if e['type'] == 'SEEN_AT':

@@ -88,6 +88,8 @@ export interface Metric {
   caseComponent: number;
   influence: number;
   community: number;
+  tacticalRole?: string;
+  roleTitle?: string;
 }
 export interface Community {
   id: number;
