@@ -97,10 +97,23 @@ export interface Community {
   id: number;
   entityIds: string[];
 }
+export interface Telemetry {
+  nodeCount: number;
+  edgeCount: number;
+  betweennessMode: string;
+  kSamples: number;
+  communityCount: number;
+  computationTimeMs?: number;
+  breakdownMs?: {
+    communities: number;
+    centrality: number;
+  };
+}
 export interface Analysis {
   metrics?: Metric[];
   alerts?: Alert[];
   communities?: Community[];
+  telemetry?: Telemetry;
   caseLinks?: {
     caseIds: string[];
     entityIds: string[];

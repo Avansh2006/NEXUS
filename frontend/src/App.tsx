@@ -30,7 +30,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { api, colors, emptyGraph } from "./types";
-import type { Graph, IncomingResult, IngestResult, PathResult, Quality } from "./types";
+import type { Edge, Entity, Graph, IncomingResult, IngestResult, PathResult, Quality } from "./types";
 import NetworkGraph from "./NetworkGraph";
 import Inspector, { HighlightedText } from "./Inspector";
 import CaseLinks from "./CaseLinks";
@@ -87,7 +87,8 @@ export default function App() {
     [caseId, setCaseId] = useState("NXS-007"),
     [ingestResult, setIngestResult] = useState<IngestResult | null>(null),
     [incomingResult, setIncomingResult] = useState<IncomingResult | null>(null),
-    [incomingActive, setIncomingActive] = useState<boolean>(false);
+    [incomingActive, setIncomingActive] = useState<boolean>(false),
+    [metaNodeView, setMetaNodeView] = useState<boolean>(false);
   const [audit, setAudit] = useState<{ action: string; createdAt: string }[]>(
     [],
   );
@@ -146,6 +147,7 @@ export default function App() {
       setQuery("");
       setIncomingResult(null);
       setIncomingActive(false);
+      setMetaNodeView(false);
       await refresh();
       setNotice("Investigation reset. Load the demo to begin again.");
     });
@@ -217,6 +219,78 @@ export default function App() {
       ),
     [graph.nodes, query],
   );
+  const metaGraph: Graph = useMemo(() => {
+    if (!metaNodeView || !graph.analyzed || !graph.analysis.communities?.length) {
+      return graph;
+    }
+    const communityNodes: Entity[] = [];
+    const entityToCommunity = new Map<string, number>();
+
+    graph.analysis.communities.forEach((c) => {
+      c.entityIds.forEach((eid) => entityToCommunity.set(eid, c.id));
+      const members = c.entityIds
+        .map((eid) => graph.nodes.find((n) => n.id === eid))
+        .filter(Boolean);
+      const caseIds = Array.from(
+        new Set(members.flatMap((m) => m?.properties.caseIds ?? [])),
+      );
+      communityNodes.push({
+        id: `meta-comm-${c.id}`,
+        type: "Organization",
+        label: `Community #${c.id + 1} (${c.entityIds.length} nodes)`,
+        properties: {
+          caseIds,
+          evidenceIds: [],
+          roles: [`Cluster of ${c.entityIds.length} entities`],
+        },
+      });
+    });
+
+    const metaEdgeMap = new Map<
+      string,
+      { source: string; target: string; count: number; caseIds: Set<string> }
+    >();
+    graph.edges.forEach((e) => {
+      const c1 = entityToCommunity.get(e.source);
+      const c2 = entityToCommunity.get(e.target);
+      if (c1 !== undefined && c2 !== undefined && c1 !== c2) {
+        const u = Math.min(c1, c2);
+        const v = Math.max(c1, c2);
+        const key = `${u}-${v}`;
+        const existing = metaEdgeMap.get(key) ?? {
+          source: `meta-comm-${u}`,
+          target: `meta-comm-${v}`,
+          count: 0,
+          caseIds: new Set<string>(),
+        };
+        existing.count += 1;
+        e.properties.caseIds?.forEach((cid) => existing.caseIds.add(cid));
+        metaEdgeMap.set(key, existing);
+      }
+    });
+
+    const metaEdges: Edge[] = Array.from(metaEdgeMap.entries()).map(
+      ([key, data]) => ({
+        id: `meta-edge-${key}`,
+        source: data.source,
+        target: data.target,
+        type: "CLUSTER_BRIDGE",
+        properties: {
+          caseIds: Array.from(data.caseIds),
+          evidenceIds: [],
+          firstSeen: "",
+          lastSeen: "",
+          events: [],
+        },
+      }),
+    );
+
+    return {
+      ...graph,
+      nodes: communityNodes,
+      edges: metaEdges,
+    };
+  }, [graph, metaNodeView]);
   const visible = useMemo(() => {
     const ranked = [...graph.nodes].sort(
       (a, b) =>
@@ -564,7 +638,6 @@ export default function App() {
           {incomingResult ? (
             <div
               className="incoming-badge flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-[#221c10] border border-[#d97706] text-[#fcd34d] text-xs font-mono mb-4 shadow-lg shadow-amber-950/20"
-              role="status"
             >
               <div className="flex items-center gap-2">
                 <Zap size={16} className="text-amber-400 flex-shrink-0" />
@@ -829,13 +902,19 @@ export default function App() {
                         viewMode={viewMode}
                         onToggleView={setViewMode}
                         analyzed={graph.analyzed}
+                        metaNodeView={metaNodeView}
+                        onToggleMetaNode={() => setMetaNodeView((v) => !v)}
                       />
                       <div style={{ display: viewMode === "2d" ? "block" : "none" }}>
                         <NetworkGraph
-                          graph={graph}
-                          visible={visible}
+                          graph={metaGraph}
+                          visible={
+                            metaNodeView
+                              ? new Set(metaGraph.nodes.map((n) => n.id))
+                              : visible
+                          }
                           selected={selected}
-                          focus={focus}
+                          focus={metaNodeView ? 0 : focus}
                           path={path?.nodeIds ?? []}
                           incomingHighlightNodes={incomingHighlightNodes}
                           onSelect={select}

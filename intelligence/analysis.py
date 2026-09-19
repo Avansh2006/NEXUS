@@ -1,6 +1,7 @@
 """Descriptive graph rules. Every alert cites only the evidence that supports it."""
 import hashlib
 import json
+import time
 from collections import defaultdict
 from datetime import datetime
 from itertools import combinations
@@ -12,17 +13,34 @@ RULES = json.loads(Path(__file__).with_name('rules.json').read_text())
 
 
 def analyze(payload, rules=None):
+    t_start = time.perf_counter()
     cfg = rules or RULES
     nodes = {n['id']: n for n in sorted(payload['nodes'], key=lambda n: n['id'])}
     edges = sorted(payload['edges'], key=lambda e: e['id'])
     graph = nx.Graph()
     graph.add_nodes_from(nodes)
     graph.add_edges_from((e['source'], e['target']) for e in edges if e['source'] != e['target'])
+    
+    t_comm_start = time.perf_counter()
     communities = list(nx.community.louvain_communities(graph, seed=cfg['seed'])) if graph.number_of_edges() else [{n} for n in graph]
     communities = sorted((sorted(c) for c in communities), key=lambda c: c[0])
     membership = {n: i for i, c in enumerate(communities) for n in c}
-    degree, between = nx.degree_centrality(graph), nx.betweenness_centrality(graph)
+    t_comm = time.perf_counter() - t_comm_start
+
+    t_metrics_start = time.perf_counter()
+    degree = nx.degree_centrality(graph)
+    n_count = len(graph)
+    if n_count > 500:
+        k_samples = min(n_count, max(50, int(n_count**0.5 * 5)))
+        between = nx.betweenness_centrality(graph, k=k_samples, seed=cfg['seed'])
+        between_mode = f"approximate (k={k_samples})"
+    else:
+        between = nx.betweenness_centrality(graph)
+        between_mode = "exact"
+        k_samples = n_count
     articulation = set(nx.articulation_points(graph))
+    t_metrics = time.perf_counter() - t_metrics_start
+
     max_b = max(between.values(), default=0) or 1
     max_c = max((len(n.get('properties', {}).get('caseIds', [])) for n in nodes.values()), default=0) or 1
     metrics = []
@@ -195,9 +213,24 @@ def analyze(payload, rules=None):
         support = sorted({eid for nid in ids for eid in nodes[nid]['properties'].get('evidenceIds', [])})
         case_links.append(dict(caseIds=list(pair), entityIds=sorted(ids), evidenceIds=support,
                                explanation=f'{pair[0]} and {pair[1]} share {len(ids)} non-public phone/account identifiers. Review the underlying records; cases are not automatically merged.'))
+    telemetry = dict(
+        nodeCount=len(nodes),
+        edgeCount=len(edges),
+        betweennessMode=between_mode,
+        kSamples=k_samples,
+        communityCount=len(communities),
+    )
+    if cfg.get('include_timing', False):
+        t_total = time.perf_counter() - t_start
+        telemetry['computationTimeMs'] = round(t_total * 1000, 2)
+        telemetry['breakdownMs'] = dict(
+            communities=round(t_comm * 1000, 2),
+            centrality=round(t_metrics * 1000, 2)
+        )
     return dict(metrics=sorted(metrics, key=lambda m: (-m['influence'],m['entityId'])),
                 alerts=sorted(alerts,key=lambda a:(a['ruleId'], a['id'])),
                 caseLinks=case_links,
                 communities=[dict(id=i, entityIds=c) for i,c in enumerate(communities)],
+                telemetry=telemetry,
                 counts=dict(records=len(payload.get('records', [])), entities=len(nodes), relationships=len(edges),
                             casesLinked=len({c for n in nodes.values() if n['type'] in ('Phone','Account') and n['label'] not in cfg['public_identifiers'] and len(n.get('properties',{}).get('caseIds',[]))>1 for c in n['properties']['caseIds']})))
