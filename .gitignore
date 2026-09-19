@@ -10,4 +10,6 @@ __pycache__/
 *.log
 *.tsbuildinfo
 artifacts/
+test-results/
+playwright-report/
 .DS_Store

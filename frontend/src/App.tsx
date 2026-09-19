@@ -32,6 +32,9 @@ import type { Graph, IngestResult, PathResult, Quality } from "./types";
 import NetworkGraph from "./NetworkGraph";
 import Inspector, { HighlightedText } from "./Inspector";
 import CaseLinks from "./CaseLinks";
+import { motion } from "motion/react";
+import AnimatedCount from "./AnimatedCount";
+import InvestigationJourney from "./InvestigationJourney";
 
 const nav = [
   ["Dashboard", LayoutDashboard],
@@ -92,6 +95,7 @@ export default function App() {
   }, []);
   const refresh = useCallback(async () => {
     const g = await api<Graph>("/graph");
+    lastGraphImage.current = undefined;
     setGraph(g);
     setPath(null);
     return g;
@@ -436,7 +440,7 @@ export default function App() {
             <div className="avatar small">IN</div>
           </div>
         </header>
-        <div className="page-content">
+        <motion.div key={page} className="page-content" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.35,ease:[.22,1,.36,1]}}>
           <div className="page-title">
             <div>
               <div className="eyebrow">NETWORK EXPLORATION & EXTRACTION</div>
@@ -490,14 +494,14 @@ export default function App() {
           ) : null}
           <div className="stats">
             {stats.map(([label, value, Icon], i) => (
-              <div className="stat" key={label}>
+              <motion.div className="stat" key={label} initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.4,delay:i*.055}}>
                 <div className={`stat-icon s${i}`}>
                   <Icon size={19} />
                 </div>
                 <div>
                   <span>{label}</span>
                   <strong>
-                    {value.toLocaleString()}
+                    <AnimatedCount value={value}/>
                     <small>
                       {i === 3
                         ? "explainable patterns"
@@ -509,12 +513,13 @@ export default function App() {
                     </small>
                   </strong>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
 
           {page === "Investigation" ? (
             <>
+              <InvestigationJourney loaded={graph.records.length>0} analyzed={graph.analyzed} busy={!!busy} onIngest={()=>setPage('Data Ingestion')} onAnalyze={analyze} onExplore={()=>{setFocus(0);cy.current?.fit(undefined,40);}}/>
               <div className="workspace-toolbar">
                 <div className="search-wrap">
                   <Search size={16} />
@@ -636,6 +641,7 @@ export default function App() {
                   <label>
                     From
                     <select
+                      aria-label="Path source"
                       value={from}
                       onChange={(e) => setFrom(e.target.value)}
                     >
@@ -650,7 +656,7 @@ export default function App() {
                   <ArrowRight size={16} />
                   <label>
                     To
-                    <select value={to} onChange={(e) => setTo(e.target.value)}>
+                    <select aria-label="Path target" value={to} onChange={(e) => setTo(e.target.value)}>
                       <option value="">Choose an entity</option>
                       {graph.nodes.map((n) => (
                         <option key={n.id} value={n.id}>
@@ -1401,7 +1407,7 @@ export default function App() {
               <span>NEXUS / INVESTIGATION SUITE</span>
             )}
           </footer>
-        </div>
+        </motion.div>
       </main>
     </div>
   );

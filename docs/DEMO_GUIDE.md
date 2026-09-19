@@ -37,6 +37,8 @@ Browser fallback files are generated locally under `artifacts/`: `workspace.png`
 `case-islands.png`, `analyzed-network.png`, `alerts.png`, and `nexus-demo.webm`.
 These runtime artifacts are ignored by Git. Verify they exist before taking the demo
 machine offline; they are not substitutes for the tested live application.
+`cd frontend && pnpm test:e2e` regenerates screenshots/video in
+`artifacts/playwright/`; see TESTING_GUIDE.md for browser installation and full tests.
 If the engine is unavailable, restore it and retry. No fabricated cached analysis is
 displayed. A report/screenshots/recording are the presentation fallback.
 Do not claim real-world integrations, production security, crime prediction, or guilt.

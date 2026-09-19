@@ -51,6 +51,18 @@ jobs:
         env:
           POSTGRES_PASSWORD: nexus-ci-ephemeral-only
         run: docker compose logs --tail=100
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test tools
+        run: |
+          npm install --global pnpm@11.19.0
+          cd frontend
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+      - name: Rehearse desktop and mobile UI
+        run: pnpm test:e2e
+        working-directory: frontend
       - uses: actions/upload-artifact@v4
         if: always()
         with:

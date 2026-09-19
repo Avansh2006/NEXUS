@@ -34,6 +34,7 @@ export default function NetworkGraph({
   const host = useRef<HTMLDivElement>(null);
   const cy = useRef<Core | null>(null);
   const select = useRef(onSelect);
+  const visibleKey=[...visible].sort().join('|');
   select.current = onSelect;
   useEffect(() => {
     if (!host.current) return;
@@ -95,7 +96,8 @@ export default function NetworkGraph({
             width: "data(size)",
             height: "data(size)",
             label: "data(label)",
-            "font-size": 9,
+            "font-size": 10,
+            "font-family": "Inter, sans-serif",
             color: "#d5e2e3",
             "text-valign": "bottom",
             "text-margin-y": 7,
@@ -182,7 +184,7 @@ export default function NetworkGraph({
       instance.destroy();
       cy.current = null;
     };
-  }, [graph, visible, onReady]);
+  }, [graph, visibleKey, onReady]);
   useEffect(() => {
     const instance = cy.current;
     if (!instance) return;
@@ -223,6 +225,7 @@ export default function NetworkGraph({
     <div
       ref={host}
       className="cytoscape"
+      data-entity-types={[...new Set(graph.nodes.filter(n=>visible.has(n.id)).map(n=>n.type))].sort().join(',')}
       role="img"
       aria-label="Interactive evidence network. Use the search and entity list to select nodes with the keyboard."
     />

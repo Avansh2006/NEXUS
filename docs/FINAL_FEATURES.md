@@ -3,6 +3,8 @@
 ## Implemented
 - NEXUS identity and persistent PROTOTYPE — SYNTHETIC DATA banner.
 - React/TypeScript/Vite/Tailwind + Cytoscape/fcose investigator workbench.
+- Refined mineral surfaces, local Inter/Space Grotesk typography, Motion transitions,
+  animated measured counters and a state-aware workflow bar; reduced-motion support.
 - Spring Boot REST backend; PostgreSQL relational graph/evidence JSONB storage;
   stateless FastAPI/spaCy/NetworkX sidecar. Four-service Docker Compose build.
 - FIR text/paste/JSON and CSV/JSON structured data; multi-file UI batches; bounded
@@ -37,7 +39,8 @@
 - Demo analysis recomputes quickly; persisted results survive normal reloads but no
   independent precomputed analysis cache is used when the engine is down.
 - Audit logging/viewer is operational, not tamper-evident or identity-attributed.
-- Browser flows were rehearsed; regression automation focuses on unit/API/Compose.
+- Three automated browser scenarios cover the desktop journey, upload validation,
+  report download, mobile layout and reduced motion, with screenshots and video.
 
 ## Roadmap
 JWT/Investigator/Admin roles, SSO, tenant isolation, device/IMEI entities, richer

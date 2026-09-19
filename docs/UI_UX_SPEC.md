@@ -1,8 +1,11 @@
 # Investigator workbench
 
 NEXUS: graphite navigation rail, light document surfaces, dark graph canvas,
-teal emphasis, amber human-review leads. Typography uses installed system fonts.
+teal emphasis, amber human-review leads. Inter and Space Grotesk are bundled locally.
 Persistent synthetic-data banner. No remote fonts or external demo resources.
+Motion provides short route/card transitions and measured count animations. A
+three-stage investigation bar reflects actual load/analyze state. Decorative orbital
+motion is limited to the empty state. Reduced-motion settings disable transforms.
 
 Navigation: Dashboard, Data Ingestion, Investigation Workspace, Alerts, Clusters,
 Timeline, Reports. Entity and case details share the workspace inspector.

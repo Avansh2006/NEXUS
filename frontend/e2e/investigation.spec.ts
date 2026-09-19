@@ -1,0 +1,101 @@
+import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
+
+test('clean investigation: evidence → network → review → report',async({page},testInfo)=>{
+  const errors:string[]=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/');
+  await expect(page.getByRole('heading',{name:'Investigation workspace',exact:true})).toBeVisible();
+  await expect(page.getByText('PROTOTYPE — SYNTHETIC DATA',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Reset demo data',exact:true}).click();
+  await expect(page.locator('.stat').filter({hasText:'Source records'}).locator('.animated-count')).toHaveAttribute('aria-label','0');
+  await page.screenshot({path:testInfo.outputPath('empty-workspace.png'),fullPage:true});
+  await page.getByRole('button',{name:'Load demo',exact:true}).click();
+  await expect(page.locator('.stat').filter({hasText:'Source records'}).locator('.animated-count')).toHaveAttribute('aria-label','121');
+  await expect(page.locator('.graph-state')).toHaveText('CASE ISLANDS');
+  await expect(page.locator('.cytoscape canvas').first()).toBeVisible();
+  await page.screenshot({path:testInfo.outputPath('case-islands.png'),fullPage:true});
+  await page.getByRole('button',{name:'Analyze Network',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('3 cases linked');
+  await expect(page.locator('.graph-state')).toHaveText('RESOLVED');
+  await expect(page.locator('.inspector h2')).toHaveText('SYN-PHONE-001');
+  await expect(page.locator('.inspector .tags')).toContainText('NXS-003');
+  await page.getByRole('button',{name:'2 hops',exact:true}).click();
+  await expect(page.getByRole('button',{name:'2 hops',exact:true})).toHaveClass(/active/);
+  await page.screenshot({path:testInfo.outputPath('analyzed-network.png'),fullPage:true});
+
+  await page.getByRole('combobox',{name:'Entity type filter'}).selectOption('Person');
+  await expect(page.locator('.cytoscape')).toHaveAttribute('data-entity-types','Person');
+  await page.getByRole('combobox',{name:'Entity type filter'}).selectOption('All types');
+  await page.getByRole('combobox',{name:'Case filter'}).selectOption('NXS-001');
+  await expect(page.getByRole('combobox',{name:'Case filter'})).toHaveValue('NXS-001');
+  await page.getByRole('textbox',{name:'Search entities'}).fill('SYN-ACCOUNT-001');
+  await page.locator('.search-results').getByRole('button').click();
+  await expect(page.locator('.inspector h2')).toHaveText('SYN-ACCOUNT-001');
+  await expect(page.locator('.inspector')).toContainText('Fan-in');
+  await page.locator('.inspector summary').filter({hasText:'FIR'}).first().click();
+  await expect(page.locator('.inspector details[open] mark').first()).toBeVisible();
+
+  await page.getByRole('button',{name:'Find path',exact:true}).click();
+  await page.getByRole('combobox',{name:'Path source'}).selectOption({label:'SYN-PHONE-001 (Phone)'});
+  await page.getByRole('combobox',{name:'Path target'}).selectOption({label:'SYN-ACCOUNT-001 (Account)'});
+  await page.getByRole('button',{name:'Trace path',exact:true}).click();
+  await expect(page.getByText('Connection chain · supporting evidence',{exact:true})).toBeVisible();
+  await expect(page.locator('.path-evidence')).toContainText('ev-');
+  await page.getByRole('button',{name:'Alerts',exact:true}).click();
+  await expect(page.locator('.alert-card.suppressed')).toContainText('public/service number');
+  await expect(page.locator('.review-row').filter({hasText:'Rivan Kesh'})).toBeVisible();
+  await page.screenshot({path:testInfo.outputPath('alerts.png'),fullPage:true});
+  await page.getByRole('button',{name:'Dashboard',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Suggested case connections'})).toBeVisible();
+  await expect(page.locator('.review-panel .alert-card')).toHaveCount(3);
+  await page.getByRole('button',{name:'Clusters',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Network communities'})).toBeVisible();
+  await page.getByRole('button',{name:'Timeline',exact:true}).click();
+  await expect(page.locator('.timeline-event').first()).toBeVisible();
+  await page.getByRole('button',{name:'Reports',exact:true}).click();
+  const downloadPromise=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Generate Investigation Report',exact:true}).click();
+  const download=await downloadPromise;
+  const reportPath=testInfo.outputPath('NEXUS-investigation-report.html');
+  await download.saveAs(reportPath);
+  const report=await readFile(reportPath,'utf8');
+  expect(report).toContain('Supporting evidence');
+  expect(report).toContain('data:image/png;base64,');
+  expect(report).toContain('SYN-ACCOUNT-001');
+  await page.getByRole('button',{name:'Refresh',exact:true}).click();
+  await expect(page.locator('.audit-row').first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('file upload isolates bad rows, deduplicates, and escapes source text',async({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Data Ingestion',exact:true}).click();
+  const text='Accused Tavi Molven; phone SYN-PHONE-077. <script>alert("fixture")</script>';
+  const data=[{caseId:'NXS-077',text,date:'2026-09-01T00:00:00Z',crimeType:'Synthetic test'},{}];
+  const upload={name:'batch.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data))};
+  await page.locator('input[type=file]').setInputFiles(upload);
+  await expect(page.locator('.ingest-result')).toContainText('1 accepted · 0 duplicates · 1 errors');
+  await expect(page.locator('.fir-card').filter({hasText:'Tavi Molven'})).toContainText('<script>');
+  await page.locator('input[type=file]').setInputFiles(upload);
+  await expect(page.locator('.ingest-result')).toContainText('0 accepted · 1 duplicates · 1 errors');
+  // Restore the demo, leaving browser tests safe to repeat.
+  await page.getByRole('button',{name:'Reset demo data',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Investigation reset');
+  await page.getByRole('button',{name:'Load demo',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('121 records loaded');
+  await page.getByRole('button',{name:'Analyze Network',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('3 cases linked');
+});
+
+test('mobile and reduced-motion layout remains usable',async({page},testInfo)=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/');
+  await expect(page.getByRole('heading',{name:'Investigation workspace',exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
+  await expect(page.getByRole('button',{name:'Dashboard',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Reports',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Generate Investigation Report',exact:true})).toBeVisible();
+  await page.screenshot({path:testInfo.outputPath('mobile-reduced-motion.png'),fullPage:true});
+});

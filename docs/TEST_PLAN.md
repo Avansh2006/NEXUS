@@ -8,6 +8,8 @@
   reversible reconstruction, evidence linkage, identifier validation, HTML escaping,
   CORS, bounded bodies, UTF-8, malformed JSON, rate limits, row isolation and duplicates.
 - `cd frontend && pnpm build`: strict TypeScript and production Vite build.
+- `cd frontend && pnpm test:e2e`: 3 browser tests; full desktop workflow with report
+  PNG, upload errors/duplicates/XSS text, and mobile/reduced-motion layout. All passed.
 - `python scripts/generate_demo.py` then `git diff --exit-code -- data/demo`:
   reproducible seeded output, including 18 independent gold narratives.
 - `python scripts/verify_demo.py`: clean reset → raw demo load → graph → analyze twice
@@ -35,6 +37,8 @@ Verify entity/case filters, search-to-jump, 1–2 hop focus, source FIR highligh
 alerts including suppression, communities, timeline, paths with evidence, report download.
 Verify collapsed navigation retains accessible labels and visible keyboard focus.
 Screenshots and recorded fallback are local artifacts described in DEMO_GUIDE.
+For the complete setup, commands, expected results and troubleshooting, use
+[TESTING_GUIDE.md](TESTING_GUIDE.md).
 
 ## Known test limits
 No representative real FIR corpus, fuzzy-resolution accuracy benchmark, exhaustive

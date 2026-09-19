@@ -45,6 +45,8 @@ The rehearsal script resets the synthetic investigation and finishes with an ana
 demo and a printable report in ignored `artifacts/`. See [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md).
 Extraction quality is a synthetic template benchmark, not real-world accuracy.
 See [docs/FINAL_FEATURES.md](docs/FINAL_FEATURES.md) for verified scope and limitations.
+For setup, sample inputs, manual acceptance checks, automated UI tests and
+troubleshooting, read the [complete testing guide](docs/TESTING_GUIDE.md).
 
 ## Git workflow
 One commit per completed implementation step; push after two or three steps.
