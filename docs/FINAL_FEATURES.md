@@ -4,7 +4,10 @@
 - NEXUS identity and persistent PROTOTYPE — SYNTHETIC DATA banner.
 - React/TypeScript/Vite/Tailwind + Cytoscape/fcose investigator workbench.
 - Refined mineral surfaces, local Inter/Space Grotesk typography, Motion transitions,
-  animated measured counters and a state-aware workflow bar; reduced-motion support.
+  animated measured counters, a state-aware workflow bar, and reduced-motion support.
+- Tactical HUD overlay with live deterministic AI telemetry, entity distribution chips,
+  and an interactive 3D WebGL tactical intelligence sphere (Three.js) toggle.
+- Cursor-following SpotlightCard components with glowing borders and ambient spotlights.
 - Spring Boot REST backend; PostgreSQL relational graph/evidence JSONB storage;
   stateless FastAPI/spaCy/NetworkX sidecar. Four-service Docker Compose build.
 - FIR text/paste/JSON and CSV/JSON structured data; multi-file UI batches; bounded
