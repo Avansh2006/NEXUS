@@ -1,0 +1,32 @@
+# Render Blueprint Specification for NEXUS
+# https://render.com/docs/blueprint-spec
+version: "1"
+
+services:
+  # NEXUS Unified Service (Spring Boot API + Python Intelligence Engine)
+  # Recommended: 1 service, 0 network lag, fits on Render Free Tier
+  - type: web
+    name: nexus-app
+    runtime: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_ORIGIN
+        value: "*"
+      - key: DEMO_DIR
+        value: /data/demo
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nexus-db
+          property: connectionString
+
+databases:
+  - name: nexus-db
+    plan: free
+    region: oregon
+    databaseName: nexus
+    user: nexus

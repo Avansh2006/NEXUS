@@ -212,8 +212,14 @@ export const emptyGraph: Graph = {
   analyzed: false,
   suggestions: [],
 };
+export const API_BASE = (
+  import.meta.env.VITE_API_URL
+    ? String(import.meta.env.VITE_API_URL).replace(/\/+$/, "")
+    : ""
+) + "/api";
+
 export async function api<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`${API_BASE}${path}`, {
     method: body === undefined ? "GET" : "POST",
     headers: body === undefined ? {} : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),

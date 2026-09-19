@@ -14,12 +14,22 @@ public class RequestGuard extends OncePerRequestFilter {
     private final String origin;
     private final Map<String,Deque<Long>> requests=new HashMap<>();
     public RequestGuard(@Value("${nexus.frontend-origin}") String origin) {this.origin=origin;}
+    private boolean isAllowedOrigin(String supplied) {
+        if (supplied == null) return false;
+        if ("*".equals(origin)) return true;
+        for (String allowed : origin.split(",")) {
+            String trimmed = allowed.trim();
+            if (trimmed.equals(supplied)) return true;
+            if (trimmed.startsWith("*.") && supplied.endsWith(trimmed.substring(1))) return true;
+        }
+        return false;
+    }
     private void fail(HttpServletResponse r,int status,String code,String message) throws IOException {r.setStatus(status);r.setContentType("application/json");r.getWriter().write("{\"error\":{\"code\":\""+code+"\",\"message\":\""+message+"\"}}");}
     @Override protected void doFilterInternal(HttpServletRequest req,HttpServletResponse res,FilterChain chain) throws ServletException,IOException {
         res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("X-Frame-Options","DENY");res.setHeader("Cache-Control","no-store");
         String supplied=req.getHeader("Origin");
-        if(supplied!=null&&!supplied.equals(origin)) {fail(res,403,"ORIGIN_DENIED","Origin not allowed");return;}
-        if(supplied!=null) {res.setHeader("Access-Control-Allow-Origin",origin);res.setHeader("Vary","Origin");res.setHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type, Authorization, X-Nexus-Role");}
+        if(supplied!=null&&!isAllowedOrigin(supplied)) {fail(res,403,"ORIGIN_DENIED","Origin not allowed");return;}
+        if(supplied!=null) {res.setHeader("Access-Control-Allow-Origin", "*".equals(origin) ? supplied : supplied);res.setHeader("Vary","Origin");res.setHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type, Authorization, X-Nexus-Role");}
         if(req.getMethod().equals("OPTIONS")) {res.setStatus(204);return;}
 
         // Authenticate request: check Bearer token or X-Nexus-Role, fallback to default ADMIN

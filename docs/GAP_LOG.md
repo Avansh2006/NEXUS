@@ -46,5 +46,16 @@ This pass addresses critical legal accuracy, objective neutrality, independent e
 
 - `docs/EVALUATION.md`: Independent evaluation on heldout dev & test sets.
 - `docs/PERFORMANCE.md`: Empirical benchmarks on 1k, 10k, and 50k nodes.
+- `docs/DEPLOYMENT.md`: Production deployment guide for Netlify Edge CDN and Render Cloud.
 - `docs/IMPROVEMENT_SUGGESTIONS.md`: Evidence-based error analysis, ranked future proposals, self-critique, and Top 5 next actions.
-- Synchronized documentation across README, `API.md`, `DEMO_GUIDE.md`, `SECURITY.md`, and `FINAL_FEATURES.md`.
+- Synchronized documentation across README, `API.md`, `DEMO_GUIDE.md`, `SECURITY.md`, `DEPLOYMENT.md`, and `FINAL_FEATURES.md`.
+
+---
+
+## 5. Workstream: Cloud Deployment (Netlify & Render)
+
+| Platform | Target | Configuration | Status |
+| :--- | :--- | :--- | :--- |
+| **Netlify** | Frontend SPA (React 19 + Vite + Cytoscape + Three.js) | `netlify.toml`, `frontend/netlify.toml`, `public/_redirects`, SPA fallback routing, `/api/*` reverse-proxy to Render backend, dynamic `VITE_API_URL` environment support. | **Resolved (Pass)** |
+| **Render** | Backend Intelligence Infrastructure | Multi-stage production `Dockerfile`, `docker-entrypoint.sh` supervisor (Python 3.12 FastAPI on loopback 8000 + Java 17 Spring Boot on dynamic `$PORT`), `render.yaml` Blueprint with free PostgreSQL database and unified web service, transparent JDBC / cloud URI parsing (`DatabaseConfig`), and flexible CORS origin handling (`RequestGuard`). | **Resolved (Pass)** |
+

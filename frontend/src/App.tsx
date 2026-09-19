@@ -29,7 +29,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { api, colors, emptyGraph } from "./types";
+import { api, API_BASE, colors, emptyGraph } from "./types";
 import type { Edge, Entity, Graph, IncomingResult, IngestResult, PathResult, Quality } from "./types";
 import NetworkGraph from "./NetworkGraph";
 import Inspector, { HighlightedText } from "./Inspector";
@@ -370,7 +370,7 @@ export default function App() {
           maxWidth: 1200,
           maxHeight: 800,
         }) ?? lastGraphImage.current;
-      const response = await fetch("/api/reports", {
+      const response = await fetch(`${API_BASE}/reports`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ graphImage }),
