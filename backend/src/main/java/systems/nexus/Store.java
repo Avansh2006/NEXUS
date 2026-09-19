@@ -32,6 +32,15 @@ public class Store {
         try { return json.treeToValue(n,Model.Graph.class); } catch(JsonProcessingException e) { throw new IllegalStateException(e); }
     }
     public void reset() { db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
+    public void deleteSourcesByCaseId(String caseId) {
+        var list = sources();
+        for (var s : list) {
+            if (caseId.equals(s.payload().path("caseId").asText())) {
+                db.update("DELETE FROM evidence WHERE record_id=?", s.id());
+                db.update("DELETE FROM source_record WHERE id=?", s.id());
+            }
+        }
+    }
 
     public static String sha256(String input) {
         try {

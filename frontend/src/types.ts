@@ -163,6 +163,20 @@ export interface IngestResult {
   duplicates: number;
   errors: { row: number; message: string }[];
 }
+export interface IncomingResult {
+  status: string;
+  caseId: string;
+  latencyMs: number;
+  newNodes: string[];
+  crossCaseLinks: Array<{
+    entityId: string;
+    label: string;
+    type: string;
+    cases: string[];
+  }>;
+  graph?: Graph;
+  message?: string;
+}
 export interface PathResult {
   nodeIds: string[];
   edges: Edge[];

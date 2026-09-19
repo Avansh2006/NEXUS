@@ -86,6 +86,83 @@ public class InvestigationService {
         for(String k:List.of("fir","cdr","transactions")) { List<JsonNode> rows=new ArrayList<>();data.path(k).forEach(rows::add);results.put(k,ingest(k,new IngestRequest(rows,null,null))); }
         store.audit("demo:load");return results;
     }
+    public synchronized Map<String, Object> ingestIncomingFir() throws IOException {
+        long start = System.nanoTime();
+        Path path = Path.of(demoDir, "incoming", "NXS-007.json");
+        if (!Files.exists(path)) {
+            if (Files.exists(Path.of("data/demo/incoming/NXS-007.json"))) {
+                path = Path.of("data/demo/incoming/NXS-007.json");
+            } else if (Files.exists(Path.of("../data/demo/incoming/NXS-007.json"))) {
+                path = Path.of("../data/demo/incoming/NXS-007.json");
+            } else {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Incoming FIR file not found");
+            }
+        }
+        JsonNode firNode = json.readTree(Files.readString(path));
+        String caseId = firNode.path("caseId").asText("NXS-007");
+
+        Set<String> existingNodeIds = new HashSet<>();
+        for (Node n : graph().nodes()) existingNodeIds.add(n.id());
+
+        IngestResult result = ingest("fir", new IngestRequest(List.of(firNode), null, null));
+        if (result.accepted() == 0 && result.duplicates() > 0) {
+            return Map.of(
+                "status", "already_ingested",
+                "caseId", caseId,
+                "latencyMs", (System.nanoTime() - start) / 1_000_000.0,
+                "message", "FIR NXS-007 is already ingested in the workspace",
+                "graph", graph()
+            );
+        }
+
+        analyze();
+        Graph updatedGraph = graph();
+
+        List<String> newNodes = new ArrayList<>();
+        List<Map<String, Object>> crossCase = new ArrayList<>();
+
+        for (Node n : updatedGraph.nodes()) {
+            if (!existingNodeIds.contains(n.id())) {
+                newNodes.add(n.id());
+            }
+            @SuppressWarnings("unchecked")
+            List<String> cases = (List<String>) n.properties().get("caseIds");
+            if (cases != null && cases.contains(caseId) && cases.size() > 1) {
+                crossCase.add(Map.of(
+                    "entityId", n.id(),
+                    "label", n.label(),
+                    "type", n.type(),
+                    "cases", cases
+                ));
+            }
+        }
+
+        double latencyMs = (System.nanoTime() - start) / 1_000_000.0;
+        store.audit("demo:incoming:ingest", "system", caseId, "latency=" + String.format(Locale.ROOT, "%.2f", latencyMs));
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("status", "ok");
+        resp.put("caseId", caseId);
+        resp.put("latencyMs", latencyMs);
+        resp.put("newNodes", newNodes);
+        resp.put("crossCaseLinks", crossCase);
+        resp.put("graph", updatedGraph);
+        return resp;
+    }
+    public synchronized Map<String, Object> removeIncomingFir() {
+        String caseId = "NXS-007";
+        store.deleteSourcesByCaseId(caseId);
+        rebuild();
+        if (!graph().nodes().isEmpty()) {
+            analyze();
+        }
+        store.audit("demo:incoming:remove", "system", caseId, "");
+        return Map.of(
+            "status", "ok",
+            "removed", caseId,
+            "graph", graph()
+        );
+    }
     public synchronized void reset() { store.reset();store.audit("demo:reset"); }
     public synchronized JsonNode analyze() {
         Graph g=store.graph();JsonNode result=engine.analyze(g);

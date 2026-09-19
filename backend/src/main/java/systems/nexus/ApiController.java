@@ -17,6 +17,8 @@ public class ApiController {
     @PostMapping("/data/{kind:fir|cdr|transactions}") public IngestResult ingest(@PathVariable String kind,@RequestBody IngestRequest body) {return service.ingest(kind,body);}
     @PostMapping("/demo/load") public Map<String,IngestResult> load() throws IOException {return service.load();}
     @PostMapping("/demo/reset") public Map<String,Boolean> reset() {service.reset();return Map.of("reset",true);}
+    @PostMapping("/demo/incoming") public Map<String,Object> incoming() throws IOException {return service.ingestIncomingFir();}
+    @PostMapping("/demo/incoming/remove") public Map<String,Object> incomingRemove() {return service.removeIncomingFir();}
     @PostMapping("/analyze") public JsonNode analyze() {return service.analyze();}
     @GetMapping("/graph") public Graph graph() {store.audit("graph:view");return service.graph();}
     @GetMapping("/network/{id}") public Graph network(@PathVariable String id,@RequestParam(defaultValue="1") int hops) {return service.network(id,hops);}

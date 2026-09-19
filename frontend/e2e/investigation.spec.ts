@@ -133,3 +133,30 @@ test('tactical extensions: 3D canvas toggle, Intel Copilot queries, and BSA 2023
   await expect(page.getByText('DETERMINISTIC, GRAPH-GROUNDED', { exact: true })).toBeHidden();
 });
 
+test('live incoming FIR: streaming ingestion, cross-case linkage, latency telemetry, and retraction', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Reset demo data', exact: true }).click();
+  await page.getByRole('button', { name: 'Load demo', exact: true }).click();
+  await page.getByRole('button', { name: 'Analyze Network', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('3 cases linked');
+
+  // Stream incoming FIR NXS-007
+  await page.getByRole('button', { name: 'Stream FIR NXS-007', exact: true }).click();
+
+  // Verify latency badge & cross-case link
+  const badge = page.locator('.incoming-badge');
+  await expect(badge).toBeVisible();
+  await expect(badge).toContainText('STREAMED FIR NXS-007');
+  await expect(badge).toContainText('SYN-PHONE-001');
+
+  // Click the cross-case link badge to focus node
+  await badge.getByRole('button', { name: /SYN-PHONE-001/ }).click();
+  await expect(page.locator('.inspector h2')).toHaveText('SYN-PHONE-001');
+
+  // Verify retract button removes the incoming FIR cleanly
+  await page.getByRole('button', { name: 'Retract NXS-007', exact: true }).click();
+  await expect(page.locator('.incoming-badge')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Stream FIR NXS-007', exact: true })).toBeVisible();
+});
+
+

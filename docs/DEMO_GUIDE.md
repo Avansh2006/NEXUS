@@ -35,6 +35,7 @@ with `-Djdk.net.unixdomain.tmpdir=<short-existing-directory>` before `-jar`.
 12. Click **Generate Investigation Report**. Open downloaded HTML and print/save PDF.
     Includes the graph visual, cases, metrics, alerts, timeline ranges, evidence IDs, original source records,
     and an **Electronic Record Provenance Statement** with automated SHA-256 digests plus a human-officer template certificate under Section 63 of the Bharatiya Sakshya Adhiniyam, 2023 (BSA 2023).
+13. Click **Stream FIR NXS-007** in the action bar. Observe live streaming ingestion and cross-case linkage within ~50ms, connecting suspect Karan Bhati to the central syndicate hub SYN-PHONE-001 and Veyra Services. Click the cross-case badge to inspect the shared node, then click **Retract NXS-007** to demonstrate non-destructive rollback.
 
 ## Rehearsal and fallback
 `python scripts/verify_demo.py` performs a clean API rehearsal and writes

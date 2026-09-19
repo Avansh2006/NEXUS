@@ -15,6 +15,7 @@ import {
   LoaderCircle,
   Network,
   Plus,
+  Radio,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -24,11 +25,12 @@ import {
   Upload,
   Waypoints,
   X,
+  Zap,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
 import { api, colors, emptyGraph } from "./types";
-import type { Graph, IngestResult, PathResult, Quality } from "./types";
+import type { Graph, IncomingResult, IngestResult, PathResult, Quality } from "./types";
 import NetworkGraph from "./NetworkGraph";
 import Inspector, { HighlightedText } from "./Inspector";
 import CaseLinks from "./CaseLinks";
@@ -83,7 +85,9 @@ export default function App() {
   const [kind, setKind] = useState("fir"),
     [text, setText] = useState(""),
     [caseId, setCaseId] = useState("NXS-007"),
-    [ingestResult, setIngestResult] = useState<IngestResult | null>(null);
+    [ingestResult, setIngestResult] = useState<IngestResult | null>(null),
+    [incomingResult, setIncomingResult] = useState<IncomingResult | null>(null),
+    [incomingActive, setIncomingActive] = useState<boolean>(false);
   const [audit, setAudit] = useState<{ action: string; createdAt: string }[]>(
     [],
   );
@@ -140,8 +144,37 @@ export default function App() {
       setPath(null);
       setCaseFilter("All cases");
       setQuery("");
+      setIncomingResult(null);
+      setIncomingActive(false);
       await refresh();
       setNotice("Investigation reset. Load the demo to begin again.");
+    });
+  const loadIncoming = () =>
+    run("Streaming and extracting incoming FIR NXS-007…", async () => {
+      const res = await api<IncomingResult>("/demo/incoming", {});
+      setIncomingResult(res);
+      setIncomingActive(true);
+      const g = res.graph ? res.graph : await refresh();
+      setGraph(g);
+      setNotice(
+        `⚡ Live FIR ${res.caseId} ingested in ${res.latencyMs.toFixed(1)}ms · ${res.crossCaseLinks.length} cross-case connection${res.crossCaseLinks.length === 1 ? "" : "s"} discovered`,
+      );
+      if (res.crossCaseLinks.length > 0) {
+        setSelected(res.crossCaseLinks[0].entityId);
+        setFocus(1);
+      }
+    });
+  const removeIncoming = () =>
+    run("Retracting incoming FIR NXS-007…", async () => {
+      const res = await api<{ status: string; removed: string; graph: Graph }>(
+        "/demo/incoming/remove",
+        {},
+      );
+      setIncomingResult(null);
+      setIncomingActive(false);
+      const g = res.graph ? res.graph : await refresh();
+      setGraph(g);
+      setNotice("Incoming FIR NXS-007 retracted from active workspace.");
     });
   const analyze = () =>
     run(
@@ -167,6 +200,13 @@ export default function App() {
     () => new Map(graph.analysis.metrics?.map((m) => [m.entityId, m])),
     [graph.analysis],
   );
+  const incomingHighlightNodes = useMemo(() => {
+    if (!incomingResult) return undefined;
+    return new Set([
+      ...incomingResult.newNodes,
+      ...incomingResult.crossCaseLinks.map((c) => c.entityId),
+    ]);
+  }, [incomingResult]);
   const cases = graph.nodes.filter((n) => n.type === "Case");
   const alerts = graph.analysis.alerts ?? [];
   const activeAlerts = alerts.filter((a) => !a.suppressed);
@@ -464,6 +504,29 @@ export default function App() {
                 <Database size={15} />
                 {graph.records.length ? "Reload demo" : "Load demo"}
               </button>
+              {incomingActive ? (
+                <button
+                  className="button incoming-remove-btn"
+                  onClick={removeIncoming}
+                  disabled={!!busy}
+                  style={{ borderColor: "#ef4444", color: "#fca5a5" }}
+                  title="Retract simulated incoming FIR NXS-007 from active workspace"
+                >
+                  <RotateCcw size={15} />
+                  Retract NXS-007
+                </button>
+              ) : (
+                <button
+                  className="button incoming-fir-btn"
+                  onClick={loadIncoming}
+                  disabled={!!busy || !graph.nodes.length}
+                  style={{ borderColor: "#f59e0b", color: "#fcd34d" }}
+                  title="Simulate live streaming ingestion of incoming FIR (NXS-007) linking into existing cases"
+                >
+                  <Radio size={15} className="text-amber-400 animate-pulse" />
+                  Stream FIR NXS-007
+                </button>
+              )}
               <button
                 className="button primary"
                 onClick={analyze}
@@ -496,6 +559,47 @@ export default function App() {
                 <Check size={16} />
               )}{" "}
               {busy || notice}
+            </div>
+          ) : null}
+          {incomingResult ? (
+            <div
+              className="incoming-badge flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-[#221c10] border border-[#d97706] text-[#fcd34d] text-xs font-mono mb-4 shadow-lg shadow-amber-950/20"
+              role="status"
+            >
+              <div className="flex items-center gap-2">
+                <Zap size={16} className="text-amber-400 flex-shrink-0" />
+                <span>
+                  <strong>STREAMED FIR {incomingResult.caseId}</strong> · Ingested & linked in{" "}
+                  <span className="text-white font-bold bg-amber-900/60 px-1.5 py-0.5 rounded">
+                    {incomingResult.latencyMs.toFixed(1)}ms
+                  </span>{" "}
+                  · {incomingResult.crossCaseLinks.length} cross-case connection
+                  {incomingResult.crossCaseLinks.length === 1 ? "" : "s"} discovered
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {incomingResult.crossCaseLinks.map((cc) => (
+                  <button
+                    key={cc.entityId}
+                    type="button"
+                    className="px-2 py-0.5 rounded bg-[#3b2d15] text-[#fde68a] text-[11px] border border-[#78350f] hover:border-amber-400 transition-colors"
+                    onClick={() => {
+                      setSelected(cc.entityId);
+                      setFocus(1);
+                    }}
+                    title={`Focus node ${cc.label}`}
+                  >
+                    🔗 {cc.label} ({cc.cases.join(", ")})
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={removeIncoming}
+                  className="ml-2 text-xs text-amber-300 underline hover:text-white"
+                >
+                  Retract
+                </button>
+              </div>
             </div>
           ) : null}
           <div className="stats">
@@ -733,6 +837,7 @@ export default function App() {
                           selected={selected}
                           focus={focus}
                           path={path?.nodeIds ?? []}
+                          incomingHighlightNodes={incomingHighlightNodes}
                           onSelect={select}
                           onReady={onReady}
                         />

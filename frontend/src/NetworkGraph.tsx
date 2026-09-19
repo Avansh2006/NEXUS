@@ -19,6 +19,7 @@ interface Props {
   selected: string;
   focus: number;
   path: string[];
+  incomingHighlightNodes?: Set<string>;
   onSelect: (id: string) => void;
   onReady: (graph: Core | null) => void;
 }
@@ -28,6 +29,7 @@ export default function NetworkGraph({
   selected,
   focus,
   path,
+  incomingHighlightNodes,
   onSelect,
   onReady,
 }: Props) {
@@ -60,7 +62,12 @@ export default function NetworkGraph({
               : "#46616a",
             type: n.type,
           },
-          classes: n.type === "Case" ? "case" : "",
+          classes: [
+            n.type === "Case" ? "case" : "",
+            incomingHighlightNodes?.has(n.id) ? "incoming-highlight" : "",
+          ]
+            .filter(Boolean)
+            .join(" "),
         });
       }
     }
@@ -156,6 +163,13 @@ export default function NetworkGraph({
         {
           selector: "node.highlight",
           style: { "border-width": 4, "border-color": "#81f2cf" },
+        },
+        {
+          selector: "node.incoming-highlight",
+          style: {
+            "border-width": 4,
+            "border-color": "#f59e0b",
+          },
         },
       ],
       layout: {
