@@ -35,6 +35,9 @@ import CaseLinks from "./CaseLinks";
 import { motion } from "motion/react";
 import AnimatedCount from "./AnimatedCount";
 import InvestigationJourney from "./InvestigationJourney";
+import TacticalHUD from "./TacticalHUD";
+import TacticalGlobe3D from "./TacticalGlobe3D";
+import SpotlightCard from "./SpotlightCard";
 
 const nav = [
   ["Dashboard", LayoutDashboard],
@@ -72,6 +75,7 @@ export default function App() {
     [quality, setQuality] = useState<Quality | null>(null);
   const [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
+    [viewMode, setViewMode] = useState<"2d" | "3d">("2d"),
     [path, setPath] = useState<PathResult | null>(null),
     [pathOpen, setPathOpen] = useState(false);
   const [kind, setKind] = useState("fir"),
@@ -713,15 +717,33 @@ export default function App() {
                     </span>
                   </div>
                   {graph.nodes.length ? (
-                    <NetworkGraph
-                      graph={graph}
-                      visible={visible}
-                      selected={selected}
-                      focus={focus}
-                      path={path?.nodeIds ?? []}
-                      onSelect={select}
-                      onReady={onReady}
-                    />
+                    <>
+                      <TacticalHUD
+                        graph={graph}
+                        viewMode={viewMode}
+                        onToggleView={setViewMode}
+                        analyzed={graph.analyzed}
+                      />
+                      <div style={{ display: viewMode === "2d" ? "block" : "none" }}>
+                        <NetworkGraph
+                          graph={graph}
+                          visible={visible}
+                          selected={selected}
+                          focus={focus}
+                          path={path?.nodeIds ?? []}
+                          onSelect={select}
+                          onReady={onReady}
+                        />
+                      </div>
+                      {viewMode === "3d" ? (
+                        <TacticalGlobe3D
+                          nodes={graph.nodes}
+                          edges={graph.edges}
+                          selectedId={selected}
+                          onSelectNode={select}
+                        />
+                      ) : null}
+                    </>
                   ) : (
                     <div className="graph-empty">
                       <div className="empty-orbit">
@@ -950,6 +972,16 @@ export default function App() {
                     Load demo
                   </button>
                 ) : null}
+                <div style={{ marginTop: 18 }}>
+                  <SpotlightCard className="callout" spotlightColor="rgba(43, 110, 85, 0.22)">
+                    <h3>Deterministic Intelligence & Provenance</h3>
+                    <p>
+                      Probabilistic merging risks connecting innocent individuals
+                      to criminal networks. NEXUS requires shared exact
+                      identifiers or explicit human approval with reversible audits.
+                    </p>
+                  </SpotlightCard>
+                </div>
               </section>
               <section className="panel padded">
                 <h3>Key connected entities</h3>
