@@ -1,22 +1,47 @@
+import base64
 import json
 import os
 import platform
 from pathlib import Path
+from typing import List, Optional, Dict, Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel, Field
 
 from analysis import analyze
 from extraction import extract
 from evaluate_multilingual import evaluate as evaluate_multilingual
 from intent import map_intent, IntentModel
+from vision.pipeline import VisionPipeline
 
 app = FastAPI(title='NEXUS intelligence', docs_url=None, redoc_url=None)
+vision_pipeline = VisionPipeline()
 
 
 class ExtractRequest(BaseModel):
     text: str = Field(max_length=10000)
     recordId: str = Field(default='', max_length=100)
+
+
+class VisionEnrollRequest(BaseModel):
+    image_base64: str
+
+
+class VisionSearchRequest(BaseModel):
+    image_base64: str
+    selected_face_index: Optional[int] = None
+    conf_threshold: float = 0.45
+
+
+class VisionCompareGalleryItem(BaseModel):
+    id: str
+    embedding: List[float]
+
+
+class VisionCompareRequest(BaseModel):
+    query_embedding: List[float]
+    gallery: List[VisionCompareGalleryItem]
+    threshold: float = 0.65
 
 
 class IntentRequest(BaseModel):
@@ -90,3 +115,84 @@ def quality():
             pass
     res['multilingualSynthetic'] = evaluate_multilingual()
     return res
+
+
+@app.get('/vision/status')
+def vision_status():
+    return vision_pipeline.get_status()
+
+
+def _decode_b64_image(b64_str: str) -> bytes:
+    if ',' in b64_str:
+        b64_str = b64_str.split(',', 1)[1]
+    try:
+        return base64.b64decode(b64_str)
+    except Exception as e:
+        raise HTTPException(400, f'Invalid base64 image data: {e}')
+
+
+@app.post('/vision/enroll')
+def vision_enroll_json(request: VisionEnrollRequest):
+    img_bytes = _decode_b64_image(request.image_base64)
+    try:
+        return vision_pipeline.process_for_enrollment(img_bytes)
+    except ValueError as e:
+        err = str(e)
+        code = 400
+        if 'NO_FACE_DETECTED' in err or 'MULTIPLE_FACES' in err or 'LOW_QUALITY' in err:
+            code = 422
+        raise HTTPException(code, err)
+
+
+@app.post('/vision/enroll/file')
+async def vision_enroll_file(image: UploadFile = File(...)):
+    img_bytes = await image.read()
+    try:
+        return vision_pipeline.process_for_enrollment(img_bytes)
+    except ValueError as e:
+        err = str(e)
+        code = 400
+        if 'NO_FACE_DETECTED' in err or 'MULTIPLE_FACES' in err or 'LOW_QUALITY' in err:
+            code = 422
+        raise HTTPException(code, err)
+
+
+@app.post('/vision/search')
+def vision_search_json(request: VisionSearchRequest):
+    img_bytes = _decode_b64_image(request.image_base64)
+    try:
+        return vision_pipeline.process_for_search(
+            img_bytes,
+            selected_face_index=request.selected_face_index,
+            conf_threshold=request.conf_threshold,
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post('/vision/search/file')
+async def vision_search_file(
+    image: UploadFile = File(...),
+    selected_face_index: Optional[int] = Form(None),
+    conf_threshold: float = Form(0.45),
+):
+    img_bytes = await image.read()
+    try:
+        return vision_pipeline.process_for_search(
+            img_bytes,
+            selected_face_index=selected_face_index,
+            conf_threshold=conf_threshold,
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post('/vision/compare')
+def vision_compare(request: VisionCompareRequest):
+    matches = []
+    for item in request.gallery:
+        sim = vision_pipeline.recognizer.cosine_similarity(request.query_embedding, item.embedding)
+        if sim >= request.threshold:
+            matches.append({'id': item.id, 'similarity': round(sim, 4)})
+    matches.sort(key=lambda x: x['similarity'], reverse=True)
+    return {'matches': matches, 'count': len(matches), 'threshold': request.threshold}

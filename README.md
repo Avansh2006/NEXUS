@@ -45,8 +45,11 @@ PostgreSQL 16; Python 3.12 with FastAPI, spaCy EntityRuler and NetworkX.
   timeline playback, structural removal simulation, CSV and GraphML exports.
 - Expiring authenticated sessions, role-aware controls, attributed audit chain
   verification, and administrator diagnostics.
+- Visual Identity Search: Unconstrained CCTV and surveillance face candidate retrieval
+  using pretrained AdaFace IR-101 and SCRFD-10G; human-in-the-loop review, candidate
+  matching only (strictly no auto-merging), and cryptographic audit trail.
 
-See [feature inventory](docs/FINAL_FEATURES.md), [API contract](docs/API.md), and
+See [Visual Identity Search Guide](docs/VISUAL_IDENTITY_SEARCH.md), [feature inventory](docs/FINAL_FEATURES.md), [API contract](docs/API.md), and
 [prototype security](docs/SECURITY.md) for precise scope and limitations.
 
 ## Development and verification

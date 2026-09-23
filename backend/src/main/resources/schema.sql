@@ -19,3 +19,8 @@ CREATE TABLE IF NOT EXISTS watchlist_entry (user_id VARCHAR(80) NOT NULL, entity
 CREATE TABLE IF NOT EXISTS alert_triage (alert_id VARCHAR(100) PRIMARY KEY, status VARCHAR(30) NOT NULL, version BIGINT NOT NULL, author VARCHAR(80) NOT NULL, updated_at VARCHAR(40) NOT NULL);
 CREATE TABLE IF NOT EXISTS audit_chain_lock (id INTEGER PRIMARY KEY);
 INSERT INTO audit_chain_lock(id) VALUES(1) ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS person_face (id VARCHAR(80) PRIMARY KEY, person_node_id VARCHAR(80) NOT NULL, image_hash VARCHAR(64) NOT NULL, embedding JSONB NOT NULL, model_name VARCHAR(80) NOT NULL, model_version VARCHAR(40) NOT NULL, created_at VARCHAR(40) NOT NULL, source_record_id VARCHAR(80) DEFAULT '', quality_score DOUBLE PRECISION DEFAULT 1.0, metadata JSONB DEFAULT '{}');
+CREATE INDEX IF NOT EXISTS person_face_node_idx ON person_face(person_node_id);
+CREATE INDEX IF NOT EXISTS person_face_hash_idx ON person_face(image_hash);
+CREATE TABLE IF NOT EXISTS face_decision (id VARCHAR(80) PRIMARY KEY, person_node_id VARCHAR(80) NOT NULL, decision VARCHAR(30) NOT NULL, similarity DOUBLE PRECISION NOT NULL, model_name VARCHAR(80) NOT NULL, image_hash VARCHAR(64) NOT NULL, notes VARCHAR(1000) DEFAULT '', author VARCHAR(80) NOT NULL, created_at VARCHAR(40) NOT NULL);
+CREATE INDEX IF NOT EXISTS face_decision_node_idx ON face_decision(person_node_id);

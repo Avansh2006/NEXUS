@@ -18,6 +18,7 @@ import {
   Radio,
   RotateCcw,
   Search,
+  ScanFace,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -29,6 +30,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import VisualIdentitySearch from "./VisualIdentitySearch";
 import { api, apiRaw, setSession, colors, emptyGraph } from "./types";
 import type {
   Session,
@@ -64,6 +66,7 @@ import type { Workflow } from "./Workflow";
 const nav = [
   ["Dashboard", LayoutDashboard],
   ["Investigation", Network],
+  ["Visual Identity", ScanFace],
   ["Data Ingestion", Database],
   ["Alerts", Activity],
   ["Clusters", Boxes],
@@ -1344,6 +1347,19 @@ export default function App({ session }: { session: Session }) {
                 ) : null}
               </section>
             </div>
+          ) : null}
+
+          {page === "Visual Identity" ? (
+            <VisualIdentitySearch
+              graph={graph}
+              session={session}
+              onNavigateToPerson={(personId) => {
+                select(personId);
+                setPage("Investigation");
+                setFocus(1);
+              }}
+              onRefreshGraph={refresh}
+            />
           ) : null}
 
           {page === "Dashboard" ? (

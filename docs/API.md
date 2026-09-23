@@ -147,3 +147,23 @@ This checks stored chain consistency, not independent authenticity of source rec
 
 The internal Python service exposes extraction, analysis, quality and health routes.
 It is not the authenticated public API and must remain on the internal network.
+
+## Visual Identity Search
+
+Visual identity matching operates on normalized 512-dimensional AdaFace IR-101 embeddings.
+Matches are candidate proposals only; no Person node merging occurs automatically.
+
+| Route | Method | Description |
+|---|---|---|
+| `/api/persons/{id}/faces` | POST | Multipart upload (`file`). Enrolls reference face for Person node. Requires INVESTIGATOR/ADMIN. |
+| `/api/persons/{id}/faces` | GET | Returns enrolled reference faces for Person node. |
+| `/api/persons/{id}/faces/{faceId}` | DELETE | Removes enrolled face record. Logged to audit ledger. |
+| `/api/vision/search` | POST | Multipart upload (`file`, optional `threshold`, `faceIndex`). Returns candidate matches and rich Person context. |
+| `/api/vision/decisions` | POST | Accepts `{personNodeId, decision: "CONFIRMED"\|"REJECTED", similarity, modelName, imageHash, notes}`. Logged to audit trail. |
+| `/api/vision/decisions` | GET | Returns recent face decisions (optional `?personNodeId=`). |
+| `/api/vision/fixtures` | GET | Returns bundled offline sample fixtures for evaluation. |
+| `/api/vision/demo-enroll` | POST | Batch-enrolls reference photos for active demo personas. |
+| `/api/vision/status` | GET | Returns vision engine connection and model status. |
+
+See [Visual Identity Search Guide](VISUAL_IDENTITY_SEARCH.md) for architectural details and benchmark guidelines.
+

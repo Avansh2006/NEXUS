@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class EngineClient {
@@ -35,4 +35,20 @@ public class EngineClient {
     public JsonNode analyze(Model.Graph graph) { return client.post().uri("/analyze").body(graph).retrieve().body(JsonNode.class); }
     public JsonNode quality() { return client.get().uri("/quality").retrieve().body(JsonNode.class); }
     public JsonNode health() { return healthClient.get().uri("/health").retrieve().body(JsonNode.class); }
+    public JsonNode visionStatus() { return client.get().uri("/vision/status").retrieve().body(JsonNode.class); }
+    public JsonNode visionEnroll(byte[] imageBytes) {
+        String b64 = Base64.getEncoder().encodeToString(imageBytes);
+        return client.post().uri("/vision/enroll").body(Map.of("image_base64", b64)).retrieve().body(JsonNode.class);
+    }
+    public JsonNode visionSearch(byte[] imageBytes, Integer selectedFaceIndex, Double confThreshold) {
+        String b64 = Base64.getEncoder().encodeToString(imageBytes);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("image_base64", b64);
+        if (selectedFaceIndex != null) body.put("selected_face_index", selectedFaceIndex);
+        if (confThreshold != null) body.put("conf_threshold", confThreshold);
+        return client.post().uri("/vision/search").body(body).retrieve().body(JsonNode.class);
+    }
+    public JsonNode visionCompare(List<Double> queryEmbedding, List<Map<String, Object>> gallery, double threshold) {
+        return client.post().uri("/vision/compare").body(Map.of("query_embedding", queryEmbedding, "gallery", gallery, "threshold", threshold)).retrieve().body(JsonNode.class);
+    }
 }

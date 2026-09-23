@@ -13,3 +13,10 @@ artifacts/
 test-results/
 playwright-report/
 .DS_Store
+*.onnx
+*.safetensors
+*.pt
+*.pth
+intelligence/models/*.onnx
+intelligence/models/*
+!intelligence/models/.gitkeep

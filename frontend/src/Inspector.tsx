@@ -1,7 +1,8 @@
-import { FileText, Link2, ArrowUpRight } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { FileText, Link2, ArrowUpRight, ScanFace, Plus, Trash2 } from "lucide-react";
 import { SupportBadge } from "./Workflow";
-import { colors } from "./types";
-import type { Graph, Source } from "./types";
+import { colors, api, apiForm, apiDelete } from "./types";
+import type { Graph, Source, PersonFace } from "./types";
 
 export function HighlightedText({ record }: { record: Source }) {
   const text = record.payload.text ?? "";
@@ -70,6 +71,56 @@ export default function Inspector({
   const records = graph.records.filter((r) => recordIds.has(r.id));
   const alerts =
     graph.analysis.alerts?.filter((a) => a.entityIds.includes(n.id)) ?? [];
+
+  const [faces, setFaces] = useState<PersonFace[]>([]);
+  const [enrolling, setEnrolling] = useState(false);
+  const [faceError, setFaceError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const loadFaces = useCallback(async () => {
+    if (n && n.type === "Person") {
+      try {
+        const list = await api<PersonFace[]>(`/persons/${n.id}/faces`);
+        setFaces(list ?? []);
+      } catch {
+        setFaces([]);
+      }
+    } else {
+      setFaces([]);
+    }
+  }, [n?.id, n?.type]);
+
+  useEffect(() => {
+    loadFaces();
+    setFaceError("");
+  }, [loadFaces]);
+
+  const handleEnrollFace = async (file: File) => {
+    if (!n) return;
+    setEnrolling(true);
+    setFaceError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      await apiForm(`/persons/${n.id}/faces`, formData);
+      await loadFaces();
+    } catch (err: any) {
+      setFaceError(err.message || "Face enrollment failed");
+    } finally {
+      setEnrolling(false);
+    }
+  };
+
+  const handleDeleteFace = async (faceId: string) => {
+    if (!n) return;
+    try {
+      await apiDelete(`/persons/${n.id}/faces/${faceId}`);
+      await loadFaces();
+    } catch (err: any) {
+      setFaceError(err.message || "Failed to remove face");
+    }
+  };
+
   return (
     <aside className="inspector">
       <div className="section-label">
@@ -80,6 +131,106 @@ export default function Inspector({
       </span>
       <h2>{n.label}</h2>
       <SupportBadge support={n.properties.support} />
+
+      {n.type === "Person" && (
+        <div style={{ marginTop: 12, marginBottom: 12, background: "#0c181c", border: "1px solid #1c3d35", borderRadius: 8, padding: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#8ab4a3", display: "flex", alignItems: "center", gap: 5 }}>
+              <ScanFace size={13} color="#34d399" /> Visual Identity ({faces.length})
+            </span>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={enrolling}
+              style={{
+                fontSize: 10,
+                padding: "2px 6px",
+                background: "#163e34",
+                color: "#6ee7b7",
+                borderRadius: 4,
+                border: "1px solid #286052",
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+                cursor: "pointer"
+              }}
+            >
+              <Plus size={11} /> {enrolling ? "Enrolling..." : "Enroll Photo"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleEnrollFace(e.target.files[0]);
+                  e.target.value = "";
+                }
+              }}
+            />
+          </div>
+
+          {faceError && (
+            <div style={{ fontSize: 10, color: "#fca5a5", background: "#450a0a", padding: "4px 6px", borderRadius: 4, marginBottom: 6 }}>
+              {faceError}
+            </div>
+          )}
+
+          {faces.length === 0 ? (
+            <div style={{ fontSize: 10, color: "#62777c", fontStyle: "italic", textAlign: "center", padding: "4px 0" }}>
+              No reference face photo enrolled.
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
+              {faces.map((f) => (
+                <div
+                  key={f.id}
+                  style={{
+                    position: "relative",
+                    minWidth: 70,
+                    maxWidth: 75,
+                    background: "#081013",
+                    border: "1px solid #1a4038",
+                    borderRadius: 6,
+                    padding: 3,
+                    textAlign: "center"
+                  }}
+                >
+                  <img
+                    src={f.metadata?.thumbnail || ""}
+                    alt="Face"
+                    style={{ width: "100%", height: 65, objectFit: "cover", borderRadius: 4, background: "#000" }}
+                  />
+                  <div style={{ fontSize: 8.5, color: "#6ee7b7", marginTop: 2, fontFamily: "monospace" }}>
+                    Q: {(f.qualityScore * 100).toFixed(0)}%
+                  </div>
+                  <button
+                    onClick={() => handleDeleteFace(f.id)}
+                    title="Delete face"
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      background: "rgba(0,0,0,0.75)",
+                      color: "#f87171",
+                      borderRadius: "50%",
+                      width: 16,
+                      height: 16,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      padding: 0
+                    }}
+                  >
+                    <Trash2 size={9} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {metric?.roleTitle ? (
         <div
           className="role-pattern-card"

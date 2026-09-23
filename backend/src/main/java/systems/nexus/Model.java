@@ -21,4 +21,16 @@ public final class Model {
     public record IngestResult(int accepted, int duplicates, List<RowError> errors) {}
     public record ReportRequest(String graphImage) {}
     public record PathResult(List<String> nodeIds, List<Edge> edges) {}
+    public record PersonFace(String id, String personNodeId, String imageHash, JsonNode embedding,
+                             String modelName, String modelVersion, String createdAt,
+                             String sourceRecordId, double qualityScore, JsonNode metadata) {}
+    public record FaceDecision(String id, String personNodeId, String decision, double similarity,
+                               String modelName, String imageHash, String notes, String author, String createdAt) {}
+    public record FaceCandidate(String personNodeId, double similarity, String status, String model,
+                                String faceId, Map<String,Object> person, Map<String,Object> quality) {}
+    public record VisionSearchResult(String status, int facesDetected, double threshold, String model,
+                                     String imageHash, List<FaceCandidate> matches,
+                                     List<Map<String,Object>> faces, String alignedThumbnail) {}
+    public record FaceDecisionRequest(String personNodeId, String decision, Double similarity,
+                                      String imageHash, String modelName, String notes) {}
 }

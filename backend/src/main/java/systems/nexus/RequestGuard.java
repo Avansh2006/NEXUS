@@ -33,7 +33,7 @@ public class RequestGuard extends OncePerRequestFilter {
         res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("X-Frame-Options","DENY");res.setHeader("Cache-Control","no-store");
         String supplied=req.getHeader("Origin");
         if(supplied!=null&&!isAllowedOrigin(supplied)) {fail(res,403,"ORIGIN_DENIED","Origin not allowed");return;}
-        if(supplied!=null) {res.setHeader("Access-Control-Allow-Origin", supplied);res.setHeader("Vary","Origin");res.setHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type, Authorization");res.setHeader("Access-Control-Expose-Headers","X-Request-ID, Retry-After, Content-Disposition");}
+        if(supplied!=null) {res.setHeader("Access-Control-Allow-Origin", supplied);res.setHeader("Vary","Origin");res.setHeader("Access-Control-Allow-Methods","GET, POST, DELETE, OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type, Authorization");res.setHeader("Access-Control-Expose-Headers","X-Request-ID, Retry-After, Content-Disposition");}
         if(req.getMethod().equals("OPTIONS")) {res.setStatus(204);return;}
 
         String path=req.getRequestURI();
@@ -45,9 +45,9 @@ public class RequestGuard extends OncePerRequestFilter {
             req.setAttribute("nexus.user",principal.username());
             req.setAttribute("nexus.role",principal.role());
             boolean adminOnly=path.startsWith("/api/demo/")||path.equals("/api/diagnostics");
-            boolean readPost=path.equals("/api/reports")||path.equals("/api/what-if/remove");
+            boolean readPost=path.equals("/api/reports")||path.equals("/api/what-if/remove")||path.equals("/api/vision/search");
             if((adminOnly&&!principal.role().equals("ADMIN"))||
-                (req.getMethod().equals("POST")&&!readPost&&principal.role().equals("VIEWER"))) {
+                ((req.getMethod().equals("POST")||req.getMethod().equals("DELETE"))&&!readPost&&principal.role().equals("VIEWER"))) {
                 fail(res,403,"FORBIDDEN","Your role is not authorized for this action");return;
             }
         }
@@ -73,6 +73,13 @@ public class RequestGuard extends OncePerRequestFilter {
                 res.setHeader("X-RateLimit-Limit", "30");
                 res.setHeader("X-RateLimit-Remaining", String.valueOf(Math.max(0, 30 - times.size())));
                 res.setHeader("X-RateLimit-Reset", String.valueOf((times.peek() + 60000) / 1000));
+            }
+            String contentType = req.getContentType();
+            boolean isMultipart = contentType != null && contentType.toLowerCase().startsWith("multipart/");
+            if(isMultipart) {
+                if(req.getContentLengthLong() > 10485760) {fail(res,413,"TOO_LARGE","Request exceeds 10 MiB");return;}
+                chain.doFilter(req,res);
+                return;
             }
             byte[] body=req.getInputStream().readNBytes(2097153);
             if(body.length>2097152) {fail(res,413,"TOO_LARGE","Request exceeds 2 MiB");return;}

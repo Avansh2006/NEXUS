@@ -31,7 +31,40 @@ public class Store {
         if(!n.has("nodes")) return new Model.Graph(List.of(),List.of(),List.of(),List.of(),json.createObjectNode(),false,List.of());
         try { return json.treeToValue(n,Model.Graph.class); } catch(JsonProcessingException e) { throw new IllegalStateException(e); }
     }
-    public void reset() { db.update("DELETE FROM entity_note"); db.update("DELETE FROM watchlist_entry"); db.update("DELETE FROM workflow_user"); db.update("DELETE FROM alert_triage"); db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
+    public void reset() { db.update("DELETE FROM face_decision"); db.update("DELETE FROM person_face"); db.update("DELETE FROM entity_note"); db.update("DELETE FROM watchlist_entry"); db.update("DELETE FROM workflow_user"); db.update("DELETE FROM alert_triage"); db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
+    public void addFace(Model.PersonFace f) {
+        db.update("INSERT INTO person_face VALUES(?,?,?,CAST(? AS JSONB),?,?,?,?,?,CAST(? AS JSONB))",
+            f.id(), f.personNodeId(), f.imageHash(), encode(f.embedding()), f.modelName(), f.modelVersion(),
+            f.createdAt(), f.sourceRecordId(), f.qualityScore(), encode(f.metadata()));
+    }
+    public List<Model.PersonFace> faces() {
+        return db.query("SELECT id,person_node_id,image_hash,embedding,model_name,model_version,created_at,source_record_id,quality_score,metadata FROM person_face ORDER BY created_at DESC",
+            (rs,n) -> new Model.PersonFace(rs.getString(1),rs.getString(2),rs.getString(3),decode(rs.getString(4)),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getDouble(9),decode(rs.getString(10))));
+    }
+    public List<Model.PersonFace> facesForPerson(String personNodeId) {
+        return db.query("SELECT id,person_node_id,image_hash,embedding,model_name,model_version,created_at,source_record_id,quality_score,metadata FROM person_face WHERE person_node_id=? ORDER BY created_at DESC",
+            (rs,n) -> new Model.PersonFace(rs.getString(1),rs.getString(2),rs.getString(3),decode(rs.getString(4)),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getDouble(9),decode(rs.getString(10))), personNodeId);
+    }
+    public Optional<Model.PersonFace> face(String id) {
+        var rows = db.query("SELECT id,person_node_id,image_hash,embedding,model_name,model_version,created_at,source_record_id,quality_score,metadata FROM person_face WHERE id=?",
+            (rs,n) -> new Model.PersonFace(rs.getString(1),rs.getString(2),rs.getString(3),decode(rs.getString(4)),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getDouble(9),decode(rs.getString(10))), id);
+        return rows.stream().findFirst();
+    }
+    public boolean deleteFace(String id) {
+        return db.update("DELETE FROM person_face WHERE id=?", id) > 0;
+    }
+    public void addFaceDecision(Model.FaceDecision d) {
+        db.update("INSERT INTO face_decision VALUES(?,?,?,?,?,?,?,?,?)",
+            d.id(), d.personNodeId(), d.decision(), d.similarity(), d.modelName(), d.imageHash(), d.notes(), d.author(), d.createdAt());
+    }
+    public List<Model.FaceDecision> faceDecisions() {
+        return db.query("SELECT id,person_node_id,decision,similarity,model_name,image_hash,notes,author,created_at FROM face_decision ORDER BY created_at DESC",
+            (rs,n) -> new Model.FaceDecision(rs.getString(1),rs.getString(2),rs.getString(3),rs.getDouble(4),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getString(9)));
+    }
+    public List<Model.FaceDecision> faceDecisionsForPerson(String personNodeId) {
+        return db.query("SELECT id,person_node_id,decision,similarity,model_name,image_hash,notes,author,created_at FROM face_decision WHERE person_node_id=? ORDER BY created_at DESC",
+            (rs,n) -> new Model.FaceDecision(rs.getString(1),rs.getString(2),rs.getString(3),rs.getDouble(4),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getString(9)), personNodeId);
+    }
     public void deleteSourcesByCaseId(String caseId) {
         var list = sources();
         for (var s : list) {

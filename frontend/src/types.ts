@@ -306,3 +306,157 @@ export async function download(path: string, filename: string) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+export async function apiForm<T>(path: string, formData: FormData): Promise<T> {
+  const token = getSession()?.token;
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+  if (!response.ok) {
+    if (response.status === 401 && token && getSession()?.token === token)
+      setSession(null, true);
+    const error = (await response.json().catch(() => null)) as {
+      error?: { message?: string };
+    } | null;
+    throw new Error(
+      response.status === 403
+        ? "Your role does not permit this action."
+        : (error?.error?.message ?? `Request failed (${response.status})`),
+    );
+  }
+  return response.json() as Promise<T>;
+}
+
+export async function apiDelete<T>(path: string): Promise<T> {
+  const token = getSession()?.token;
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "DELETE",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!response.ok) {
+    if (response.status === 401 && token && getSession()?.token === token)
+      setSession(null, true);
+    const error = (await response.json().catch(() => null)) as {
+      error?: { message?: string };
+    } | null;
+    throw new Error(
+      response.status === 403
+        ? "Your role does not permit this action."
+        : (error?.error?.message ?? `Request failed (${response.status})`),
+    );
+  }
+  return response.json() as Promise<T>;
+}
+
+export interface DetectedFaceBBox {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface FaceQuality {
+  sharpness: number;
+  contrast: number;
+  brightness: number;
+  resolution_score: number;
+  overall_quality: number;
+  is_cctv_quality: boolean;
+  notes: string[];
+}
+
+export interface DetectedFace {
+  faceIndex: number;
+  score: number;
+  thumbnail: string;
+  bbox?: DetectedFaceBBox;
+  quality?: FaceQuality;
+}
+
+export interface PersonContext {
+  id: string;
+  canonicalId: string;
+  label: string;
+  type: string;
+  referencePhoto?: string;
+  faceEnrolledAt?: string;
+  qualityScore?: number;
+  roles?: string[];
+  corroboration?: string;
+  cases?: string[];
+  phones?: string[];
+  accounts?: string[];
+  vehicles?: string[];
+  locations?: string[];
+  associates?: Array<{ id: string; label: string; relation: string }>;
+  relationships?: Array<{ type: string; target: string; targetType: string }>;
+  activeAlertsCount?: number;
+  aliases?: string[];
+}
+
+export interface FaceCandidate {
+  personNodeId: string;
+  similarity: number;
+  status: "STRONG_CANDIDATE" | "CANDIDATE";
+  model: string;
+  faceId: string;
+  person: PersonContext;
+  quality?: Record<string, unknown>;
+}
+
+export interface VisionSearchResult {
+  status: "MATCH_CANDIDATE" | "NO_MATCH" | "NO_FACE_DETECTED" | "MULTIPLE_FACES" | "LOW_QUALITY";
+  facesDetected: number;
+  threshold: number;
+  model: string;
+  imageHash: string;
+  matches: FaceCandidate[];
+  faces: DetectedFace[];
+  alignedThumbnail?: string;
+}
+
+export interface PersonFace {
+  id: string;
+  personNodeId: string;
+  imageHash: string;
+  modelName: string;
+  modelVersion: string;
+  createdAt: string;
+  sourceRecordId?: string;
+  qualityScore: number;
+  metadata?: {
+    filename?: string;
+    thumbnail?: string;
+    bbox?: DetectedFaceBBox;
+    quality?: FaceQuality;
+    personLabel?: string;
+  };
+}
+
+export interface FaceDecision {
+  id: string;
+  personNodeId: string;
+  decision: "CONFIRMED" | "REJECTED";
+  similarity: number;
+  modelName: string;
+  imageHash: string;
+  notes: string;
+  author: string;
+  createdAt: string;
+}
+
+export interface FaceDecisionRequest {
+  personNodeId: string;
+  decision: "CONFIRMED" | "REJECTED";
+  similarity: number;
+  imageHash: string;
+  modelName: string;
+  notes: string;
+}
+
