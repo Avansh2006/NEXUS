@@ -1,4 +1,5 @@
 import { FileText, Link2, ArrowUpRight } from "lucide-react";
+import { SupportBadge } from "./Workflow";
 import { colors } from "./types";
 import type { Graph, Source } from "./types";
 
@@ -78,21 +79,70 @@ export default function Inspector({
         {n.type}
       </span>
       <h2>{n.label}</h2>
+      <SupportBadge support={n.properties.support} />
       {metric?.roleTitle ? (
-        <div className="role-pattern-card" style={{ marginBottom: 10, padding: "8px 10px", background: "#132c33", borderRadius: 6, border: "1px solid #2f5a4e" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, flexWrap: "wrap" }}>
-            <span className="pill" style={{ background: "#214a3e", color: "#a5f0cd", border: "1px solid #3d806a", fontSize: 10, fontWeight: 600 }}>
+        <div
+          className="role-pattern-card"
+          style={{
+            marginBottom: 10,
+            padding: "8px 10px",
+            background: "#132c33",
+            borderRadius: 6,
+            border: "1px solid #2f5a4e",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 6,
+              flexWrap: "wrap",
+            }}
+          >
+            <span
+              className="pill"
+              style={{
+                background: "#214a3e",
+                color: "#a5f0cd",
+                border: "1px solid #3d806a",
+                fontSize: 10,
+                fontWeight: 600,
+              }}
+            >
               {metric.roleTitle}
             </span>
-            <span style={{ fontSize: 9, color: "#8ab4a3", fontStyle: "italic" }}>
+            <span
+              style={{ fontSize: 9, color: "#8ab4a3", fontStyle: "italic" }}
+            >
               Pattern hypothesis — for investigator review
             </span>
           </div>
-          <div style={{ fontSize: 9.5, color: "#a1cbba", marginTop: 4, fontFamily: "monospace" }}>
-            {metric.roleCriteria ? `Criteria: ${metric.roleCriteria}` : `Criteria: Degree=${(metric.degree * 100).toFixed(1)}%, Betw=${(metric.betweenness * 100).toFixed(1)}%, Inf=${metric.influence.toFixed(1)}`}
+          <div
+            style={{
+              fontSize: 9.5,
+              color: "#a1cbba",
+              marginTop: 4,
+              fontFamily: "monospace",
+            }}
+          >
+            {metric.roleCriteria
+              ? `Criteria: ${metric.roleCriteria}`
+              : `Criteria: Degree=${(metric.degree * 100).toFixed(1)}%, Betw=${(metric.betweenness * 100).toFixed(1)}%, Inf=${metric.influence.toFixed(1)}`}
           </div>
-          {(metric.tacticalRole === "PASS_THROUGH_ACCOUNT" || metric.roleTitle?.toLowerCase().includes("pass-through")) ? (
-            <div style={{ fontSize: 9, color: "#f2d385", marginTop: 5, background: "#332b12", padding: "4px 6px", borderRadius: 4, borderLeft: "2px solid #e0b443" }}>
+          {metric.tacticalRole === "PASS_THROUGH_ACCOUNT" ||
+          metric.roleTitle?.toLowerCase().includes("pass-through") ? (
+            <div
+              style={{
+                fontSize: 9,
+                color: "#f2d385",
+                marginTop: 5,
+                background: "#332b12",
+                padding: "4px 6px",
+                borderRadius: 4,
+                borderLeft: "2px solid #e0b443",
+              }}
+            >
               Notice: Account holders may be unwitting participants or victims.
             </div>
           ) : null}
@@ -164,13 +214,17 @@ export default function Inspector({
               <i style={{ background: colors[other?.type ?? "Case"] }} />
               <span>
                 {other?.label}
-                <small>{e.type.replaceAll("_", " ")}</small>
+                <small>
+                  {e.type.replaceAll("_", " ")}  - {" "}
+                  {e.properties.support?.level ?? "Unassessed"} evidence support
+                </small>
               </span>
               <ArrowUpRight size={13} />
             </button>
           );
         })}
       </div>
+      <details className="source-record"><summary>Relationship support details</summary>{edges.slice(0,20).map(edge=><div key={edge.id}><b>{edge.type.replaceAll("_"," ")}</b><SupportBadge support={edge.properties.support}/></div>)}</details>
       <h3>
         <FileText size={15} /> Supporting records <span>{records.length}</span>
       </h3>
@@ -180,7 +234,12 @@ export default function Inspector({
             {r.kind.toUpperCase()} · {r.payload.caseId}
           </summary>
           <small>{r.id}</small>
-          {r.kind === "fir" ? (
+          <p>
+            Reliability: {r.payload.sourceReliability ?? "Unassessed"}  -
+            Information credibility:{" "}
+            {r.payload.informationCredibility ?? "Unassessed"}
+          </p>
+          {r.payload.text ? (
             <HighlightedText record={r} />
           ) : (
             <dl>

@@ -18,6 +18,7 @@ public final class GraphBuilder {
     public GraphBuilder(ObjectMapper json, Map<String,String> aliases, Map<String,String> decisions) {
         this.json=json; this.aliases=aliases; this.decisions=decisions;
     }
+    public static boolean narrative(String kind) { return Set.of("fir","criminal-history","intel-report","surveillance-report").contains(kind); }
     public static String hash(String text) {
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8))); }
         catch(Exception e) { throw new IllegalStateException(e); }
@@ -59,7 +60,13 @@ public final class GraphBuilder {
         String eid="ev-"+hash(s.id()+"|"+edgeId).substring(0,24);
         add(e.properties(),"evidenceIds",eid);
         if(evidence.stream().noneMatch(x->x.id().equals(eid))) {
-            evidence.add(new Evidence(eid,s.id(),null,edgeId,null,null,s.payload().path("_row").asInt(1),type,1));
+            final String sourceNode=from,targetNode=to;
+            var spans=evidence.stream().filter(x->x.recordId().equals(s.id()) && (sourceNode.equals(x.entityId()) || targetNode.equals(x.entityId())) && x.start()!=null).toList();
+            Integer start=spans.stream().map(Evidence::start).min(Integer::compareTo).orElse(null);
+            Integer end=spans.stream().map(Evidence::end).max(Integer::compareTo).orElse(null);
+            double confidence=spans.stream().mapToDouble(Evidence::confidence).min().orElse(1);
+            String raw=start==null?type:s.payload().path("text").asText().substring(start,end);
+            evidence.add(new Evidence(eid,s.id(),null,edgeId,start,end,s.payload().path("_row").asInt(1),raw,confidence));
             var events=(List<Map<String,Object>>)e.properties().computeIfAbsent("events",k->new ArrayList<>());
             events.add(Map.of("timestamp",timestamp,"evidenceId",eid,"amount",amount));
         }
@@ -69,9 +76,9 @@ public final class GraphBuilder {
     }
     public Graph build(List<Source> sources) {
         for(Source s:sources) {
-            JsonNode p=s.payload(); String c=p.path("caseId").asText(), time=p.path(s.kind().equals("fir")?"date":"timestamp").asText();
+            JsonNode p=s.payload(); String c=p.path("caseId").asText(), time=p.path(narrative(s.kind())?"date":"timestamp").asText();
             String caseNode=node("Case",c,c,c,s,null,null,1);
-            if(s.kind().equals("fir")) {
+            if(narrative(s.kind())) {
                 nodes.get(caseNode).properties().put("crimeType",p.path("crimeType").asText("Unspecified"));
                 List<Extracted> extracted=new ArrayList<>();
                 for(JsonNode raw:p.path("_entities")) extracted.add(json.convertValue(raw,Extracted.class));
@@ -98,7 +105,7 @@ public final class GraphBuilder {
                     else nid=node(x.type(),x.normalized(),x.normalized(),c,s,x.start(),x.end(),x.confidence());
                     edge(nid,caseNode,"CONNECTED_TO_CASE",c,s,time,0);
                     if(currentPerson!=null&&!nid.equals(currentPerson)) {
-                        String relation=switch(x.type()) { case "Phone" -> "USES";case "Account","Vehicle" -> "OWNS";case "Location" -> "SEEN_AT";default -> "LOCATED_AT";};
+                        String relation=switch(x.type()) { case "Phone","SocialHandle" -> "USES";case "Account","Vehicle" -> "OWNS";case "Location" -> "SEEN_AT";default -> "LOCATED_AT";};
                         edge(currentPerson,nid,relation,c,s,time,0);
                     }
                 }
@@ -116,6 +123,19 @@ public final class GraphBuilder {
                 }
             }
         }
+        Map<String,Source> byId=new HashMap<>(); sources.forEach(x->byId.put(x.id(),x));
+        // Later mentions of an endpoint in the same record can lower confidence.
+        // Finalize edge spans after all mentions have been reconstructed.
+        for(int i=0;i<evidence.size();i++) {
+            Evidence ev=evidence.get(i); if(ev.edgeId()==null) continue;
+            Edge edge=edges.get(ev.edgeId());
+            var spans=evidence.stream().filter(x->x.recordId().equals(ev.recordId()) && x.start()!=null && (edge.source().equals(x.entityId()) || edge.target().equals(x.entityId()))).toList();
+            if(spans.isEmpty()) continue;
+            int start=spans.stream().mapToInt(Evidence::start).min().orElseThrow(),end=spans.stream().mapToInt(Evidence::end).max().orElseThrow();
+            evidence.set(i,new Evidence(ev.id(),ev.recordId(),null,ev.edgeId(),start,end,ev.row(),byId.get(ev.recordId()).payload().path("text").asText().substring(start,end),spans.stream().mapToDouble(Evidence::confidence).min().orElseThrow()));
+        }
+        nodes.values().forEach(n->n.properties().put("support",support(evidence.stream().filter(e->n.id().equals(e.entityId())).toList(),byId)));
+        edges.values().forEach(e->e.properties().put("support",support(evidence.stream().filter(v->e.id().equals(v.edgeId())).toList(),byId)));
         List<Suggestion> suggestions=new ArrayList<>();
         var people=nodes.values().stream().filter(n->n.type().equals("Person")).toList();
         for(int i=0;i<people.size();i++) for(int j=i+1;j<people.size();j++) {
@@ -127,6 +147,24 @@ public final class GraphBuilder {
             }
         }
         return new Graph(new ArrayList<>(nodes.values()),new ArrayList<>(edges.values()),evidence,sources,json.createObjectNode(),false,suggestions);
+    }
+    private static Map<String,Object> support(List<Evidence> items,Map<String,Source> sources) {
+        Set<String> records=new TreeSet<>(),kinds=new TreeSet<>();
+        double minimum=1; boolean assessed=true,low=false;
+        for(Evidence e:items) {
+            minimum=Math.min(minimum,e.confidence());
+            if(!records.add(e.recordId())) continue;
+            Source s=sources.get(e.recordId()); kinds.add(s.kind());
+            String reliability=s.payload().path("sourceReliability").asText(""),credibility=s.payload().path("informationCredibility").asText("");
+            assessed &= reliability.matches("[A-F]") && credibility.matches("[1-6]");
+            low |= reliability.matches("[EF]") || credibility.matches("[56]");
+        }
+        String level=records.size()>=2 && kinds.size()>=2 && minimum>=.9 && assessed && !low?"High":records.size()>=2 && minimum>=.8 && !low?"Medium":"Low";
+        Map<String,Object> out=new LinkedHashMap<>();
+        out.put("level",level); out.put("recordCount",records.size()); out.put("sourceKindCount",kinds.size()); out.put("minimumExtractionConfidence",minimum);
+        out.put("credibilityAssessed",assessed); out.put("lowCredibility",low);
+        out.put("explanation","Evidence support, not a probability of truth. High: at least 2 records and 2 source kinds, minimum extraction confidence 0.9, all grades assessed, no low credibility. Medium: at least 2 records, minimum confidence 0.8, no low credibility. Otherwise Low. E/F or 5/6 is low; absent grades are unassessed.");
+        return out;
     }
     static double similarity(String a,String b) {
         int[][] d=new int[a.length()+1][b.length()+1];

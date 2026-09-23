@@ -5,12 +5,14 @@ export type EntityType =
   | "Location"
   | "Vehicle"
   | "Organization"
-  | "Case";
+  | "Case"
+  | "SocialHandle";
 export interface Entity {
   id: string;
   type: EntityType;
   label: string;
   properties: {
+    support?: EvidenceSupport;
     caseIds: string[];
     evidenceIds: string[];
     roles?: string[];
@@ -29,6 +31,7 @@ export interface Edge {
   target: string;
   type: string;
   properties: {
+    support?: EvidenceSupport;
     caseIds: string[];
     evidenceIds: string[];
     firstSeen: string;
@@ -64,6 +67,8 @@ export interface Source {
     text?: string;
     date?: string;
     crimeType?: string;
+    sourceReliability?: string;
+    informationCredibility?: number;
     from?: string;
     to?: string;
     timestamp?: string;
@@ -115,6 +120,7 @@ export interface Analysis {
   communities?: Community[];
   telemetry?: Telemetry;
   caseLinks?: {
+    support?: EvidenceSupport;
     caseIds: string[];
     entityIds: string[];
     evidenceIds: string[];
@@ -145,6 +151,16 @@ export interface Graph {
   suggestions: Suggestion[];
 }
 export interface Quality {
+  multilingualSynthetic?: {
+    samples: number;
+    truePositives: number;
+    falsePositives: number;
+    falseNegatives: number;
+    strictPrecision: number;
+    strictRecall: number;
+    strictF1: number;
+    scope: string;
+  };
   precision: number;
   recall: number;
   truePositives: number;
@@ -195,6 +211,7 @@ export interface PathResult {
   edges: Edge[];
 }
 export const colors: Record<EntityType, string> = {
+  SocialHandle: "#d09dec",
   Person: "#60c5b3",
   Phone: "#e5b45b",
   Account: "#ad9ff0",
@@ -212,25 +229,80 @@ export const emptyGraph: Graph = {
   analyzed: false,
   suggestions: [],
 };
-export const API_BASE = (
-  import.meta.env.VITE_API_URL
+export const API_BASE =
+  (import.meta.env.VITE_API_URL
     ? String(import.meta.env.VITE_API_URL).replace(/\/+$/, "")
-    : ""
-) + "/api";
+    : "") + "/api";
 
-export async function api<T>(path: string, body?: unknown): Promise<T> {
+export interface EvidenceSupport {
+  level: "Low" | "Medium" | "High";
+  recordCount: number;
+  sourceKindCount: number;
+  minimumExtractionConfidence: number;
+  credibilityAssessed: boolean;
+  lowCredibility: boolean;
+  explanation: string;
+}
+export interface Session {
+  token: string;
+  username: string;
+  role: "ADMIN" | "INVESTIGATOR" | "VIEWER";
+  expiresAt: string;
+}
+export function getSession(): Session | null {
+  try {
+    const value: unknown = JSON.parse(sessionStorage.getItem("nexus.session") ?? "null");
+    if (value && typeof value === "object") {
+      const candidate = value as Partial<Session>;
+      if (typeof candidate.token === "string" && candidate.token.length > 0 && candidate.token.length <= 8192 &&
+          typeof candidate.username === "string" && candidate.username.trim().length > 0 && candidate.username.length <= 80 &&
+          ["ADMIN", "INVESTIGATOR", "VIEWER"].includes(candidate.role ?? "") &&
+          typeof candidate.expiresAt === "string" && Number.isFinite(Date.parse(candidate.expiresAt))) return candidate as Session;
+    }
+  } catch { /* Discard malformed storage and allow sign-in. */ }
+  sessionStorage.removeItem("nexus.session");
+  return null;
+}
+export function setSession(session: Session | null, expired = false) {
+  if (session) sessionStorage.setItem("nexus.session", JSON.stringify(session));
+  else sessionStorage.removeItem("nexus.session");
+  window.dispatchEvent(
+    new CustomEvent("nexus-session", { detail: { expired } }),
+  );
+}
+export async function apiRaw(path: string, body?: unknown): Promise<Response> {
+  const token = getSession()?.token;
   const response = await fetch(`${API_BASE}${path}`, {
     method: body === undefined ? "GET" : "POST",
-    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    headers: {
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!response.ok) {
+    if (response.status === 401 && path !== "/auth/login" && token && getSession()?.token === token)
+      setSession(null, true);
     const error = (await response.json().catch(() => null)) as {
       error?: { message?: string };
     } | null;
     throw new Error(
-      error?.error?.message ?? `Request failed (${response.status})`,
+      response.status === 403
+        ? "Your role does not permit this action."
+        : (error?.error?.message ?? `Request failed (${response.status})`),
     );
   }
-  return response.json() as Promise<T>;
+  return response;
+}
+export async function api<T>(path: string, body?: unknown): Promise<T> {
+  return (await apiRaw(path, body)).json() as Promise<T>;
+}
+export async function download(path: string, filename: string) {
+  const response = await apiRaw(path);
+  const url = URL.createObjectURL(await response.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

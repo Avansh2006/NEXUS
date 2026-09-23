@@ -12,3 +12,10 @@ ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS entry_hash VARCHAR(64) DEFAULT '0
 CREATE INDEX IF NOT EXISTS edge_source_idx ON edge(source_id);
 CREATE INDEX IF NOT EXISTS edge_target_idx ON edge(target_id);
 CREATE INDEX IF NOT EXISTS evidence_record_idx ON evidence(record_id);
+CREATE TABLE IF NOT EXISTS entity_note (id VARCHAR(80) PRIMARY KEY, entity_id VARCHAR(80) NOT NULL, note_text VARCHAR(4000) NOT NULL, author VARCHAR(80) NOT NULL, created_at VARCHAR(40) NOT NULL);
+CREATE INDEX IF NOT EXISTS entity_note_entity_idx ON entity_note(entity_id);
+CREATE TABLE IF NOT EXISTS workflow_user (user_id VARCHAR(80) PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS watchlist_entry (user_id VARCHAR(80) NOT NULL, entity_id VARCHAR(80) NOT NULL, PRIMARY KEY(user_id,entity_id));
+CREATE TABLE IF NOT EXISTS alert_triage (alert_id VARCHAR(100) PRIMARY KEY, status VARCHAR(30) NOT NULL, version BIGINT NOT NULL, author VARCHAR(80) NOT NULL, updated_at VARCHAR(40) NOT NULL);
+CREATE TABLE IF NOT EXISTS audit_chain_lock (id INTEGER PRIMARY KEY);
+INSERT INTO audit_chain_lock(id) VALUES(1) ON CONFLICT DO NOTHING;

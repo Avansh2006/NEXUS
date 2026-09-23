@@ -31,6 +31,7 @@ RUN pip install --no-cache-dir -r /app/intelligence/requirements.txt
 COPY intelligence /app/intelligence
 COPY --from=java-builder /build/target/nexus-api-0.1.0.jar /app/app.jar
 COPY data/demo /data/demo
+COPY data/eval/evaluation_results.json /data/eval/evaluation_results.json
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN chmod +x /docker-entrypoint.sh

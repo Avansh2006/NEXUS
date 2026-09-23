@@ -20,8 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: pip install -r intelligence/requirements.txt
-      - run: python -m pytest -q intelligence
+      - run: pip install -r intelligence/requirements.txt -r scripts/requirements-dev.txt
+      - run: python -m pytest -q intelligence scripts/test_setup_credentials.py scripts/test_verify_features.py
       - run: mvn -B -f backend/pom.xml test
       - run: npm install --global pnpm@11.19.0
       - run: pnpm install --frozen-lockfile && pnpm build
@@ -30,41 +30,16 @@ jobs:
         run: python scripts/generate_demo.py && git diff --exit-code -- data/demo
   compose-rehearsal:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Build and start actual PostgreSQL stack
-        env:
-          POSTGRES_PASSWORD: nexus-ci-ephemeral-only
-        run: docker compose up --build -d
-      - name: Wait for API and run clean rehearsal
-        env:
-          NEXUS_API: http://localhost:8080/api
+      - name: Verify PostgreSQL stack, persistence, service recovery, and browser journeys
         run: |
-          for attempt in $(seq 1 60); do
-            if curl --fail --silent http://localhost:8080/api/health; then break; fi
-            sleep 2
-          done
-          python scripts/verify_demo.py
-      - name: Show service logs
-        if: failure()
-        env:
-          POSTGRES_PASSWORD: nexus-ci-ephemeral-only
-        run: docker compose logs --tail=100
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install browser test tools
-        run: |
-          npm install --global pnpm@11.19.0
-          cd frontend
-          pnpm install --frozen-lockfile
-          pnpm exec playwright install --with-deps chromium
-      - name: Rehearse desktop and mobile UI
-        run: pnpm test:e2e
-        working-directory: frontend
+          mkdir -p artifacts/azure
+          git rev-parse HEAD > artifacts/azure/source-revision.txt
+          bash scripts/test-azure.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: demo-verification
+          name: complete-verification
           path: artifacts/

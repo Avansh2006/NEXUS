@@ -5,6 +5,13 @@ import java.time.Instant;
 
 public final class Report {
     private Report() {}
+    private static final com.fasterxml.jackson.databind.ObjectMapper JSON=new com.fasterxml.jackson.databind.ObjectMapper().enable(com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
+    private static String canonicalJson(Object value) {
+        try {
+            // Converting trees to plain maps also sorts JsonNode payload/analysis keys.
+            return JSON.writeValueAsString(JSON.convertValue(value,Object.class));
+        } catch(com.fasterxml.jackson.core.JsonProcessingException e) { throw new IllegalStateException("Cannot serialize report graph",e); }
+    }
     static String escape(Object value) {return String.valueOf(value).replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;").replace("'","&#39;");}
     static String sha256(String input) {
         try {
@@ -26,9 +33,14 @@ public final class Report {
         for(Node n:g.nodes()) {String influence="Not analyzed";for(var m:g.analysis().path("metrics")) if(m.path("entityId").asText().equals(n.id())) influence=m.path("influence").asText();out.append("<tr><td>").append(escape(n.id())).append(" / ").append(n.type()).append("</td><td>").append(escape(n.label())).append("</td><td>").append(escape(n.properties().get("caseIds"))).append("</td><td>").append(influence).append("</td></tr>");}out.append("</table>");
         out.append("<h2>Relationships and timeline</h2><table><tr><th>From → To</th><th>Type</th><th>First / last seen</th><th>Evidence</th></tr>");for(Edge e:g.edges()) out.append("<tr><td>").append(escape(e.source()+" → "+e.target())).append("</td><td>").append(e.type()).append("</td><td>").append(escape(e.properties().get("firstSeen"))).append("<br>").append(escape(e.properties().get("lastSeen"))).append("</td><td>").append(escape(e.properties().get("evidenceIds"))).append("</td></tr>");out.append("</table>");
         out.append("<h2>Supporting evidence</h2><table><tr><th>ID</th><th>Record</th><th>Entity / edge</th><th>Span / row</th><th>Raw</th></tr>");for(Evidence e:g.evidence()) out.append("<tr><td>").append(escape(e.id())).append("</td><td>").append(escape(e.recordId())).append("</td><td>").append(escape(e.entityId()!=null?e.entityId():e.edgeId())).append("</td><td>").append(escape(e.start()+":"+e.end()+" / "+e.row())).append("</td><td>").append(escape(e.raw())).append("</td></tr>");out.append("</table>");
-        String sourceAggregate = g.records().stream().map(r -> r.id() + ":" + r.kind()).reduce("", (a, b) -> a + "|" + b);
-        String sourceDigest = sha256(sourceAggregate.isEmpty() ? "none" : sourceAggregate);
-        String contentDigest = sha256(g.nodes().size() + ":" + g.edges().size() + ":" + g.evidence().size() + ":" + sourceDigest);
+        out.append("<h2>Evidence support</h2><p>Evidence support is not a probability of truth. Repeated spans from one source record do not count as independent corroboration. Missing grades are Unassessed.</p><table><tr><th>Entity / relationship ID</th><th>Support inputs and rule</th></tr>");
+        for(Node n:g.nodes()) out.append("<tr><td>").append(escape(n.id())).append("</td><td>").append(escape(n.properties().getOrDefault("support","Unassessed"))).append("</td></tr>");
+        for(Edge e:g.edges()) out.append("<tr><td>").append(escape(e.id())).append("</td><td>").append(escape(e.properties().getOrDefault("support","Unassessed"))).append("</td></tr>");
+        out.append("</table><h2>Source assessment</h2><table><tr><th>Record ID</th><th>Kind</th><th>Source reliability</th><th>Information credibility</th></tr>");
+        for(Source source:g.records()) out.append("<tr><td>").append(escape(source.id())).append("</td><td>").append(escape(source.kind())).append("</td><td>").append(escape(source.payload().path("sourceReliability").asText("Unassessed"))).append("</td><td>").append(escape(source.payload().path("informationCredibility").asText("Unassessed"))).append("</td></tr>");
+        out.append("</table>");
+        String sourceDigest = sha256(canonicalJson(g.records().stream().sorted(java.util.Comparator.comparing(Source::id)).map(r->java.util.Map.of("id",r.id(),"kind",r.kind())).toList()));
+        String contentDigest = sha256(canonicalJson(g));
 
         out.append("<h2>Electronic Record Provenance Statement</h2>");
         out.append("<div style='border:1px solid #7ea89b;background:#f4faf7;padding:16px;border-radius:6px;font-size:11.5px;line-height:1.6;'>");
@@ -36,8 +48,9 @@ public final class Report {
         out.append("<b>Tool / Pipeline:</b> NEXUS — Network Exploration &amp; eXtraction for Unified Intelligence Systems (v0.2.0-prototype)<br>");
         out.append("<b>Generation Timestamp:</b> ").append(Instant.now()).append("<br>");
         out.append("<b>Derivation Method:</b> Deterministic rule-based extraction, exact identifier canonicalization, and NetworkX graph analytics. No generative models or probabilistic text fabrication are used in entity resolution or link analysis.<br>");
-        out.append("<b>Source Records Analyzed:</b> ").append(g.records().size()).append(" records (Aggregate Source Hash: <code>").append(sourceDigest).append("</code>)<br>");
-        out.append("<b>Dossier Content Integrity Hash:</b> <code>").append(contentDigest).append("</code> (SHA-256)<br>");
+        out.append("<b>Source Records Analyzed:</b> ").append(g.records().size()).append(" records (Source manifest SHA-256, sorted IDs and kinds only: <code>").append(sourceDigest).append("</code>)<br>");
+        out.append("<b>Graph data SHA-256:</b> <code>").append(contentDigest).append("</code><br>");
+        out.append("<p>Digest scope: complete graph data serialized as JSON with sorted object keys and preserved array order, including entities, relationships, evidence, source payloads, analysis, and resolution suggestions. Excludes HTML rendering, report generation timestamps, and the optional graph image; this is not a hash of the full report.</p>");
         out.append("<div style='margin-top:10px;padding:8px 10px;background:#e9f2ee;border-left:3px solid #3c826e;font-size:10.5px;'><b>DISCLAIMER:</b> PROTOTYPE SYSTEM / SYNTHETIC DATA NOTICE. This dossier is generated for investigative lead review only. It does not constitute legal advice, does not establish guilt or liability, and does not constitute a self-executing certificate of authenticity or admissibility under any statutory law.</div>");
         out.append("</div>");
 

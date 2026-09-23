@@ -1,0 +1,14 @@
+#cloud-config
+# Dedicated test VM only. Application ports remain bound to loopback.
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-v2
+  - git
+  - python3
+  - ca-certificates
+runcmd:
+  - [systemctl, enable, --now, docker]
+  - [usermod, -aG, docker, nexus]
+  - [install, -d, -o, nexus, -g, nexus, /home/nexus/NEXUS]
+final_message: "NEXUS test VM bootstrap finished after $UPTIME seconds."

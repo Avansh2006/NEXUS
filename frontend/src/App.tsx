@@ -29,8 +29,17 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { api, API_BASE, colors, emptyGraph } from "./types";
-import type { Edge, Entity, Graph, IncomingResult, IngestResult, PathResult, Quality } from "./types";
+import { api, apiRaw, setSession, colors, emptyGraph } from "./types";
+import type {
+  Session,
+  Edge,
+  Entity,
+  Graph,
+  IncomingResult,
+  IngestResult,
+  PathResult,
+  Quality,
+} from "./types";
 import NetworkGraph from "./NetworkGraph";
 import Inspector, { HighlightedText } from "./Inspector";
 import CaseLinks from "./CaseLinks";
@@ -42,6 +51,18 @@ import TacticalGlobe3D from "./TacticalGlobe3D";
 import SpotlightCard from "./SpotlightCard";
 import IntelCopilot from "./IntelCopilot";
 
+import Playback from "./Playback";
+import QualityPanel from "./QualityPanel";
+import AuditPanel from "./AuditPanel";
+import {
+  EntityWorkflow,
+  AlertTriage,
+  SimulationPanel,
+  Exports,
+  Diagnostics,
+  emptyWorkflow,
+} from "./Workflow";
+import type { Workflow } from "./Workflow";
 const nav = [
   ["Dashboard", LayoutDashboard],
   ["Investigation", Network],
@@ -60,7 +81,14 @@ const ruleNames: Record<string, string> = {
   R6: "Repeated co-accusation",
   R7: "Circular transaction laundering loop",
 };
-export default function App() {
+export default function App({ session }: { session: Session }) {
+  const canEdit = session.role !== "VIEWER",
+    isAdmin = session.role === "ADMIN";
+  const [workflow, setWorkflow] = useState<Workflow>(emptyWorkflow);
+  const [playback, setPlayback] = useState<number | null>(null);
+  const refreshWorkflow = useCallback(async () => {
+    setWorkflow(await api<Workflow>("/workflow"));
+  }, []);
   const [page, setPage] = useState("Investigation"),
     [graph, setGraph] = useState<Graph>(emptyGraph),
     [selected, setSelected] = useState("");
@@ -82,6 +110,8 @@ export default function App() {
     [viewMode, setViewMode] = useState<"2d" | "3d">("2d"),
     [path, setPath] = useState<PathResult | null>(null),
     [pathOpen, setPathOpen] = useState(false);
+  const [sourceReliability, setSourceReliability] = useState(""),
+    [informationCredibility, setInformationCredibility] = useState("");
   const [kind, setKind] = useState("fir"),
     [text, setText] = useState(""),
     [caseId, setCaseId] = useState("NXS-007"),
@@ -89,9 +119,6 @@ export default function App() {
     [incomingResult, setIncomingResult] = useState<IncomingResult | null>(null),
     [incomingActive, setIncomingActive] = useState<boolean>(false),
     [metaNodeView, setMetaNodeView] = useState<boolean>(false);
-  const [audit, setAudit] = useState<{ action: string; createdAt: string }[]>(
-    [],
-  );
   const cy = useRef<Core | null>(null);
   const lastGraphImage = useRef<string | undefined>(undefined);
   const onReady = useCallback((c: Core | null) => {
@@ -108,9 +135,14 @@ export default function App() {
     const g = await api<Graph>("/graph");
     lastGraphImage.current = undefined;
     setGraph(g);
+    if (!g.records.some((r) => r.payload.caseId === "NXS-007"))
+      setIncomingResult(null);
+    setIncomingActive(g.records.some((r) => r.payload.caseId === "NXS-007"));
+    setPlayback(null);
+    await refreshWorkflow();
     setPath(null);
     return g;
-  }, []);
+  }, [refreshWorkflow]);
   useEffect(() => {
     void refresh().catch((e) => setError(String(e)));
     void api<Quality>("/quality")
@@ -153,11 +185,20 @@ export default function App() {
     });
   const loadIncoming = () =>
     run("Streaming and extracting incoming FIR NXS-007…", async () => {
-      const res = await api<IncomingResult>("/demo/incoming", {});
+      const raw = await api<IncomingResult>("/demo/incoming", {});
+      const res = {
+        ...raw,
+        newNodes: raw.newNodes ?? [],
+        crossCaseLinks: raw.crossCaseLinks ?? [],
+        latencyMs: raw.latencyMs ?? 0,
+      };
       setIncomingResult(res);
       setIncomingActive(true);
       const g = res.graph ? res.graph : await refresh();
       setGraph(g);
+      setPlayback(null);
+      setPath(null);
+      await refreshWorkflow();
       setNotice(
         `⚡ Live FIR ${res.caseId} ingested in ${res.latencyMs.toFixed(1)}ms · ${res.crossCaseLinks.length} cross-case connection${res.crossCaseLinks.length === 1 ? "" : "s"} discovered`,
       );
@@ -176,6 +217,9 @@ export default function App() {
       setIncomingActive(false);
       const g = res.graph ? res.graph : await refresh();
       setGraph(g);
+      setPlayback(null);
+      setPath(null);
+      await refreshWorkflow();
       setNotice("Incoming FIR NXS-007 retracted from active workspace.");
     });
   const analyze = () =>
@@ -219,78 +263,6 @@ export default function App() {
       ),
     [graph.nodes, query],
   );
-  const metaGraph: Graph = useMemo(() => {
-    if (!metaNodeView || !graph.analyzed || !graph.analysis.communities?.length) {
-      return graph;
-    }
-    const communityNodes: Entity[] = [];
-    const entityToCommunity = new Map<string, number>();
-
-    graph.analysis.communities.forEach((c) => {
-      c.entityIds.forEach((eid) => entityToCommunity.set(eid, c.id));
-      const members = c.entityIds
-        .map((eid) => graph.nodes.find((n) => n.id === eid))
-        .filter(Boolean);
-      const caseIds = Array.from(
-        new Set(members.flatMap((m) => m?.properties.caseIds ?? [])),
-      );
-      communityNodes.push({
-        id: `meta-comm-${c.id}`,
-        type: "Organization",
-        label: `Community #${c.id + 1} (${c.entityIds.length} nodes)`,
-        properties: {
-          caseIds,
-          evidenceIds: [],
-          roles: [`Cluster of ${c.entityIds.length} entities`],
-        },
-      });
-    });
-
-    const metaEdgeMap = new Map<
-      string,
-      { source: string; target: string; count: number; caseIds: Set<string> }
-    >();
-    graph.edges.forEach((e) => {
-      const c1 = entityToCommunity.get(e.source);
-      const c2 = entityToCommunity.get(e.target);
-      if (c1 !== undefined && c2 !== undefined && c1 !== c2) {
-        const u = Math.min(c1, c2);
-        const v = Math.max(c1, c2);
-        const key = `${u}-${v}`;
-        const existing = metaEdgeMap.get(key) ?? {
-          source: `meta-comm-${u}`,
-          target: `meta-comm-${v}`,
-          count: 0,
-          caseIds: new Set<string>(),
-        };
-        existing.count += 1;
-        e.properties.caseIds?.forEach((cid) => existing.caseIds.add(cid));
-        metaEdgeMap.set(key, existing);
-      }
-    });
-
-    const metaEdges: Edge[] = Array.from(metaEdgeMap.entries()).map(
-      ([key, data]) => ({
-        id: `meta-edge-${key}`,
-        source: data.source,
-        target: data.target,
-        type: "CLUSTER_BRIDGE",
-        properties: {
-          caseIds: Array.from(data.caseIds),
-          evidenceIds: [],
-          firstSeen: "",
-          lastSeen: "",
-          events: [],
-        },
-      }),
-    );
-
-    return {
-      ...graph,
-      nodes: communityNodes,
-      edges: metaEdges,
-    };
-  }, [graph, metaNodeView]);
   const visible = useMemo(() => {
     const ranked = [...graph.nodes].sort(
       (a, b) =>
@@ -361,6 +333,137 @@ export default function App() {
     date,
     path,
   ]);
+  const filteredGraph = useMemo(() => {
+    const edges = graph.edges
+      .filter((e) => visible.has(e.source) && visible.has(e.target))
+      .map((e) => ({
+        ...e,
+        properties: {
+          ...e.properties,
+          events: e.properties.events.filter(
+            (x) => !date || x.timestamp.slice(0, 10) === date,
+          ),
+        },
+      }))
+      .filter((e) => !date || e.properties.events.length > 0);
+    return {
+      ...graph,
+      nodes: graph.nodes.filter((n) => visible.has(n.id)),
+      edges,
+    };
+  }, [graph, visible, date]);
+  const instants = useMemo(
+    () =>
+      [
+        ...new Set(
+          filteredGraph.edges
+            .flatMap((e) =>
+              e.properties.events.map((x) => Date.parse(x.timestamp)),
+            )
+            .filter(Number.isFinite),
+        ),
+      ].sort((a, b) => a - b),
+    [filteredGraph],
+  );
+  const playbackGraph = useMemo(() => {
+    if (playback === null) return filteredGraph;
+    const edges = filteredGraph.edges
+      .map((e) => ({
+        ...e,
+        properties: {
+          ...e.properties,
+          events: e.properties.events.filter(
+            (x) =>
+              Number.isFinite(Date.parse(x.timestamp)) &&
+              Date.parse(x.timestamp) <= playback,
+          ),
+        },
+      }))
+      .filter((e) => e.properties.events.length > 0);
+    const ids = new Set(edges.flatMap((e) => [e.source, e.target]));
+    return {
+      ...filteredGraph,
+      edges,
+      nodes: filteredGraph.nodes.filter((n) => ids.has(n.id)),
+    };
+  }, [filteredGraph, playback]);
+  const metaGraph: Graph = useMemo(() => {
+    if (
+      !metaNodeView ||
+      !playbackGraph.analyzed ||
+      !playbackGraph.analysis.communities?.length
+    ) {
+      return playbackGraph;
+    }
+    const communityNodes: Entity[] = [];
+    const entityToCommunity = new Map<string, number>();
+
+    playbackGraph.analysis.communities.forEach((c) => {
+      c.entityIds.forEach((eid) => entityToCommunity.set(eid, c.id));
+      const members = c.entityIds
+        .map((eid) => playbackGraph.nodes.find((n) => n.id === eid))
+        .filter(Boolean);
+      if (!members.length) return;
+      const caseIds = Array.from(
+        new Set(members.flatMap((m) => m?.properties.caseIds ?? [])),
+      );
+      communityNodes.push({
+        id: `meta-comm-${c.id}`,
+        type: "Organization",
+        label: `Community #${c.id + 1} (${members.length} nodes)`,
+        properties: {
+          caseIds,
+          evidenceIds: [],
+          roles: [`Cluster of ${members.length} entities`],
+        },
+      });
+    });
+
+    const metaEdgeMap = new Map<
+      string,
+      { source: string; target: string; count: number; caseIds: Set<string> }
+    >();
+    playbackGraph.edges.forEach((e) => {
+      const c1 = entityToCommunity.get(e.source);
+      const c2 = entityToCommunity.get(e.target);
+      if (c1 !== undefined && c2 !== undefined && c1 !== c2) {
+        const u = Math.min(c1, c2);
+        const v = Math.max(c1, c2);
+        const key = `${u}-${v}`;
+        const existing = metaEdgeMap.get(key) ?? {
+          source: `meta-comm-${u}`,
+          target: `meta-comm-${v}`,
+          count: 0,
+          caseIds: new Set<string>(),
+        };
+        existing.count += 1;
+        e.properties.caseIds?.forEach((cid) => existing.caseIds.add(cid));
+        metaEdgeMap.set(key, existing);
+      }
+    });
+
+    const metaEdges: Edge[] = Array.from(metaEdgeMap.entries()).map(
+      ([key, data]) => ({
+        id: `meta-edge-${key}`,
+        source: data.source,
+        target: data.target,
+        type: "CLUSTER_BRIDGE",
+        properties: {
+          caseIds: Array.from(data.caseIds),
+          evidenceIds: [],
+          firstSeen: "",
+          lastSeen: "",
+          events: [],
+        },
+      }),
+    );
+
+    return {
+      ...playbackGraph,
+      nodes: communityNodes,
+      edges: metaEdges,
+    };
+  }, [playbackGraph, metaNodeView]);
   const exportReport = () =>
     run("Preparing evidence report…", async () => {
       const graphImage =
@@ -370,11 +473,7 @@ export default function App() {
           maxWidth: 1200,
           maxHeight: 800,
         }) ?? lastGraphImage.current;
-      const response = await fetch(`${API_BASE}/reports`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ graphImage }),
-      });
+      const response = await apiRaw("/reports", { graphImage });
       if (!response.ok) throw new Error("Report generation failed");
       const blob = new Blob([await response.text()], { type: "text/html" });
       const url = URL.createObjectURL(blob);
@@ -400,6 +499,10 @@ export default function App() {
               text: content,
               date: new Date().toISOString(),
               crimeType: "Unspecified",
+              ...(sourceReliability ? { sourceReliability } : {}),
+              ...(informationCredibility
+                ? { informationCredibility: Number(informationCredibility) }
+                : {}),
             },
           ],
         };
@@ -421,9 +524,15 @@ export default function App() {
         const extension = file.name.split(".").pop()?.toLowerCase();
         if (
           !["txt", "json", "csv"].includes(extension ?? "") ||
-          (extension === "txt" && kind !== "fir")
+          (extension === "txt" &&
+            ![
+              "fir",
+              "criminal-history",
+              "intel-report",
+              "surveillance-report",
+            ].includes(kind))
         )
-          throw new Error("Use .txt FIR, .json, or .csv files");
+          throw new Error("Use narrative .txt, .json, or .csv files");
         const content = new TextDecoder("utf-8", { fatal: true }).decode(
           await file.arrayBuffer(),
         );
@@ -440,6 +549,10 @@ export default function App() {
                 text: content,
                 date: new Date().toISOString(),
                 crimeType: "Unspecified",
+                ...(sourceReliability ? { sourceReliability } : {}),
+                ...(informationCredibility
+                  ? { informationCredibility: Number(informationCredibility) }
+                  : {}),
               },
             ],
           };
@@ -462,7 +575,8 @@ export default function App() {
   };
   const review = (id: string, action: string) =>
     run("Applying investigator review…", async () => {
-      setGraph(await api<Graph>(`/link-suggestions/${id}/${action}`, {}));
+      await api<Graph>(`/link-suggestions/${id}/${action}`, {});
+      await refresh();
       setSelected("");
       setNotice("Resolution updated. Re-run analysis to refresh metrics.");
     });
@@ -473,10 +587,12 @@ export default function App() {
     ["Leads for review", activeAlerts.length, Activity],
   ] as const;
   const chosen = graph.nodes.find((n) => n.id === selected);
-  const timeline = graph.edges
+  const timeline = playbackGraph.edges
+    .filter((e) => visible.has(e.source) && visible.has(e.target))
     .filter((e) => !selected || e.source === selected || e.target === selected)
     .flatMap((e) => e.properties.events.map((event) => ({ ...event, edge: e })))
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    .filter((e) => Number.isFinite(Date.parse(e.timestamp)))
+    .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -514,6 +630,11 @@ export default function App() {
               {name === page ? <ChevronRight size={13} /> : null}
             </button>
           ))}
+          {isAdmin && (
+            <button className="nav-item" onClick={() => setPage("Diagnostics")}>
+              Diagnostics
+            </button>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <div className="local-status">
@@ -527,7 +648,8 @@ export default function App() {
           <div className="user">
             <div className="avatar">IN</div>
             <div>
-              Investigator<small>Prototype workspace</small>
+              {session.username}
+              <small>{session.role}</small>
             </div>
             <ShieldCheck size={16} />
           </div>
@@ -553,14 +675,22 @@ export default function App() {
               title="Reset demo data"
               aria-label="Reset demo data"
               onClick={reset}
-              disabled={!!busy}
+              disabled={!!busy || !isAdmin}
             >
               <RotateCcw size={16} />
             </button>
-            <div className="avatar small">IN</div>
+            <button className="button compact" onClick={() => setSession(null)}>
+              Sign out
+            </button>
           </div>
         </header>
-        <motion.div key={page} className="page-content" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.35,ease:[.22,1,.36,1]}}>
+        <motion.div
+          key={page}
+          className="page-content"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className="page-title">
             <div>
               <div className="eyebrow">NETWORK EXPLORATION & EXTRACTION</div>
@@ -574,7 +704,11 @@ export default function App() {
               </p>
             </div>
             <div className="actions">
-              <button className="button" onClick={load} disabled={!!busy}>
+              <button
+                className="button"
+                onClick={load}
+                disabled={!!busy || !isAdmin}
+              >
                 <Database size={15} />
                 {graph.records.length ? "Reload demo" : "Load demo"}
               </button>
@@ -582,7 +716,7 @@ export default function App() {
                 <button
                   className="button incoming-remove-btn"
                   onClick={removeIncoming}
-                  disabled={!!busy}
+                  disabled={!!busy || !isAdmin}
                   style={{ borderColor: "#ef4444", color: "#fca5a5" }}
                   title="Retract simulated incoming FIR NXS-007 from active workspace"
                 >
@@ -593,7 +727,7 @@ export default function App() {
                 <button
                   className="button incoming-fir-btn"
                   onClick={loadIncoming}
-                  disabled={!!busy || !graph.nodes.length}
+                  disabled={!!busy || !graph.nodes.length || !isAdmin}
                   style={{ borderColor: "#f59e0b", color: "#fcd34d" }}
                   title="Simulate live streaming ingestion of incoming FIR (NXS-007) linking into existing cases"
                 >
@@ -604,7 +738,7 @@ export default function App() {
               <button
                 className="button primary"
                 onClick={analyze}
-                disabled={!!busy || !graph.nodes.length}
+                disabled={!!busy || !graph.nodes.length || !canEdit}
               >
                 {busy ? (
                   <LoaderCircle className="spin" size={16} />
@@ -626,7 +760,7 @@ export default function App() {
             </div>
           ) : null}
           {busy || notice ? (
-            <div className="status" role="status" aria-live="polite">
+            <div className="status" role="status" aria-label="Investigation status" aria-live="polite">
               {busy ? (
                 <LoaderCircle className="spin" size={16} />
               ) : (
@@ -636,18 +770,18 @@ export default function App() {
             </div>
           ) : null}
           {incomingResult ? (
-            <div
-              className="incoming-badge flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-[#221c10] border border-[#d97706] text-[#fcd34d] text-xs font-mono mb-4 shadow-lg shadow-amber-950/20"
-            >
+            <div className="incoming-badge flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-[#221c10] border border-[#d97706] text-[#fcd34d] text-xs font-mono mb-4 shadow-lg shadow-amber-950/20">
               <div className="flex items-center gap-2">
                 <Zap size={16} className="text-amber-400 flex-shrink-0" />
                 <span>
-                  <strong>STREAMED FIR {incomingResult.caseId}</strong> · Ingested & linked in{" "}
+                  <strong>STREAMED FIR {incomingResult.caseId}</strong> ·
+                  Ingested & linked in{" "}
                   <span className="text-white font-bold bg-amber-900/60 px-1.5 py-0.5 rounded">
                     {incomingResult.latencyMs.toFixed(1)}ms
                   </span>{" "}
                   · {incomingResult.crossCaseLinks.length} cross-case connection
-                  {incomingResult.crossCaseLinks.length === 1 ? "" : "s"} discovered
+                  {incomingResult.crossCaseLinks.length === 1 ? "" : "s"}{" "}
+                  discovered
                 </span>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -667,6 +801,7 @@ export default function App() {
                 ))}
                 <button
                   type="button"
+                  disabled={!isAdmin || !!busy}
                   onClick={removeIncoming}
                   className="ml-2 text-xs text-amber-300 underline hover:text-white"
                 >
@@ -677,14 +812,20 @@ export default function App() {
           ) : null}
           <div className="stats">
             {stats.map(([label, value, Icon], i) => (
-              <motion.div className="stat" key={label} initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.4,delay:i*.055}}>
+              <motion.div
+                className="stat"
+                key={label}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.055 }}
+              >
                 <div className={`stat-icon s${i}`}>
                   <Icon size={19} />
                 </div>
                 <div>
                   <span>{label}</span>
                   <strong>
-                    <AnimatedCount value={value}/>
+                    <AnimatedCount value={value} />
                     <small>
                       {i === 3
                         ? "explainable patterns"
@@ -700,9 +841,27 @@ export default function App() {
             ))}
           </div>
 
+          {(page === "Investigation" || page === "Timeline") && (
+            <Playback
+              instants={instants}
+              value={playback}
+              onChange={setPlayback}
+              resetKey={page}
+            />
+          )}
           {page === "Investigation" ? (
             <>
-              <InvestigationJourney loaded={graph.records.length>0} analyzed={graph.analyzed} busy={!!busy} onIngest={()=>setPage('Data Ingestion')} onAnalyze={analyze} onExplore={()=>{setFocus(0);cy.current?.fit(undefined,40);}}/>
+              <InvestigationJourney
+                loaded={graph.records.length > 0}
+                analyzed={graph.analyzed}
+                busy={!!busy || !canEdit}
+                onIngest={() => setPage("Data Ingestion")}
+                onAnalyze={analyze}
+                onExplore={() => {
+                  setFocus(0);
+                  cy.current?.fit(undefined, 40);
+                }}
+              />
               <div className="workspace-toolbar">
                 <div className="search-wrap">
                   <Search size={16} />
@@ -839,7 +998,11 @@ export default function App() {
                   <ArrowRight size={16} />
                   <label>
                     To
-                    <select aria-label="Path target" value={to} onChange={(e) => setTo(e.target.value)}>
+                    <select
+                      aria-label="Path target"
+                      value={to}
+                      onChange={(e) => setTo(e.target.value)}
+                    >
                       <option value="">Choose an entity</option>
                       {graph.nodes.map((n) => (
                         <option key={n.id} value={n.id}>
@@ -905,9 +1068,17 @@ export default function App() {
                         metaNodeView={metaNodeView}
                         onToggleMetaNode={() => setMetaNodeView((v) => !v)}
                       />
-                      <div style={{ display: viewMode === "2d" ? "block" : "none" }}>
+                      <div
+                        style={{
+                          display: viewMode === "2d" ? "block" : "none",
+                        }}
+                      >
                         <NetworkGraph
-                          graph={metaGraph}
+                          graph={
+                            metaNodeView
+                              ? metaGraph
+                              : playbackGraph
+                          }
                           visible={
                             metaNodeView
                               ? new Set(metaGraph.nodes.map((n) => n.id))
@@ -923,8 +1094,13 @@ export default function App() {
                       </div>
                       {viewMode === "3d" ? (
                         <TacticalGlobe3D
-                          nodes={graph.nodes}
-                          edges={graph.edges}
+                          nodes={playbackGraph.nodes.filter((n) =>
+                            visible.has(n.id),
+                          )}
+                          edges={playbackGraph.edges.filter(
+                            (e) =>
+                              visible.has(e.source) && visible.has(e.target),
+                          )}
                           selectedId={selected}
                           onSelectNode={select}
                         />
@@ -947,7 +1123,7 @@ export default function App() {
                       <button
                         className="button primary"
                         onClick={load}
-                        disabled={!!busy}
+                        disabled={!!busy || !isAdmin}
                       >
                         <Database size={16} />
                         Load synthetic investigation
@@ -1068,6 +1244,14 @@ export default function App() {
                         <div>
                           <strong>{ruleNames[a.ruleId]}</strong>
                           <p>{a.explanation}</p>
+                          <AlertTriage
+                            alertId={a.id}
+                            triage={workflow.triage.find(
+                              (t) => t.alertId === a.id,
+                            )}
+                            canEdit={canEdit}
+                            onRefresh={refreshWorkflow}
+                          />
                         </div>
                         <ChevronRight size={16} />
                       </button>
@@ -1080,55 +1264,7 @@ export default function App() {
                     </div>
                   )}
                 </section>
-                <section className="panel quality">
-                  <div className="panel-heading">
-                    <h3>
-                      <ShieldCheck size={16} />
-                      Extraction quality
-                    </h3>
-                    <span className="tag">HELD-OUT BENCHMARK</span>
-                  </div>
-                  {quality ? (
-                    <>
-                      <div className="quality-scores">
-                        <div>
-                          <strong>
-                            {((quality.heldoutTest?.lenientPrecision ?? quality.precision) * 100).toFixed(1)}
-                            <small>%</small>
-                          </strong>
-                          <span>Precision</span>
-                        </div>
-                        <div>
-                          <strong>
-                            {((quality.heldoutTest?.lenientRecall ?? quality.recall) * 100).toFixed(1)}
-                            <small>%</small>
-                          </strong>
-                          <span>Recall</span>
-                        </div>
-                        <div>
-                          <strong>
-                            {((quality.heldoutTest?.lenientF1 ?? 0.673) * 100).toFixed(1)}
-                            <small>%</small>
-                          </strong>
-                          <span>F1 Score</span>
-                        </div>
-                      </div>
-                      <p>
-                        {quality.heldoutTest
-                          ? `Evaluated on ${quality.heldoutTest.samples} frozen held-out FIRs across 4 states · Strict F1: ${(quality.heldoutTest.strictF1 * 100).toFixed(1)}%`
-                          : `${quality.samples} labeled synthetic FIRs · exact type + span match`}
-                      </p>
-                      <small>
-                        Evaluated with realistic OCR noise, Hinglish legal cues, and Devanagari numerals. Real-world accuracy varies by scan and document quality.
-                      </small>
-                    </>
-                  ) : (
-                    <div className="quiet-state">
-                      Quality evaluation appears when the intelligence engine is
-                      available.
-                    </div>
-                  )}
-                </section>
+                <QualityPanel quality={quality}/>
               </div>
             </>
           ) : null}
@@ -1161,17 +1297,25 @@ export default function App() {
                   </button>
                 ))}
                 {!cases.length ? (
-                  <button className="button primary" onClick={load}>
+                  <button
+                    className="button primary"
+                    onClick={load}
+                    disabled={!isAdmin}
+                  >
                     Load demo
                   </button>
                 ) : null}
                 <div style={{ marginTop: 18 }}>
-                  <SpotlightCard className="callout" spotlightColor="rgba(43, 110, 85, 0.22)">
+                  <SpotlightCard
+                    className="callout"
+                    spotlightColor="rgba(43, 110, 85, 0.22)"
+                  >
                     <h3>Deterministic Intelligence & Provenance</h3>
                     <p>
-                      Probabilistic merging risks connecting innocent individuals
-                      to criminal networks. NEXUS requires shared exact
-                      identifiers or explicit human approval with reversible audits.
+                      Probabilistic merging risks connecting innocent
+                      individuals to criminal networks. NEXUS requires shared
+                      exact identifiers or explicit human approval with
+                      reversible audits.
                     </p>
                   </SpotlightCard>
                 </div>
@@ -1235,6 +1379,11 @@ export default function App() {
                     onChange={(e) => setKind(e.target.value)}
                   >
                     <option value="fir">FIR / case narrative</option>
+                    <option value="criminal-history">Criminal history</option>
+                    <option value="intel-report">Intelligence report</option>
+                    <option value="surveillance-report">
+                      Surveillance report
+                    </option>
                     <option value="cdr">Call detail records</option>
                     <option value="transactions">Financial transactions</option>
                   </select>
@@ -1246,6 +1395,38 @@ export default function App() {
                     onChange={(e) => setCaseId(e.target.value)}
                   />
                 </label>
+                <div className="two-columns">
+                  <label>
+                    Source reliability
+                    <select
+                      value={sourceReliability}
+                      onChange={(e) => setSourceReliability(e.target.value)}
+                    >
+                      <option value="">Unassessed</option>
+                      {["A", "B", "C", "D", "E", "F"].map((v) => (
+                        <option key={v}>{v}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Information credibility
+                    <select
+                      value={informationCredibility}
+                      onChange={(e) =>
+                        setInformationCredibility(e.target.value)
+                      }
+                    >
+                      <option value="">Unassessed</option>
+                      {[1, 2, 3, 4, 5, 6].map((v) => (
+                        <option key={v}>{v}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <p className="muted">
+                  Grades apply to plain-text uploads. JSON/CSV records carry
+                  their own grades.
+                </p>
                 <label className="upload-zone">
                   <Upload size={27} />
                   <b>Select files to upload</b>
@@ -1256,7 +1437,7 @@ export default function App() {
                     type="file"
                     multiple
                     accept=".txt,.csv,.json"
-                    disabled={!!busy}
+                    disabled={!!busy || !canEdit}
                     onChange={(e) => {
                       void files(e.target.files);
                       e.target.value = "";
@@ -1264,7 +1445,12 @@ export default function App() {
                   />
                 </label>
                 <label>
-                  {kind === "fir"
+                  {[
+                    "fir",
+                    "criminal-history",
+                    "intel-report",
+                    "surveillance-report",
+                  ].includes(kind)
                     ? "Paste FIR text or JSON records"
                     : "Paste JSON records or CSV"}
                   <textarea
@@ -1272,7 +1458,12 @@ export default function App() {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder={
-                      kind === "fir"
+                      [
+                        "fir",
+                        "criminal-history",
+                        "intel-report",
+                        "surveillance-report",
+                      ].includes(kind)
                         ? "Accused Fictional Name; phone SYN-PHONE-070…"
                         : '[{"caseId":"NXS-007", ...}]'
                     }
@@ -1280,13 +1471,18 @@ export default function App() {
                 </label>
                 <button
                   className="button primary"
-                  disabled={!!busy || !text.trim()}
+                  disabled={!!busy || !text.trim() || !canEdit}
                   onClick={() =>
                     ingest(
                       text,
                       text.trim().startsWith("[") || text.trim().startsWith("{")
                         ? "json"
-                        : kind === "fir"
+                        : [
+                              "fir",
+                              "criminal-history",
+                              "intel-report",
+                              "surveillance-report",
+                            ].includes(kind)
                           ? "text"
                           : "csv",
                     )
@@ -1317,7 +1513,7 @@ export default function App() {
                   confidence. Hover over a span to inspect it.
                 </p>
                 {graph.records
-                  .filter((r) => r.kind === "fir")
+                  .filter((r) => !!r.payload.text)
                   .map((r) => (
                     <div className="fir-card" key={r.id}>
                       <span className="tag">{r.payload.caseId}</span>
@@ -1356,6 +1552,12 @@ export default function App() {
                     </div>
                     <h3>{ruleNames[a.ruleId]}</h3>
                     <p>{a.explanation}</p>
+                    <AlertTriage
+                      alertId={a.id}
+                      triage={workflow.triage.find((t) => t.alertId === a.id)}
+                      canEdit={canEdit}
+                      onRefresh={refreshWorkflow}
+                    />
                     <footer>
                       <span>{a.evidenceIds.length} evidence references</span>
                       <button
@@ -1410,7 +1612,7 @@ export default function App() {
                     {s.status !== "accepted" ? (
                       <button
                         className="button primary compact"
-                        disabled={!!busy}
+                        disabled={!!busy || !canEdit}
                         onClick={() => review(s.id, "accept")}
                       >
                         Accept merge
@@ -1418,7 +1620,7 @@ export default function App() {
                     ) : null}
                     <button
                       className="button compact"
-                      disabled={!!busy}
+                      disabled={!!busy || !canEdit}
                       onClick={() => review(s.id, "reject")}
                     >
                       {s.status === "accepted" ? "Undo merge" : "Reject"}
@@ -1542,6 +1744,7 @@ export default function App() {
           {page === "Reports" ? (
             <div className="two-columns">
               <section className="panel padded report-card">
+                <Exports />
                 <div className="report-icon">
                   <FileText size={42} />
                 </div>
@@ -1581,39 +1784,40 @@ export default function App() {
                   available.
                 </small>
               </section>
-              <section className="panel padded">
-                <div className="panel-heading">
-                  <h3>Audit trail</h3>
-                  <button
-                    onClick={() =>
-                      run("Loading audit events…", async () =>
-                        setAudit(await api("/audit")),
-                      )
-                    }
-                  >
-                    Refresh <RotateCcw size={13} />
-                  </button>
-                </div>
-                {audit.length ? (
-                  audit.map((a, i) => (
-                    <div className="audit-row" key={i}>
-                      <b>{a.action}</b>
-                      <small>{new Date(a.createdAt).toLocaleString()}</small>
-                    </div>
-                  ))
-                ) : (
-                  <p className="muted">
-                    Refresh to view uploads, analysis, entity views, resolution
-                    decisions, and exports.
-                  </p>
-                )}
-                <div className="note">
-                  This local prototype has no login or role enforcement. Use
-                  synthetic data only.
-                </div>
-              </section>
+              <AuditPanel/>
             </div>
           ) : null}
+          {page === "Diagnostics" && isAdmin && <Diagnostics />}
+          {page === "Investigation" && chosen && (
+            <div className="two-columns">
+              <EntityWorkflow
+                key={chosen.id}
+                entity={chosen}
+                workflow={workflow}
+                canEdit={canEdit}
+                onRefresh={refreshWorkflow}
+              />
+              <SimulationPanel key={`sim-${chosen.id}`} entity={chosen} />
+            </div>
+          )}
+          {page === "Investigation" && (
+            <section className="workflow-panel">
+              <h3>My watchlist</h3>
+              {workflow.watchlist.length ? (
+                workflow.watchlist.map((id) => (
+                  <button
+                    className="button compact"
+                    key={id}
+                    onClick={() => select(id)}
+                  >
+                    {graph.nodes.find((n) => n.id === id)?.label ?? id}
+                  </button>
+                ))
+              ) : (
+                <p>No watched entities.</p>
+              )}
+            </section>
+          )}
           <footer className="page-footer">
             <span>
               <ShieldCheck size={13} /> Every insight has a source. Every

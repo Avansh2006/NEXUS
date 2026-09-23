@@ -1840,3 +1840,4 @@ select {
     scroll-behavior: auto !important;
   }
 }
+.login-screen{min-height:100vh;display:grid;place-items:center;padding:24px}.login-card{width:min(440px,100%)}.login-card label,.workflow-panel label,.playback label{display:flex;flex-direction:column;gap:7px;margin:12px 0}.workflow-panel{padding:18px;margin:14px 0;border:1px solid #34535b;border-radius:10px;background:#10272e;min-width:0}.workflow-panel .button{margin:5px}.entity-note{border-bottom:1px solid #34535b;padding:10px 0;white-space:pre-wrap;overflow-wrap:anywhere}.triage-control small{display:block;margin:6px 0}.support-badge{padding:10px 0;font-size:12px}.workflow-panel table{width:100%;text-align:left;border-collapse:collapse}.workflow-panel td,.workflow-panel th{padding:8px}.playback input[type=range]{width:100%}.playback output{overflow-wrap:anywhere}.login-card input{width:100%}button:disabled{cursor:not-allowed;opacity:.45}

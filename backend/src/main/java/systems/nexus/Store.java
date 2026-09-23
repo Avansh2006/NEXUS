@@ -31,7 +31,7 @@ public class Store {
         if(!n.has("nodes")) return new Model.Graph(List.of(),List.of(),List.of(),List.of(),json.createObjectNode(),false,List.of());
         try { return json.treeToValue(n,Model.Graph.class); } catch(JsonProcessingException e) { throw new IllegalStateException(e); }
     }
-    public void reset() { db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
+    public void reset() { db.update("DELETE FROM entity_note"); db.update("DELETE FROM watchlist_entry"); db.update("DELETE FROM workflow_user"); db.update("DELETE FROM alert_triage"); db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
     public void deleteSourcesByCaseId(String caseId) {
         var list = sources();
         for (var s : list) {
@@ -54,7 +54,9 @@ public class Store {
         }
     }
 
-    public synchronized void audit(String action, String userId, String entityId, String payloadDigest) {
+    @org.springframework.transaction.annotation.Transactional
+    public void audit(String action, String userId, String entityId, String payloadDigest) {
+        db.queryForList("SELECT id FROM audit_chain_lock WHERE id=1 FOR UPDATE");
         String prevHash = db.query(
             "SELECT entry_hash FROM audit_log ORDER BY id DESC LIMIT 1",
             (rs, n) -> rs.getString(1)
@@ -70,8 +72,11 @@ public class Store {
         );
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void audit(String action) {
-        audit(action, "system", "", "");
+        var attributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        Object user = attributes instanceof org.springframework.web.context.request.ServletRequestAttributes request ? request.getRequest().getAttribute("nexus.user") : null;
+        audit(action, user instanceof String name ? name : "system", "", "");
     }
 
     public List<Map<String,Object>> audit() {

@@ -25,6 +25,7 @@ public class InvestigationService {
         return v;
     }
     public synchronized IngestResult ingest(String kind,IngestRequest request) {
+        if(!Set.of("fir","criminal-history","intel-report","surveillance-report","cdr","transactions").contains(kind)) throw new IllegalArgumentException("Unsupported source kind");
         List<JsonNode> rows=request.records();
         if("csv".equals(request.format())) {
             if(request.content()==null||request.content().contains("\uFFFD")) throw new IllegalArgumentException("CSV must contain valid UTF-8 content");
@@ -38,13 +39,16 @@ public class InvestigationService {
         for(int i=0;i<rows.size();i++) {
             ObjectNode p;
             try {
-                if(!rows.get(i).isObject()) throw new IllegalArgumentException("Row must be an object");
+                if(rows.get(i)==null||!rows.get(i).isObject()) throw new IllegalArgumentException("Row must be an object");
                 p=(ObjectNode)rows.get(i).deepCopy();p.remove(List.of("_entities","_row"));
                 required(p,"caseId");
-                if(kind.equals("fir")) {
+                if(GraphBuilder.narrative(kind)) {
                     String t=p.path("text").asText("");
-                    if(t.isBlank()||t.length()>10000||t.contains("\uFFFD")) throw new IllegalArgumentException("FIR text must contain 1–10000 valid characters");
+                    if(!p.path("text").isTextual()||t.isBlank()||t.length()>10000||t.contains("\uFFFD")) throw new IllegalArgumentException("Narrative text must contain 1–10000 valid characters");
                     p.put("date",Instant.parse(required(p,"date")).toString());
+                    if(p.has("sourceReliability") && (!p.get("sourceReliability").isTextual() || !p.get("sourceReliability").asText().matches("[A-F]"))) throw new IllegalArgumentException("sourceReliability must be A–F");
+                    if(p.has("informationCredibility") && (!(p.get("informationCredibility").isTextual() || p.get("informationCredibility").isIntegralNumber()) || !p.get("informationCredibility").asText().matches("[1-6]"))) throw new IllegalArgumentException("informationCredibility must be 1–6");
+                    if(p.has("informationCredibility"))p.put("informationCredibility",p.get("informationCredibility").asText());
                     if(p.has("crimeType")) required(p,"crimeType");
                 } else {
                     String from=required(p,"from"),to=required(p,"to");
@@ -63,7 +67,7 @@ public class InvestigationService {
             String hash=GraphBuilder.hash(kind+store.encode(sorted));
             if(store.exists(hash)) { duplicates++;continue; }
             String sid="src-"+hash.substring(0,24);
-            if(kind.equals("fir")) p.set("_entities",json.valueToTree(engine.extract(p.path("text").asText(),sid).entities()));
+            if(GraphBuilder.narrative(kind)) p.set("_entities",json.valueToTree(engine.extract(p.path("text").asText(),sid).entities()));
             p.put("_row",i+1);store.source(sid,kind,hash,p);accepted++;
         }
         if(accepted>0) rebuild();
@@ -138,7 +142,7 @@ public class InvestigationService {
         }
 
         double latencyMs = (System.nanoTime() - start) / 1_000_000.0;
-        store.audit("demo:incoming:ingest", "system", caseId, "latency=" + String.format(Locale.ROOT, "%.2f", latencyMs));
+        store.audit("demo:incoming:ingest:"+caseId);
 
         Map<String, Object> resp = new LinkedHashMap<>();
         resp.put("status", "ok");
@@ -156,7 +160,7 @@ public class InvestigationService {
         if (!graph().nodes().isEmpty()) {
             analyze();
         }
-        store.audit("demo:incoming:remove", "system", caseId, "");
+        store.audit("demo:incoming:remove:"+caseId);
         return Map.of(
             "status", "ok",
             "removed", caseId,

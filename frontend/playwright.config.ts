@@ -13,7 +13,8 @@ export default defineConfig({
     baseURL:process.env.NEXUS_UI_URL??'http://localhost:8080',
     viewport:{width:1440,height:1000},
     channel:process.env.PLAYWRIGHT_CHANNEL||undefined,
-    trace:'retain-on-failure',
+    // Real login traces include passwords and bearer headers. Keep them opt-in and private.
+    trace:process.env.NEXUS_PRIVATE_TRACE==='1'?'retain-on-failure':'off',
     screenshot:'only-on-failure',
     video:'on',
   },

@@ -13,6 +13,14 @@ services:
     region: oregon
     healthCheckPath: /api/health
     envVars:
+      - key: NEXUS_JWT_SECRET
+        generateValue: true
+      - key: NEXUS_ADMIN_PASSWORD_HASH
+        sync: false
+      - key: NEXUS_INVESTIGATOR_PASSWORD_HASH
+        sync: false
+      - key: NEXUS_VIEWER_PASSWORD_HASH
+        sync: false
       - key: PORT
         value: 10000
       - key: FRONTEND_ORIGIN

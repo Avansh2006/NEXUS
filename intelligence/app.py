@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -7,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from analysis import analyze
 from extraction import extract
+from evaluate_multilingual import evaluate as evaluate_multilingual
 from intent import map_intent, IntentModel
 
 app = FastAPI(title='NEXUS intelligence', docs_url=None, redoc_url=None)
@@ -24,7 +26,7 @@ class IntentRequest(BaseModel):
 
 @app.get('/health')
 def health():
-    return {'status': 'ok'}
+    return {'status': 'ok', 'version': '0.1.0', 'versions': {'python': platform.python_version(), 'intelligence': '0.1.0'}}
 
 
 @app.post('/copilot/intent')
@@ -60,7 +62,7 @@ def quality():
                truePositives=tp, falsePositives=fp, falseNegatives=fn, samples=len(gold),
                scope='Synthetic template gold set; not a real-world accuracy claim')
 
-    eval_path = Path(__file__).resolve().parents[1] / 'data' / 'eval' / 'evaluation_results.json'
+    eval_path = path.parent / 'eval' / 'evaluation_results.json'
     if eval_path.exists():
         try:
             eval_data = json.loads(eval_path.read_text(encoding='utf-8'))
@@ -86,4 +88,5 @@ def quality():
             }
         except Exception:
             pass
+    res['multilingualSynthetic'] = evaluate_multilingual()
     return res

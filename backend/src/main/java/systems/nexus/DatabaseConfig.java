@@ -25,6 +25,9 @@ public class DatabaseConfig {
     @Value("${spring.datasource.password:}")
     private String password;
 
+    @Value("${spring.datasource.hikari.connection-timeout:5000}")
+    private long connectionTimeout = 5000;
+
     @Bean
     @Primary
     public DataSource dataSource() {
@@ -33,6 +36,9 @@ public class DatabaseConfig {
         if (rawUrl != null && (rawUrl.startsWith("postgres://") || rawUrl.startsWith("postgresql://"))) {
             try {
                 URI uri = new URI(rawUrl);
+                if (uri.getHost() == null || uri.getPath() == null || uri.getPath().length() < 2) {
+                    throw new IllegalArgumentException("Invalid cloud database URI");
+                }
                 String userInfo = uri.getUserInfo();
                 String user = username;
                 String pass = password;
@@ -45,16 +51,14 @@ public class DatabaseConfig {
                 String path = uri.getPath();
                 String jdbcUrl = "jdbc:postgresql://" + uri.getHost() + ":" + port + path;
 
-                log.info("Configuring cloud PostgreSQL DataSource: jdbc:postgresql://{}:{}{}", uri.getHost(), port, path);
+                log.info("Configuring cloud PostgreSQL DataSource");
                 config.setJdbcUrl(jdbcUrl);
                 config.setUsername(user);
                 config.setPassword(pass);
                 config.setDriverClassName("org.postgresql.Driver");
             } catch (Exception e) {
-                log.warn("Failed to parse cloud database URI '{}', falling back to raw: {}", rawUrl, e.getMessage());
-                config.setJdbcUrl(rawUrl);
-                config.setUsername(username);
-                config.setPassword(password);
+                // Neither the raw URI nor the parse exception is safe to log: both can contain credentials.
+                throw new IllegalArgumentException("Invalid cloud database URI");
             }
         } else if (rawUrl != null && !rawUrl.isBlank()) {
             config.setJdbcUrl(rawUrl);
@@ -70,7 +74,7 @@ public class DatabaseConfig {
 
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(2);
-        config.setConnectionTimeout(30000);
+        config.setConnectionTimeout(connectionTimeout);
         return new HikariDataSource(config);
     }
 }

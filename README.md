@@ -1,53 +1,83 @@
 # NEXUS
+
 **Network Exploration & eXtraction for Unified Intelligence Systems**
 
-An evidence-linked investigation workbench that connects fragmented fictional FIRs,
-call records, and transactions. **PROTOTYPE — SYNTHETIC DATA.**
+An evidence-linked investigation workbench for fictional narratives, call records,
+and transactions. **PROTOTYPE - SYNTHETIC DATA.** Descriptive patterns and structural
+simulations support human review; they do not establish guilt or recommend enforcement.
 
 ## Run with Docker
-1. Copy `.env.example` to `.env` and replace `POSTGRES_PASSWORD` with a local password.
-2. Run `docker compose up --build`.
-3. Open http://localhost:8080, choose **Load demo**, then **Analyze Network**.
 
-Images and packages need network access on the first build. The built demo runs
-without external APIs, remote fonts, an LLM, or pretrained model downloads.
-The only published port binds to localhost. This prototype has no authentication.
+From the repository root, with Python and Docker Compose installed:
 
-## Stack
-React 19 + TypeScript + Vite + Tailwind + Cytoscape/fcose; Spring Boot/Java 17;
-PostgreSQL 16; stateless Python FastAPI + spaCy EntityRuler + NetworkX.
+```sh
+python -m pip install -r scripts/requirements-dev.txt
+python scripts/setup_credentials.py
+docker compose up --build -d
+```
 
-## Development
+The credential helper creates private `.env` and `.tools/credentials.json` files,
+including a database password, signing secret, BCrypt hashes, and local/test account
+passwords. It prints file locations, never credentials. Existing complete authentication
+configuration is retained; incomplete configuration must be resolved before proceeding.
+Keep both files out of Git and shared logs. Open the private credentials file locally
+when signing in; there are no built-in passwords.
+
+Open http://localhost:8080, sign in as `admin`, choose **Load demo**, then
+**Analyze Network**. `investigator` can ingest, analyze, resolve matches, and update
+workflow. `viewer` can read, download reports/exports, and run non-mutating simulations.
+Only `admin` controls the demo and service diagnostics.
+
+Initial builds require network access. The built application uses local fonts,
+synthetic fixtures, and its internal intelligence service, without an external LLM
+or pretrained model download. Compose publishes the application on loopback.
+
+## Stack and capabilities
+
+React 19, TypeScript, Vite, Cytoscape/fcose and Three.js; Spring Boot on Java 17;
+PostgreSQL 16; Python 3.12 with FastAPI, spaCy EntityRuler and NetworkX.
+
+- FIR, criminal-history, intelligence-report and surveillance-report narratives,
+  plus call-detail and financial records, with original source spans.
+- Exact-identifier resolution, reversible reviewed merges, evidence-support badges,
+  communities, descriptive patterns and source-linked reports.
+- Persistent entity notes, personal watchlists, versioned alert triage, manual-first
+  timeline playback, structural removal simulation, CSV and GraphML exports.
+- Expiring authenticated sessions, role-aware controls, attributed audit chain
+  verification, and administrator diagnostics.
+
+See [feature inventory](docs/FINAL_FEATURES.md), [API contract](docs/API.md), and
+[prototype security](docs/SECURITY.md) for precise scope and limitations.
+
+## Development and verification
+
 Prerequisites: Java 17+, Maven 3.9+, Python 3.12, Node 22+, pnpm 11.
+Create a virtual environment, install `intelligence/requirements.txt` and
+`scripts/requirements-dev.txt`, generate credentials, and install frontend dependencies
+with `pnpm install --frozen-lockfile` inside `frontend`.
+
+On Windows, `scripts/start-local.ps1` starts the local stack using repository-relative
+paths and local environment configuration. The local Java profile uses H2 in PostgreSQL
+mode; Compose verification exercises PostgreSQL. For manual service startup, load the
+configured authentication variables into the Java process environment first.
 
 ```sh
-python -m venv .venv
-# Activate .venv for your shell
-pip install -r intelligence/requirements.txt
-python scripts/generate_demo.py
-cd intelligence
-uvicorn app:app --host 127.0.0.1 --port 8000
+python -m pytest -q intelligence
+mvn -f backend/pom.xml test
+# Inside frontend:
+pnpm build
+pnpm test:e2e
+# Repository root, running stack and test credentials in the environment:
+python scripts/verify_demo.py
 ```
 
-In a second terminal, `cd backend` and `mvn spring-boot:run -Dspring-boot.run.profiles=local`.
-The **local** profile uses H2 in PostgreSQL mode for development only.
-In a third terminal, `cd frontend`, `pnpm install`, and `pnpm dev`.
-Frontend proxies requests to port 8081. Use http://localhost:8080 for the configured origin.
+Rehearsal and integration tests reset synthetic investigation state. See the
+[testing guide](docs/TESTING_GUIDE.md) for credential loading, commands, artifacts,
+and acceptance checks. Feature implementation is separate from final integrated test
+results; see [Azure completion results](docs/AZURE_COMPLETION_RESULTS.md) for the
+recorded source snapshot, logs, and exit codes.
 
-```sh
-cd intelligence && python -m pytest -q
-cd ../backend && mvn test
-cd ../frontend && pnpm build
-cd .. && python scripts/verify_demo.py
-```
-
-The rehearsal script resets the synthetic investigation and finishes with an analyzed
-demo and a printable report in ignored `artifacts/`. See [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md).
-Extraction quality is a synthetic template benchmark, not real-world accuracy.
-See [docs/FINAL_FEATURES.md](docs/FINAL_FEATURES.md) for verified scope and limitations.
-For setup, sample inputs, manual acceptance checks, automated UI tests and
-troubleshooting, read the [complete testing guide](docs/TESTING_GUIDE.md).
-
-## Git workflow
-One commit per completed implementation step; push after two or three steps.
-Repository: https://github.com/Avansh2006/NEXUS (private).
+VS Code launch/attach configurations and request-ID debugging are documented in
+[Debugging](docs/DEBUGGING.md). The newly provisioned dedicated Azure VM, loopback
+SSH access, and repeatable verification runner are documented in
+[Azure test VM](docs/AZURE_TEST_VM.md).

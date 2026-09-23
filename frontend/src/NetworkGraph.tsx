@@ -35,8 +35,9 @@ export default function NetworkGraph({
 }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const cy = useRef<Core | null>(null);
+  const positions = useRef(new Map<string, { x: number; y: number }>());
   const select = useRef(onSelect);
-  const visibleKey=[...visible].sort().join('|');
+  const visibleKey = [...visible].sort().join("|");
   select.current = onSelect;
   useEffect(() => {
     if (!host.current) return;
@@ -87,9 +88,17 @@ export default function NetworkGraph({
               target,
               label: e.type.replaceAll("_", " "),
               type: e.type,
+              support: e.properties.support?.level ?? "Low",
             },
           });
       }
+    const allPositioned = elements
+      .filter((e) => !e.data.source)
+      .every((e) => positions.current.has(String(e.data.id)));
+    for (const e of elements) {
+      const pos = positions.current.get(String(e.data.id));
+      if (pos) e.position = pos;
+    }
     const instance = cytoscape({
       container: host.current,
       elements,
@@ -142,6 +151,7 @@ export default function NetworkGraph({
             "target-arrow-shape": "none",
           },
         },
+        { selector: 'edge[support="Low"]', style: { "line-style": "dashed" } },
         { selector: ".dim", style: { opacity: 0.1 } },
         {
           selector: ".active",
@@ -173,7 +183,7 @@ export default function NetworkGraph({
         },
       ],
       layout: {
-        name: "fcose",
+        name: allPositioned ? "preset" : "fcose",
         quality: "default",
         randomize: true,
         animate: false,
@@ -195,6 +205,9 @@ export default function NetworkGraph({
     return () => {
       observer.disconnect();
       onReady(null);
+      instance.nodes().forEach((n) => {
+        positions.current.set(n.id(), { ...n.position() });
+      });
       instance.destroy();
       cy.current = null;
     };
@@ -239,7 +252,13 @@ export default function NetworkGraph({
     <div
       ref={host}
       className="cytoscape"
-      data-entity-types={[...new Set(graph.nodes.filter(n=>visible.has(n.id)).map(n=>n.type))].sort().join(',')}
+      data-entity-types={[
+        ...new Set(
+          graph.nodes.filter((n) => visible.has(n.id)).map((n) => n.type),
+        ),
+      ]
+        .sort()
+        .join(",")}
       role="img"
       aria-label="Interactive evidence network. Use the search and entity list to select nodes with the keyboard."
     />
