@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Core } from "cytoscape";
 import {
   Activity,
@@ -43,11 +43,9 @@ import type {
 import NetworkGraph from "./NetworkGraph";
 import Inspector, { HighlightedText } from "./Inspector";
 import CaseLinks from "./CaseLinks";
-import { motion } from "motion/react";
 import AnimatedCount from "./AnimatedCount";
 import InvestigationJourney from "./InvestigationJourney";
 import TacticalHUD from "./TacticalHUD";
-import TacticalGlobe3D from "./TacticalGlobe3D";
 import SpotlightCard from "./SpotlightCard";
 import IntelCopilot from "./IntelCopilot";
 
@@ -81,6 +79,7 @@ const ruleNames: Record<string, string> = {
   R6: "Repeated co-accusation",
   R7: "Circular transaction laundering loop",
 };
+const TacticalGlobe3D = lazy(() => import("./TacticalGlobe3D"));
 export default function App({ session }: { session: Session }) {
   const canEdit = session.role !== "VIEWER",
     isAdmin = session.role === "ADMIN";
@@ -92,6 +91,8 @@ export default function App({ session }: { session: Session }) {
   const [page, setPage] = useState("Investigation"),
     [graph, setGraph] = useState<Graph>(emptyGraph),
     [selected, setSelected] = useState("");
+  const pageRef = useRef(page);
+  pageRef.current = page;
   const [busy, setBusy] = useState(""),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
@@ -122,7 +123,7 @@ export default function App({ session }: { session: Session }) {
   const cy = useRef<Core | null>(null);
   const lastGraphImage = useRef<string | undefined>(undefined);
   const onReady = useCallback((c: Core | null) => {
-    if (!c && cy.current && !cy.current.destroyed())
+    if (!c && pageRef.current !== "Investigation" && cy.current && !cy.current.destroyed())
       lastGraphImage.current = cy.current.png({
         output: "base64uri",
         bg: "#13282e",
@@ -631,8 +632,8 @@ export default function App({ session }: { session: Session }) {
             </button>
           ))}
           {isAdmin && (
-            <button className="nav-item" onClick={() => setPage("Diagnostics")}>
-              Diagnostics
+            <button aria-label="Diagnostics" title="Diagnostics" className={page === "Diagnostics" ? "nav-item active" : "nav-item"} onClick={() => setPage("Diagnostics")}>
+              <ShieldCheck size={18} /><span>Diagnostics</span>
             </button>
           )}
         </nav>
@@ -684,12 +685,9 @@ export default function App({ session }: { session: Session }) {
             </button>
           </div>
         </header>
-        <motion.div
+        <div
           key={page}
           className="page-content"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="page-title">
             <div>
@@ -717,7 +715,6 @@ export default function App({ session }: { session: Session }) {
                   className="button incoming-remove-btn"
                   onClick={removeIncoming}
                   disabled={!!busy || !isAdmin}
-                  style={{ borderColor: "#ef4444", color: "#fca5a5" }}
                   title="Retract simulated incoming FIR NXS-007 from active workspace"
                 >
                   <RotateCcw size={15} />
@@ -728,7 +725,6 @@ export default function App({ session }: { session: Session }) {
                   className="button incoming-fir-btn"
                   onClick={loadIncoming}
                   disabled={!!busy || !graph.nodes.length || !isAdmin}
-                  style={{ borderColor: "#f59e0b", color: "#fcd34d" }}
                   title="Simulate live streaming ingestion of incoming FIR (NXS-007) linking into existing cases"
                 >
                   <Radio size={15} className="text-amber-400 animate-pulse" />
@@ -812,12 +808,9 @@ export default function App({ session }: { session: Session }) {
           ) : null}
           <div className="stats">
             {stats.map(([label, value, Icon], i) => (
-              <motion.div
+              <div
                 className="stat"
                 key={label}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.055 }}
               >
                 <div className={`stat-icon s${i}`}>
                   <Icon size={19} />
@@ -837,7 +830,7 @@ export default function App({ session }: { session: Session }) {
                     </small>
                   </strong>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
@@ -1093,6 +1086,7 @@ export default function App({ session }: { session: Session }) {
                         />
                       </div>
                       {viewMode === "3d" ? (
+                        <Suspense fallback={<div className="graph-loading" role="status">Loading 3D network…</div>}>
                         <TacticalGlobe3D
                           nodes={playbackGraph.nodes.filter((n) =>
                             visible.has(n.id),
@@ -1104,6 +1098,7 @@ export default function App({ session }: { session: Session }) {
                           selectedId={selected}
                           onSelectNode={select}
                         />
+                        </Suspense>
                       ) : null}
                     </>
                   ) : (
@@ -1836,7 +1831,7 @@ export default function App({ session }: { session: Session }) {
               <span>NEXUS / INVESTIGATION SUITE</span>
             )}
           </footer>
-        </motion.div>
+        </div>
         <IntelCopilot
           graph={graph}
           onSelectEntity={(id) => {

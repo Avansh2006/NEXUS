@@ -180,7 +180,7 @@ export default function IntelCopilot({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#215a49] to-[#163f35] text-[#e0fff2] shadow-2xl border border-[#48997a66] hover:scale-105 transition-all font-sans text-xs font-medium cursor-pointer"
+          className="intel-copilot-trigger fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#215a49] to-[#163f35] text-[#e0fff2] shadow-2xl border border-[#48997a66] hover:scale-105 transition-all font-sans text-xs font-medium cursor-pointer"
           aria-label="Open NEXUS Intel Copilot"
         >
           <Sparkles size={16} className="text-[#5ce0a8] animate-pulse" />

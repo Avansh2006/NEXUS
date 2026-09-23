@@ -1,0 +1,115 @@
+/* Legible investigation surfaces and restrained interaction feedback. */
+:root { color: #19343b; background: #f4f7f6; font-size: 14px; }
+body { background: #f4f7f6; }
+.cytoscape canvas { animation: none; }
+p { color: #4e6670; }
+small { font-size: 11px; }
+.page-content { max-width: 1560px; }
+.page-title { gap: 24px; }
+.page-title p { font-size: 13px; color: #526d70; }
+.page-title .eyebrow { font-size: 11px; color: #41685a; }
+.breadcrumb, .prototype, .prototype b, .offline { font-size: 11px; }
+.prototype { color: #654e20; }
+.prototype > span:nth-of-type(1) { color: #6d5e3d; }
+.pill { font-size: 10px; color: #53645e; }
+.nav-item { font-size: 13px; color: #cad9d6; }
+.nav-item.active { color: #ecfff1; }
+.workspace-label, .local-status { font-size: 11px; color: #b4c9c5; }
+.sidebar-bottom p, .user, .user small { font-size: 11px; color: #b7cac8; }
+.button, .button.compact, .panel-heading button { font-size: 12px; }
+.button { min-height: 40px; }
+.button.compact { min-height: 36px; }
+.button:disabled { opacity: .58; }
+.button:not(:disabled):focus-visible, .nav-item:focus-visible { outline-color: #0d8163; }
+.incoming-fir-btn { color: #75490b; border-color: #bd8225; background: #fff9ea; }
+.incoming-fir-btn:hover:not(:disabled) { color: #603c09; background: #fff0cf; }
+.incoming-remove-btn { color: #a12c2c; border-color: #ce7774; background: #fff5f4; }
+.incoming-remove-btn:hover:not(:disabled) { color: #842121; background: #ffe9e6; }
+input, select, textarea { font-size: 13px; color: #203d44; }
+input::placeholder, textarea::placeholder { color: #627980; opacity: 1; }
+select { min-height: 38px; }
+.search-wrap input, .workspace-toolbar select { font-size: 13px; }
+.stat { border-color: #d4e0dc; box-shadow: 0 3px 16px #17372d08; }
+.stat span, .stat small { font-size: 11px; color: #526b70; }
+.stat strong { color: #17363e; }
+.panel, .alert-card, .report-card { border-color: #d5e0dc; }
+.panel-heading h3, .signal strong { font-size: 13px; color: #243f3e; }
+.signal p, .alert-card p, .quiet-state { font-size: 12px; color: #526b68; }
+.quality > p, .quality > small, .quality-scores span { font-size: 11px; color: #53695d; }
+.quality h4 { color: #25443f; }
+.quality-scores strong { color: #285f4a; }
+.rule-tag, .tag { font-size: 10px; }
+.section-intro p, .padded > label, .upload-zone > span, .upload-zone input, .ingest-result { font-size: 12px; color: #4e666b; }
+.error-text { font-size: 12px; color: #a83232; }
+.alert-card footer, .alert-card footer button { font-size: 11px; color: #3b6454; }
+.review-row p, .review-row small, .community-entity, .community-entity small { font-size: 11px; color: #526b68; }
+.timeline-event time, .timeline-event small, .timeline-event b, .timeline-event p { font-size: 12px; color: #486558; }
+.report-card ul, .report-card > small, .audit-row b, .audit-row small { font-size: 12px; color: #526b61; }
+.graph-heading, .graph-bottom { color: #e4f1ef; }
+.graph-heading > span, .legend span { font-size: 11px; color: #d0e2df; }
+.graph-empty p, .graph-empty > small, .graph-empty .eyebrow { color: #c1d4d0; font-size: 12px; }
+.graph-empty h2 { color: #ecf7f3; }
+.graph-empty .button { color: #fff; font-size: 12px; }
+.inspector p, .inspector small, .source-record, .connections button { font-size: 12px; }
+.page-footer { font-size: 11px; color: #526b68; }
+.status { font-size: 12px; }
+
+/* Workflow and export cards were dark while their inherited text stayed dark. */
+.workflow-panel { background: #fff; border: 1px solid #d5e0dc; border-radius: 12px; color: #19343b; box-shadow: 0 4px 20px #183c2f09; padding: 22px; }
+.workflow-panel h3 { font-size: 16px; color: #1b4540; margin: 0 0 11px; }
+.workflow-panel h3:not(:first-child) { margin-top: 20px; }
+.workflow-panel p, .workflow-panel label, .workflow-panel small { color: #4c666d; font-size: 12px; line-height: 1.55; }
+.workflow-panel .button { background: #edf6f2; color: #174d3e; border-color: #b9d4c8; margin: 5px 8px 5px 0; }
+.workflow-panel .button:hover:not(:disabled) { background: #dff0e8; border-color: #5a9d7d; }
+.workflow-panel textarea { width: 100%; min-height: 92px; resize: vertical; }
+.workflow-panel table { margin-top: 14px; font-size: 12px; }
+.workflow-panel th, .workflow-panel td { border-bottom: 1px solid #dfeae5; }
+.entity-note { border-color: #e1eae6; }
+.entity-note p { color: #203d44; white-space: pre-wrap; }
+.workflow-panel [role="alert"] { color: #a12a2a; }
+.support-badge { color: #315f4f; font-size: 12px; }
+.support-badge summary { cursor: pointer; font-weight: 600; }
+.support-badge p { padding-top: 5px; }
+.playback { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 10px 20px; align-items: end; }
+.playback .panel-heading { grid-column: 1 / -1; padding: 0 0 12px; }
+.playback label { margin: 0; font-size: 12px; color: #38575c; }
+.playback label:first-of-type { grid-column: 1 / 2; }
+.playback input[type="range"] { accent-color: #216c54; min-height: 24px; padding: 0; }
+.playback output { grid-column: 1 / 2; color: #1a4c3b; font-size: 12px; font-variant-numeric: tabular-nums; }
+.playback label:nth-of-type(2) { grid-column: 2; grid-row: 2; }
+.playback > button { grid-column: 3; grid-row: 2; }
+.playback > p { grid-column: 1 / -1; margin-top: 0; font-size: 11px; }
+.graph-loading { height: 420px; display: grid; place-items: center; color: #dcf0e9; background: #112a30; }
+
+@media (max-width: 1150px) {
+  .button, .button.compact { font-size: 12px; }
+  .page-title p { font-size: 12px; }
+  .stat span, .stat small { font-size: 11px; }
+}
+@media (max-width: 850px) {
+  .sidebar .nav-item { padding: 12px; }
+  .page-title .eyebrow { font-size: 10px; }
+  .search-wrap input { font-size: 13px; }
+  .stat { min-width: 0; }
+  .stat small { font-size: 10px; }
+}
+@media (max-width: 650px) {
+  .intel-copilot-trigger { width: 44px; height: 44px; right: 12px; bottom: 12px; padding: 0; justify-content: center; }
+  .intel-copilot-trigger > span { display: none; }
+  .page-content { padding: 18px 14px 0; }
+  .page-title h1 { font-size: 27px; }
+  .page-title p { font-size: 13px; }
+  .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .actions .button { white-space: normal; text-align: center; min-width: 0; }
+  .actions .button.primary { grid-column: 1 / -1; }
+  .stats { gap: 10px; }
+  .stat { padding: 13px; }
+  .stat span, .stat small { font-size: 10px; }
+  .stat small { display: block; margin: 4px 0 0; }
+  .playback { grid-template-columns: 1fr; gap: 10px; }
+  .playback .panel-heading, .playback label:first-of-type, .playback output, .playback label:nth-of-type(2), .playback > button, .playback > p { grid-column: 1; grid-row: auto; }
+  .workflow-panel { padding: 16px; }
+  .graph-heading > span, .legend span { font-size: 10px; }
+  .graph-bottom { flex-wrap: wrap; }
+  .prototype, .prototype b { font-size: 9px; }
+}
