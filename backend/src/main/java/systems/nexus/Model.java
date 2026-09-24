@@ -33,4 +33,44 @@ public final class Model {
                                      List<Map<String,Object>> faces, String alignedThumbnail) {}
     public record FaceDecisionRequest(String personNodeId, String decision, Double similarity,
                                       String imageHash, String modelName, String notes) {}
+
+    // Investigation Intelligence Suite Models
+    public record ReplayDelta(List<String> nodesAdded, List<String> edgesAdded, List<String> alertsTriggered) {}
+    public record ReplayCumulative(int nodeCount, int edgeCount, int alertCount) {}
+    public record ReplayStep(int step, String timestamp, String recordId, String kind, String caseId,
+                              String summary, ReplayDelta delta, ReplayCumulative cumulative) {}
+    public record ReplayResponse(List<ReplayStep> steps, int totalSteps, Graph graphAtStep) {}
+
+    public record WhatIfRequest(List<String> excludeSources, List<String> excludeIdentifiers,
+                                List<String> excludeDecisions, List<String> excludeNodes) {}
+    public record WhatIfDelta(List<Node> removedNodes, List<Node> addedNodes,
+                              List<Edge> removedEdges, List<Edge> addedEdges,
+                              List<JsonNode> affectedAlerts, List<String> connectivityChanges) {}
+    public record WhatIfResponse(boolean canonicalGraphUnchanged, int excludedCount,
+                                 String summary, WhatIfDelta delta, Graph simulatedGraph) {}
+
+    public record Contradiction(String id, String ruleId, String title, String severity,
+                                String description, List<String> entityIds, List<String> evidenceIds,
+                                List<String> sourceRecordIds, String reviewStatus, String reviewNotes,
+                                String reviewedBy, String reviewedAt) {}
+    public record ContradictionReview(String id, String ruleId, String status, String notes,
+                                      String author, String updatedAt) {}
+    public record ContradictionReviewRequest(String status, String notes) {}
+
+    public record EvidenceDetail(String evidenceId, String sourceRecordId, String sourceKind,
+                                 String caseId, String timestamp, double confidence,
+                                 String rawExcerpt, String rationale) {}
+    public record EvidenceTrailStep(Node sourceNode, Node targetNode, Edge edge, List<EvidenceDetail> evidence) {}
+    public record EvidenceTrailPath(int pathIndex, int totalHops, List<EvidenceTrailStep> steps, String pathSummary) {}
+    public record EvidenceTrailResponse(String fromNodeId, String toNodeId, String fromLabel, String toLabel,
+                                        List<EvidenceTrailPath> paths, String chainSummary) {}
+
+    public record InvestigationGap(String id, String category, String severity, String title,
+                                  String description, List<String> entityIds, List<String> suggestedActions) {}
+    public record GapsResponse(List<InvestigationGap> gaps, int totalGaps, Map<String, Integer> gapsByCategory) {}
+
+    public record NetworkChange(String id, String timestamp, String trigger, String changeType,
+                                String severity, String summary, List<String> affectedEntities,
+                                String previousState, String newState) {}
+    public record NetworkChangesResponse(List<NetworkChange> changes, int totalChanges, Map<String, Integer> changesByType) {}
 }

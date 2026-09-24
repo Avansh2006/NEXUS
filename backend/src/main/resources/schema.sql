@@ -24,3 +24,6 @@ CREATE INDEX IF NOT EXISTS person_face_node_idx ON person_face(person_node_id);
 CREATE INDEX IF NOT EXISTS person_face_hash_idx ON person_face(image_hash);
 CREATE TABLE IF NOT EXISTS face_decision (id VARCHAR(80) PRIMARY KEY, person_node_id VARCHAR(80) NOT NULL, decision VARCHAR(30) NOT NULL, similarity DOUBLE PRECISION NOT NULL, model_name VARCHAR(80) NOT NULL, image_hash VARCHAR(64) NOT NULL, notes VARCHAR(1000) DEFAULT '', author VARCHAR(80) NOT NULL, created_at VARCHAR(40) NOT NULL);
 CREATE INDEX IF NOT EXISTS face_decision_node_idx ON face_decision(person_node_id);
+CREATE TABLE IF NOT EXISTS contradiction_review (id VARCHAR(100) PRIMARY KEY, rule_id VARCHAR(20) NOT NULL, status VARCHAR(30) NOT NULL, notes VARCHAR(2000) DEFAULT '', author VARCHAR(80) NOT NULL, updated_at VARCHAR(40) NOT NULL);
+CREATE INDEX IF NOT EXISTS contradiction_review_rule_idx ON contradiction_review(rule_id);
+

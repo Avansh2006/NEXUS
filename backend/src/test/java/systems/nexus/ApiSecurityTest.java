@@ -66,6 +66,8 @@ class ApiSecurityTest extends TestCredentials {
         mvc.perform(postAs("/api/data/transactions","viewer").content("{}")).andExpect(status().isForbidden());
         mvc.perform(get("/api/diagnostics").header("Authorization",bearer("viewer"))).andExpect(status().isForbidden());
         mvc.perform(postAs("/api/reports","viewer").content("{}")).andExpect(status().isOk());
+        mvc.perform(postAs("/api/investigation/what-if","viewer").content("{}")).andExpect(status().isOk());
+        mvc.perform(postAs("/api/investigation/contradictions/C1-test/review","viewer").content("{\"status\":\"ACKNOWLEDGED\"}")).andExpect(status().isForbidden());
         mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("{\"username\":\"admin\",\"password\":\"wrong\"}"))
             .andExpect(status().isUnauthorized());
         mvc.perform(get("/api/auth/me").header("Authorization","Bearer invalid")).andExpect(status().isUnauthorized());

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { FileText, Link2, ArrowUpRight, ScanFace, Plus, Trash2 } from "lucide-react";
+import { FileText, Link2, ArrowUpRight, ScanFace, Plus, Trash2, Waypoints, GitBranch } from "lucide-react";
 import { SupportBadge } from "./Workflow";
 import { colors, api, apiForm, apiDelete } from "./types";
 import type { Graph, Source, PersonFace } from "./types";
@@ -35,10 +35,12 @@ export default function Inspector({
   graph,
   selected,
   onSelect,
+  onNavigateToIntelligence,
 }: {
   graph: Graph;
   selected: string;
   onSelect: (id: string) => void;
+  onNavigateToIntelligence?: (tab: string, entityLabel?: string) => void;
 }) {
   const n = graph.nodes.find((n) => n.id === selected);
   if (!n)
@@ -131,6 +133,45 @@ export default function Inspector({
       </span>
       <h2>{n.label}</h2>
       <SupportBadge support={n.properties.support} />
+
+      {onNavigateToIntelligence && (
+        <div style={{ marginTop: 10, marginBottom: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button
+            onClick={() => onNavigateToIntelligence("trail", n.label)}
+            style={{
+              fontSize: 10,
+              padding: "4px 8px",
+              background: "#182c30",
+              color: "#a5f3fc",
+              border: "1px solid #234f59",
+              borderRadius: 5,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              cursor: "pointer",
+            }}
+          >
+            <Waypoints size={12} /> Evidence Trail
+          </button>
+          <button
+            onClick={() => onNavigateToIntelligence("what-if", n.label)}
+            style={{
+              fontSize: 10,
+              padding: "4px 8px",
+              background: "#182c30",
+              color: "#cbd5e1",
+              border: "1px solid #334155",
+              borderRadius: 5,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              cursor: "pointer",
+            }}
+          >
+            <GitBranch size={12} /> Simulate Exclusion
+          </button>
+        </div>
+      )}
 
       {n.type === "Person" && (
         <div style={{ marginTop: 12, marginBottom: 12, background: "#0c181c", border: "1px solid #1c3d35", borderRadius: 8, padding: 10 }}>

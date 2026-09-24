@@ -31,6 +31,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import VisualIdentitySearch from "./VisualIdentitySearch";
+import InvestigationIntelligence from "./InvestigationIntelligence";
 import { api, apiRaw, setSession, colors, emptyGraph } from "./types";
 import type {
   Session,
@@ -67,6 +68,7 @@ const nav = [
   ["Dashboard", LayoutDashboard],
   ["Investigation", Network],
   ["Visual Identity", ScanFace],
+  ["Investigation Intelligence", Sparkles],
   ["Data Ingestion", Database],
   ["Alerts", Activity],
   ["Clusters", Boxes],
@@ -94,6 +96,9 @@ export default function App({ session }: { session: Session }) {
   const [page, setPage] = useState("Investigation"),
     [graph, setGraph] = useState<Graph>(emptyGraph),
     [selected, setSelected] = useState("");
+  const [intelligenceTab, setIntelligenceTab] = useState<
+    "replay" | "what-if" | "contradictions" | "trail" | "gaps" | "radar"
+  >("replay");
   const pageRef = useRef(page);
   pageRef.current = page;
   const [busy, setBusy] = useState(""),
@@ -1195,6 +1200,10 @@ export default function App({ session }: { session: Session }) {
                   graph={graph}
                   selected={selected}
                   onSelect={select}
+                  onNavigateToIntelligence={(t) => {
+                    setIntelligenceTab(t as any);
+                    setPage("Investigation Intelligence");
+                  }}
                 />
               </div>
               {path ? (
@@ -1359,6 +1368,19 @@ export default function App({ session }: { session: Session }) {
                 setFocus(1);
               }}
               onRefreshGraph={refresh}
+            />
+          ) : null}
+
+          {page === "Investigation Intelligence" ? (
+            <InvestigationIntelligence
+              graph={graph}
+              session={session}
+              defaultTab={intelligenceTab}
+              onSelectEntity={(entityId) => {
+                select(entityId);
+                setPage("Investigation");
+                setFocus(1);
+              }}
             />
           ) : null}
 

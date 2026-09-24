@@ -31,7 +31,21 @@ public class Store {
         if(!n.has("nodes")) return new Model.Graph(List.of(),List.of(),List.of(),List.of(),json.createObjectNode(),false,List.of());
         try { return json.treeToValue(n,Model.Graph.class); } catch(JsonProcessingException e) { throw new IllegalStateException(e); }
     }
-    public void reset() { db.update("DELETE FROM face_decision"); db.update("DELETE FROM person_face"); db.update("DELETE FROM entity_note"); db.update("DELETE FROM watchlist_entry"); db.update("DELETE FROM workflow_user"); db.update("DELETE FROM alert_triage"); db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
+    public void reset() { db.update("DELETE FROM contradiction_review"); db.update("DELETE FROM face_decision"); db.update("DELETE FROM person_face"); db.update("DELETE FROM entity_note"); db.update("DELETE FROM watchlist_entry"); db.update("DELETE FROM workflow_user"); db.update("DELETE FROM alert_triage"); db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
+    public void saveContradictionReview(Model.ContradictionReview r) {
+        db.update("DELETE FROM contradiction_review WHERE id=?", r.id());
+        db.update("INSERT INTO contradiction_review(id, rule_id, status, notes, author, updated_at) VALUES(?,?,?,?,?,?)",
+            r.id(), r.ruleId(), r.status(), r.notes(), r.author(), r.updatedAt());
+    }
+    public List<Model.ContradictionReview> contradictionReviews() {
+        return db.query("SELECT id, rule_id, status, notes, author, updated_at FROM contradiction_review",
+            (rs,n) -> new Model.ContradictionReview(rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5),rs.getString(6)));
+    }
+    public Optional<Model.ContradictionReview> contradictionReview(String id) {
+        var rows = db.query("SELECT id, rule_id, status, notes, author, updated_at FROM contradiction_review WHERE id=?",
+            (rs,n) -> new Model.ContradictionReview(rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5),rs.getString(6)), id);
+        return rows.stream().findFirst();
+    }
     public void addFace(Model.PersonFace f) {
         db.update("INSERT INTO person_face VALUES(?,?,?,CAST(? AS JSONB),?,?,?,?,?,CAST(? AS JSONB))",
             f.id(), f.personNodeId(), f.imageHash(), encode(f.embedding()), f.modelName(), f.modelVersion(),

@@ -460,3 +460,161 @@ export interface FaceDecisionRequest {
   notes: string;
 }
 
+// ==========================================
+// Investigation Intelligence Suite Types
+// ==========================================
+
+export interface ReplayDelta {
+  nodesAdded: string[];
+  edgesAdded: string[];
+  alertsTriggered: string[];
+}
+
+export interface ReplayCumulative {
+  nodeCount: number;
+  edgeCount: number;
+  alertCount: number;
+}
+
+export interface ReplayStep {
+  step: number;
+  timestamp: string;
+  recordId: string;
+  kind: string;
+  caseId: string;
+  summary: string;
+  delta: ReplayDelta;
+  cumulative: ReplayCumulative;
+}
+
+export interface ReplayResponse {
+  steps: ReplayStep[];
+  totalSteps: number;
+  graphAtStep: Graph | null;
+}
+
+export interface WhatIfRequest {
+  excludeSources?: string[];
+  excludeIdentifiers?: string[];
+  excludeDecisions?: string[];
+  excludeNodes?: string[];
+}
+
+export interface WhatIfDelta {
+  removedNodes: Entity[];
+  addedNodes: Entity[];
+  removedEdges: Edge[];
+  addedEdges: Edge[];
+  affectedAlerts: Alert[];
+  connectivityChanges: string[];
+}
+
+export interface WhatIfResponse {
+  canonicalGraphUnchanged: boolean;
+  excludedCount: number;
+  summary: string;
+  delta: WhatIfDelta;
+  simulatedGraph: Graph;
+}
+
+export type ContradictionRuleId = "C1" | "C2" | "C3" | "C4" | "C5" | "C6";
+export type ContradictionReviewStatus = "PENDING" | "ACKNOWLEDGED" | "RESOLVED" | "FLAGGED_FALSE_POSITIVE" | "UNDER_INVESTIGATION";
+
+export interface Contradiction {
+  id: string;
+  ruleId: ContradictionRuleId;
+  title: string;
+  severity: "HIGH" | "MEDIUM" | "LOW";
+  description: string;
+  entityIds: string[];
+  evidenceIds: string[];
+  sourceRecordIds: string[];
+  reviewStatus: ContradictionReviewStatus;
+  reviewNotes: string;
+  reviewedBy: string;
+  reviewedAt: string;
+}
+
+export interface ContradictionReview {
+  id: string;
+  ruleId: string;
+  status: ContradictionReviewStatus;
+  notes: string;
+  author: string;
+  updatedAt: string;
+}
+
+export interface ContradictionReviewRequest {
+  status: ContradictionReviewStatus;
+  notes: string;
+}
+
+export interface EvidenceDetail {
+  evidenceId: string;
+  sourceRecordId: string;
+  sourceKind: string;
+  caseId: string;
+  timestamp: string;
+  confidence: number;
+  rawExcerpt: string;
+  rationale: string;
+}
+
+export interface EvidenceTrailStep {
+  sourceNode: Entity;
+  targetNode: Entity;
+  edge: Edge;
+  evidence: EvidenceDetail[];
+}
+
+export interface EvidenceTrailPath {
+  pathIndex: number;
+  totalHops: number;
+  steps: EvidenceTrailStep[];
+  pathSummary: string;
+}
+
+export interface EvidenceTrailResponse {
+  fromNodeId: string;
+  toNodeId: string;
+  fromLabel: string;
+  toLabel: string;
+  paths: EvidenceTrailPath[];
+  chainSummary: string;
+}
+
+export interface InvestigationGap {
+  id: string;
+  category: "UNRESOLVED_IDENTIFIER" | "DEAD_END_LEAD" | "UNVERIFIED_ASSET" | "SINGLE_SOURCE_RISK" | "TEMPORAL_BLINDSPOT";
+  severity: "HIGH" | "MEDIUM" | "LOW";
+  title: string;
+  description: string;
+  entityIds: string[];
+  suggestedActions: string[];
+}
+
+export interface GapsResponse {
+  gaps: InvestigationGap[];
+  totalGaps: number;
+  gapsByCategory: Record<string, number>;
+}
+
+export interface NetworkChange {
+  id: string;
+  timestamp: string;
+  trigger: string;
+  changeType: string;
+  severity: "HIGH" | "MEDIUM" | "LOW";
+  summary: string;
+  affectedEntities: string[];
+  previousState: string;
+  newState: string;
+}
+
+export interface NetworkChangesResponse {
+  changes: NetworkChange[];
+  totalChanges: number;
+  changesByType: Record<string, number>;
+}
+
+

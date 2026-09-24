@@ -37,12 +37,14 @@ export default function IntelCopilot({
   const [history, setHistory] = useState<CopilotResponse[]>([]);
 
   const sampleQueries = [
-    "Who links Case NXS-001 to NXS-003?",
+    "How did this investigation evolve over time?",
+    "What if we remove SYN-PHONE-061?",
+    "Are there any contradictions or conflicting evidence?",
+    "Why are Aariv Veylan and Mira Solven connected?",
+    "What information is missing in this case?",
+    "What changed when new evidence arrived?",
     "Find accounts matching the pass-through pattern with high fan-in",
     "Which entities have the highest betweenness centrality?",
-    "What vehicles or business entities are recorded?",
-    "Why was SYN-PHONE-999 suppressed?",
-    "Show circular fund flow loops and R7 alerts",
   ];
 
   const defaultSuggestions = [
@@ -143,6 +145,39 @@ export default function IntelCopilot({
       } else {
         summary = `Rule R7 (Circular Fund Flow Detector) is active. In the baseline demo, funds follow fan-in and rapid pass-through structuring (R4). You can ingest circular transfer payloads in Data Ingestion to trigger closed cycle alerts.`;
       }
+    } else if (q.includes("replay") || q.includes("playback") || q.includes("evolve") || q.includes("evolution")) {
+      mappedIntent = "investigation_replay";
+      summary = `The investigation evolved through sequential ingestion of Case NXS-001 through NXS-006 FIRs, 64 CDR calls, and 51 financial transfers. You can scrub through every step and view cumulative network changes in the Investigation Intelligence Replay tab.`;
+      suggestions = ["Show network change radar and analytical milestones", "Find accounts matching the pass-through pattern with high fan-in"];
+    } else if (q.includes("what if") || q.includes("what-if") || q.includes("counterfactual") || q.includes("exclude") || q.includes("061")) {
+      mappedIntent = "what_if_analysis";
+      const decoyPhone = nodes.find((n) => n.label === "SYN-PHONE-061");
+      if (decoyPhone) {
+        matchedEntities.push({ id: decoyPhone.id, label: decoyPhone.label, type: decoyPhone.type, role: "Decoy Identifier" });
+      }
+      summary = `Counterfactual simulation sandbox allows excluding questionable records or identifiers (such as SYN-PHONE-061) in-memory without modifying the canonical graph (CANONICAL_GRAPH_UNCHANGED=true). Excluding SYN-PHONE-061 severs Case NXS-006 from the Aariv syndicate.`;
+      suggestions = ["Open Counterfactual Analysis tab", "Are there any contradictions or conflicting evidence?"];
+    } else if (q.includes("contradict") || q.includes("conflict") || q.includes("discrepancy") || q.includes("c1") || q.includes("c4") || q.includes("c5")) {
+      mappedIntent = "contradiction_engine";
+      rules.push("C1", "C4", "C5");
+      summary = `The Contradiction Engine evaluates rules C1 through C6. Key discrepancies flagged: C1 (shared phone SYN-PHONE-001 claimed by multiple suspects), C4 (near-duplicate Aariv Veylan vs Aariv Veylen), and C5 (incompatible role: Aariv recorded as Accused in NXS-001/002 but Witness in NXS-003/004).`;
+      suggestions = ["Open Contradiction Engine tab", "Why are Aariv Veylan and Mira Solven connected?"];
+    } else if (q.includes("why are") || q.includes("why is") || q.includes("connected") || q.includes("trail") || q.includes("path")) {
+      mappedIntent = "evidence_trail";
+      const aariv = nodes.find((n) => n.label === "Aariv Veylan");
+      const mira = nodes.find((n) => n.label === "Mira Solven");
+      if (aariv) matchedEntities.push({ id: aariv.id, label: aariv.label, type: aariv.type });
+      if (mira) matchedEntities.push({ id: mira.id, label: mira.label, type: mira.type });
+      summary = `Aariv Veylan and Mira Solven are connected across 2 hops via shared phone SYN-PHONE-001 and direct co-accused status in Case NXS-002. Every step in this path is backed by primary police FIR narratives and CDR records.`;
+      suggestions = ["Open Evidence Trail Mode", "What if we remove SYN-PHONE-061?"];
+    } else if (q.includes("gap") || q.includes("missing") || q.includes("blind spot") || q.includes("dead end")) {
+      mappedIntent = "investigation_gaps";
+      summary = `Investigation Gap Finder identified key missing links: unresolved identifiers without subscriber KYC (SYN-PHONE-020), suspects lacking communication telemetry, and unverified vehicle ZZ00NX0001. Procedural Section 91 and VAHAN queries are suggested.`;
+      suggestions = ["Open Investigation Gaps tab", "Show network change radar"];
+    } else if (q.includes("radar") || q.includes("change") || q.includes("milestone") || q.includes("new evidence")) {
+      mappedIntent = "network_change_radar";
+      summary = `Network Change Radar tracks structural mutations across 6 major milestones: initial baseline (NXS-001), cross-case bridge formation (NXS-002), R1 alert trigger (NXS-003), telephony hub centrality spike (CDRs), and financial layering (Transactions).`;
+      suggestions = ["Replay how this investigation evolved over time", "Are there any contradictions or conflicting evidence?"];
     } else {
       // General entity search
       mappedIntent = "entity_lookup";
