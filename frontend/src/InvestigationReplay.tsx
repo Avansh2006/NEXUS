@@ -19,9 +19,15 @@ import type { ReplayResponse, ReplayStep } from "./types";
 
 interface Props {
   onSelectEntity?: (label: string) => void;
+  onLaunchReplayOnCanvas?: (data?: ReplayResponse) => void;
+  onViewSourceRecord?: (recordId: string) => void;
 }
 
-export default function InvestigationReplay({ onSelectEntity }: Props) {
+export default function InvestigationReplay({
+  onSelectEntity,
+  onLaunchReplayOnCanvas,
+  onViewSourceRecord,
+}: Props) {
   const [data, setData] = useState<ReplayResponse | null>(null);
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -190,10 +196,20 @@ export default function InvestigationReplay({ onSelectEntity }: Props) {
               className="text-xs bg-white border border-slate-300 rounded px-1.5 py-1 text-slate-700"
               title="Playback Speed"
             >
+              <option value={0.5}>0.5x Speed</option>
               <option value={1}>1x Speed</option>
               <option value={2}>2x Speed</option>
               <option value={5}>5x Speed</option>
             </select>
+            {onLaunchReplayOnCanvas && (
+              <button
+                onClick={() => onLaunchReplayOnCanvas(data || undefined)}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center gap-1 transition"
+                title="Open Replay in Interactive Graph"
+              >
+                View on Graph
+              </button>
+            )}
           </div>
         </div>
 
@@ -235,6 +251,13 @@ export default function InvestigationReplay({ onSelectEntity }: Props) {
                     <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-mono rounded">
                       Case {stepObj.caseId}
                     </span>
+                    <button
+                      onClick={() => onViewSourceRecord?.(stepObj.recordId)}
+                      className="px-2 py-0.5 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-mono rounded transition cursor-pointer"
+                      title="Inspect source record"
+                    >
+                      Record: {stepObj.recordId}
+                    </button>
                   </div>
                   <h3 className="text-base font-bold text-slate-900 mt-2">
                     {stepObj.summary}

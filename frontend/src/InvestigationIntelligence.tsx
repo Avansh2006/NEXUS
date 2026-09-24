@@ -22,6 +22,9 @@ interface Props {
   session: Session;
   onSelectEntity?: (id: string) => void;
   defaultTab?: "replay" | "what-if" | "contradictions" | "trail" | "gaps" | "radar";
+  onLaunchReplayOnCanvas?: (data?: any) => void;
+  onLaunchWhatIfOnCanvas?: (whatIfResponse: any) => void;
+  onLaunchEvidencePathOnCanvas?: (trail: any) => void;
 }
 
 export default function InvestigationIntelligence({
@@ -29,6 +32,9 @@ export default function InvestigationIntelligence({
   session,
   onSelectEntity,
   defaultTab = "replay",
+  onLaunchReplayOnCanvas,
+  onLaunchWhatIfOnCanvas,
+  onLaunchEvidencePathOnCanvas,
 }: Props) {
   const [tab, setTab] = useState<
     "replay" | "what-if" | "contradictions" | "trail" | "gaps" | "radar"
@@ -148,16 +154,26 @@ export default function InvestigationIntelligence({
       {/* Subtab Content */}
       <div className="mt-4">
         {tab === "replay" && (
-          <InvestigationReplay onSelectEntity={onSelectEntity} />
+          <InvestigationReplay
+            onSelectEntity={onSelectEntity}
+            onLaunchReplayOnCanvas={onLaunchReplayOnCanvas}
+          />
         )}
         {tab === "what-if" && (
-          <CounterfactualAnalysis onSelectEntity={onSelectEntity} />
+          <CounterfactualAnalysis
+            onSelectEntity={onSelectEntity}
+            onLaunchWhatIfOnCanvas={onLaunchWhatIfOnCanvas}
+          />
         )}
         {tab === "contradictions" && (
           <ContradictionPanel session={session} onSelectEntity={onSelectEntity} />
         )}
         {tab === "trail" && (
-          <EvidenceTrail graph={graph} onSelectEntity={onSelectEntity} />
+          <EvidenceTrail
+            graph={graph}
+            onSelectEntity={onSelectEntity}
+            onLaunchEvidencePathOnCanvas={onLaunchEvidencePathOnCanvas}
+          />
         )}
         {tab === "gaps" && (
           <InvestigationGaps onSelectEntity={onSelectEntity} />

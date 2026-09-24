@@ -616,5 +616,22 @@ export interface NetworkChangesResponse {
   totalChanges: number;
   changesByType: Record<string, number>;
 }
+export interface AuditVerificationResponse {
+  valid: boolean;
+  entriesChecked?: number;
+  entriesVerified?: number;
+  genesisHash?: string;
+  headHash?: string;
+  verifiedAt?: string;
+  firstBrokenEntry?: number | string | null;
+  brokenAtIndex?: number;
+  reason?: string;
+}
 
-
+export interface DossierRequest {
+  graphImage?: string;
+  sections?: string[];
+  simulationMode?: "canonical" | "simulation" | "overlay";
+  whatIfData?: WhatIfResponse;
+  evidenceTrail?: EvidenceTrailResponse;
+}

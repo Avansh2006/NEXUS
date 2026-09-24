@@ -152,34 +152,49 @@ public class Store {
             (rs, n) -> new AuditRow(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8))
         );
         String expectedPrev = "0".repeat(64);
+        String genesisHash = rows.isEmpty() ? expectedPrev : rows.get(0).entryHash();
+        String verifiedAt = Instant.now().toString();
+
         for (int i = 0; i < rows.size(); i++) {
             AuditRow r = rows.get(i);
             if (!r.prevHash().equals(expectedPrev)) {
-                return Map.of(
-                    "valid", false,
-                    "brokenAtIndex", i,
-                    "expectedPrevHash", expectedPrev,
-                    "actualPrevHash", r.prevHash(),
-                    "reason", "Broken hash linkage at index " + i
-                );
+                Map<String, Object> res = new LinkedHashMap<>();
+                res.put("valid", false);
+                res.put("entriesChecked", i);
+                res.put("entriesVerified", i);
+                res.put("brokenAtIndex", i);
+                res.put("firstBrokenEntry", r.id());
+                res.put("expectedPrevHash", expectedPrev);
+                res.put("actualPrevHash", r.prevHash());
+                res.put("reason", "PREVIOUS_HASH_MISMATCH");
+                res.put("verifiedAt", verifiedAt);
+                return res;
             }
             String computed = sha256(r.prevHash() + r.createdAt() + r.userId() + r.action() + r.entityId() + r.payloadDigest());
             if (!computed.equals(r.entryHash())) {
-                return Map.of(
-                    "valid", false,
-                    "brokenAtIndex", i,
-                    "computedHash", computed,
-                    "storedEntryHash", r.entryHash(),
-                    "reason", "Hash tampering detected at index " + i
-                );
+                Map<String, Object> res = new LinkedHashMap<>();
+                res.put("valid", false);
+                res.put("entriesChecked", i);
+                res.put("entriesVerified", i);
+                res.put("brokenAtIndex", i);
+                res.put("firstBrokenEntry", r.id());
+                res.put("computedHash", computed);
+                res.put("storedEntryHash", r.entryHash());
+                res.put("reason", "HASH_TAMPERING_DETECTED");
+                res.put("verifiedAt", verifiedAt);
+                return res;
             }
             expectedPrev = r.entryHash();
         }
-        return Map.of(
-            "valid", true,
-            "entriesVerified", rows.size(),
-            "headHash", expectedPrev
-        );
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("valid", true);
+        res.put("entriesChecked", rows.size());
+        res.put("entriesVerified", rows.size());
+        res.put("genesisHash", genesisHash);
+        res.put("headHash", expectedPrev);
+        res.put("verifiedAt", verifiedAt);
+        res.put("firstBrokenEntry", null);
+        return res;
     }
 
     public void tamperAuditEntry(long id, String tamperedAction) {

@@ -29,6 +29,13 @@ import {
   Zap,
   ZoomIn,
   ZoomOut,
+  AlertTriangle,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Printer,
+  Eye,
 } from "lucide-react";
 import VisualIdentitySearch from "./VisualIdentitySearch";
 import InvestigationIntelligence from "./InvestigationIntelligence";
@@ -42,6 +49,10 @@ import type {
   IngestResult,
   PathResult,
   Quality,
+  ReplayResponse,
+  WhatIfResponse,
+  EvidenceTrailResponse,
+  EvidenceDetail,
 } from "./types";
 import NetworkGraph from "./NetworkGraph";
 import Inspector, { HighlightedText } from "./Inspector";
@@ -84,6 +95,24 @@ const ruleNames: Record<string, string> = {
   R6: "Repeated co-accusation",
   R7: "Circular transaction laundering loop",
 };
+
+export const DOSSIER_SECTIONS = [
+  { id: "summary", label: "1. Case Overview & Scope" },
+  { id: "entities", label: "2. Entity Roster & Influence" },
+  { id: "vision", label: "3. Visual Identity Verifications (SCRFD + AdaFace)" },
+  { id: "evidence", label: "4. Complete Evidence Manifest" },
+  { id: "graph", label: "5. Relational Graph Visualization" },
+  { id: "trails", label: "6. Provenance & Evidence Trails" },
+  { id: "alerts", label: "7. Analytical Leads & Pattern Detections (R1–R7)" },
+  { id: "contradictions", label: "8. Contradiction Analysis" },
+  { id: "whatIf", label: "9. Counterfactual Impact Assessment" },
+  { id: "gaps", label: "10. Investigative Gaps & Missing Leads" },
+  { id: "radar", label: "11. Network Evolution Radar" },
+  { id: "audit", label: "12. Cryptographic Audit Certificate" },
+  { id: "bsa", label: "13. BSA 2023 Section 63 Template" },
+  { id: "limitations", label: "14. Safeguards & Limitations Statement" },
+] as const;
+
 const TacticalGlobe3D = lazy(() => import("./TacticalGlobe3D"));
 export default function App({ session }: { session: Session }) {
   const canEdit = session.role !== "VIEWER",
@@ -128,6 +157,36 @@ export default function App({ session }: { session: Session }) {
     [incomingResult, setIncomingResult] = useState<IncomingResult | null>(null),
     [incomingActive, setIncomingActive] = useState<boolean>(false),
     [metaNodeView, setMetaNodeView] = useState<boolean>(false);
+
+  // 1. Live Replay States
+  const [replayActive, setReplayActive] = useState<boolean>(false);
+  const [replayResponse, setReplayResponse] = useState<ReplayResponse | null>(null);
+  const [replayStepIndex, setReplayStepIndex] = useState<number>(1);
+  const [replayPlaying, setReplayPlaying] = useState<boolean>(false);
+  const [replaySpeed, setReplaySpeed] = useState<number>(1);
+  const replayTimer = useRef<number | null>(null);
+
+  // 2. Counterfactual Simulation States
+  const [simulationActive, setSimulationActive] = useState<boolean>(false);
+  const [whatIfResponse, setWhatIfResponse] = useState<WhatIfResponse | null>(null);
+  const [simulationMode, setSimulationMode] = useState<"canonical" | "simulation" | "overlay">("overlay");
+  const [showOnlyImpacted, setShowOnlyImpacted] = useState<boolean>(false);
+
+  // 3. Evidence Trail States
+  const [activeEvidenceTrail, setActiveEvidenceTrail] = useState<EvidenceTrailResponse | null>(null);
+  const [selectedPathIndex, setSelectedPathIndex] = useState<number>(0);
+  const [clickedEdgeDetail, setClickedEdgeDetail] = useState<{ edge: Edge; evidence: EvidenceDetail[] } | null>(null);
+  const [previousSelectedNode, setPreviousSelectedNode] = useState<string>("");
+
+  // 4. Dossier States
+  const [selectedDossierSections, setSelectedDossierSections] = useState<Set<string>>(
+    new Set([
+      "summary", "entities", "vision", "evidence", "graph", "trails", "alerts",
+      "contradictions", "whatIf", "gaps", "radar", "audit", "bsa", "limitations"
+    ])
+  );
+  const [dossierPreviewHtml, setDossierPreviewHtml] = useState<string | null>(null);
+  const [dossierPreviewing, setDossierPreviewing] = useState<boolean>(false);
   const cy = useRef<Core | null>(null);
   const lastGraphImage = useRef<string | undefined>(undefined);
   const onReady = useCallback((c: Core | null) => {
@@ -248,7 +307,12 @@ export default function App({ session }: { session: Session }) {
       },
     );
   const select = useCallback((id: string) => {
-    setSelected(id);
+    setSelected((prev) => {
+      if (prev && prev !== id) {
+        setPreviousSelectedNode(prev);
+      }
+      return id;
+    });
     void api(`/entities/${encodeURIComponent(id)}`).catch(() => {});
   }, []);
   const metrics = useMemo(
@@ -473,26 +537,219 @@ export default function App({ session }: { session: Session }) {
       edges: metaEdges,
     };
   }, [playbackGraph, metaNodeView]);
-  const exportReport = () =>
-    run("Preparing evidence report…", async () => {
-      const graphImage =
-        cy.current?.png({
-          output: "base64uri",
-          bg: "#13282e",
-          maxWidth: 1200,
-          maxHeight: 800,
-        }) ?? lastGraphImage.current;
-      const response = await apiRaw("/reports", { graphImage });
-      if (!response.ok) throw new Error("Report generation failed");
+  // 1. Replay memoized helpers & playback timer
+  const replayCumulativeNodes = useMemo(() => {
+    if (!replayActive || !replayResponse || !replayResponse.steps.length) return null;
+    const nodes = new Set<string>();
+    for (let i = 0; i < replayStepIndex && i < replayResponse.steps.length; i++) {
+      for (const n of replayResponse.steps[i].delta.nodesAdded) {
+        nodes.add(n);
+      }
+    }
+    return nodes;
+  }, [replayActive, replayResponse, replayStepIndex]);
+
+  const replayNewNodes = useMemo(() => {
+    if (!replayActive || !replayResponse || !replayResponse.steps.length) return null;
+    const cur = replayResponse.steps[replayStepIndex - 1];
+    return cur ? new Set(cur.delta.nodesAdded) : null;
+  }, [replayActive, replayResponse, replayStepIndex]);
+
+  const replayNewEdges = useMemo(() => {
+    if (!replayActive || !replayResponse || !replayResponse.steps.length) return null;
+    const cur = replayResponse.steps[replayStepIndex - 1];
+    return cur ? new Set(cur.delta.edgesAdded) : null;
+  }, [replayActive, replayResponse, replayStepIndex]);
+
+  useEffect(() => {
+    if (replayPlaying && replayResponse && replayResponse.steps.length > 0) {
+      replayTimer.current = window.setInterval(() => {
+        setReplayStepIndex((prev) => {
+          if (prev >= replayResponse.steps.length) {
+            setReplayPlaying(false);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 2000 / replaySpeed);
+    } else if (replayTimer.current) {
+      clearInterval(replayTimer.current);
+      replayTimer.current = null;
+    }
+    return () => {
+      if (replayTimer.current) clearInterval(replayTimer.current);
+    };
+  }, [replayPlaying, replayResponse, replaySpeed]);
+
+  const startReplayOnCanvas = async (initialData?: ReplayResponse) => {
+    setPage("Investigation");
+    setReplayActive(true);
+    setSimulationActive(false);
+    setActiveEvidenceTrail(null);
+    if (initialData) {
+      setReplayResponse(initialData);
+      setReplayStepIndex(1);
+      return;
+    }
+    if (!replayResponse) {
+      try {
+        const res = await api<ReplayResponse>("/investigation/replay");
+        setReplayResponse(res);
+        setReplayStepIndex(1);
+      } catch {
+        setNotice("Failed to load investigation replay data");
+      }
+    }
+  };
+
+  const handleReplayStepChange = (targetStep: number) => {
+    if (!replayResponse) return;
+    const bounded = Math.max(1, Math.min(targetStep, replayResponse.steps.length));
+    setReplayStepIndex(bounded);
+  };
+
+  // 2. Counterfactual Canvas Handlers
+  const startSimulationOnCanvas = (res: WhatIfResponse) => {
+    setWhatIfResponse(res);
+    setSimulationActive(true);
+    setSimulationMode("overlay");
+    setReplayActive(false);
+    setActiveEvidenceTrail(null);
+    setPage("Investigation");
+  };
+
+  const exitSimulation = () => {
+    setSimulationActive(false);
+    setWhatIfResponse(null);
+    setSimulationMode("canonical");
+    setShowOnlyImpacted(false);
+  };
+
+  // 3. Evidence Trail Canvas Handlers
+  const startEvidenceTrailOnCanvas = (trail: EvidenceTrailResponse) => {
+    setActiveEvidenceTrail(trail);
+    setSelectedPathIndex(0);
+    setClickedEdgeDetail(null);
+    setSimulationActive(false);
+    setReplayActive(false);
+    setPage("Investigation");
+  };
+
+  const clearEvidenceHighlight = () => {
+    setActiveEvidenceTrail(null);
+    setSelectedPathIndex(0);
+    setClickedEdgeDetail(null);
+  };
+
+  const handleEdgeClickOnCanvas = (canonicalEdgeId: string) => {
+    if (activeEvidenceTrail && activeEvidenceTrail.paths[selectedPathIndex]) {
+      const step = activeEvidenceTrail.paths[selectedPathIndex].steps.find(
+        (s) => s.edge.id === canonicalEdgeId,
+      );
+      if (step) {
+        setClickedEdgeDetail({ edge: step.edge, evidence: step.evidence });
+        return;
+      }
+    }
+    const edge = graph.edges.find((e) => e.id === canonicalEdgeId);
+    if (edge) {
+      const evList = graph.evidence.filter((ev) => ev.edgeId === edge.id);
+      const evDetails: EvidenceDetail[] = evList.map((ev) => ({
+        evidenceId: ev.id,
+        sourceRecordId: ev.recordId,
+        sourceKind: graph.records.find((r) => r.id === ev.recordId)?.kind ?? "record",
+        caseId: String(edge.properties.caseIds?.[0] ?? ""),
+        timestamp: String(edge.properties.events?.[0]?.timestamp ?? ""),
+        confidence: ev.confidence,
+        rawExcerpt: ev.raw,
+        rationale: `Direct connection linking ${edge.source} to ${edge.target}`,
+      }));
+      setClickedEdgeDetail({ edge, evidence: evDetails });
+    }
+  };
+
+  const handleWhyConnected = async (sourceId: string, targetId: string) => {
+    run("Tracing evidence path...", async () => {
+      try {
+        const res = await api<EvidenceTrailResponse>(
+          `/evidence/path?from=${encodeURIComponent(sourceId)}&to=${encodeURIComponent(targetId)}`
+        );
+        startEvidenceTrailOnCanvas(res);
+      } catch (err) {
+        setNotice(err instanceof Error ? err.message : "No evidence path found between entities");
+      }
+    });
+  };
+
+  // 4. Dossier Payload & Export Handlers
+  const generateDossierPayload = () => {
+    const graphImage =
+      cy.current?.png({
+        output: "base64uri",
+        bg: "#13282e",
+        maxWidth: 1600,
+        maxHeight: 1000,
+        full: true,
+      }) ?? lastGraphImage.current;
+
+    return {
+      graphImage,
+      sections: Array.from(selectedDossierSections),
+      simulationMode: simulationActive ? simulationMode : "canonical",
+      whatIfData: simulationActive ? whatIfResponse : null,
+      evidenceTrail: activeEvidenceTrail,
+    };
+  };
+
+  const previewDossier = () =>
+    run("Generating dossier preview…", async () => {
+      const payload = generateDossierPayload();
+      const response = await apiRaw("/reports", payload);
+      if (!response.ok) throw new Error("Dossier generation failed");
+      const html = await response.text();
+      setDossierPreviewHtml(html);
+      setDossierPreviewing(true);
+    });
+
+  const exportDossier = () =>
+    run("Generating official investigation dossier…", async () => {
+      const payload = generateDossierPayload();
+      const response = await apiRaw("/reports", payload);
+      if (!response.ok) throw new Error("Dossier generation failed");
       const blob = new Blob([await response.text()], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "NEXUS-investigation-report.html";
+      a.download = "NEXUS-investigation-dossier.html";
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      setNotice("Report downloaded. Open it and use Print → Save as PDF.");
+      setNotice("Investigation Dossier downloaded. Open and use browser Print → Save as PDF.");
     });
+
+  const exportReport = exportDossier;
+
+  const toggleDossierSection = (sectionId: string) => {
+    setSelectedDossierSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllDossierSections = () => {
+    setSelectedDossierSections(
+      new Set(DOSSIER_SECTIONS.map((s) => s.id))
+    );
+  };
+
+  const deselectAllDossierSections = () => {
+    setSelectedDossierSections(new Set(["summary"]));
+  };
+
   const ingest = (content: string, format: "text" | "json" | "csv") =>
     run("Validating and ingesting records…", async () => {
       let body: unknown;
@@ -1069,6 +1326,268 @@ export default function App({ session }: { session: Session }) {
                         metaNodeView={metaNodeView}
                         onToggleMetaNode={() => setMetaNodeView((v) => !v)}
                       />
+                      {simulationActive && (
+                        <div
+                          className="simulation-banner"
+                          style={{
+                            background: "#450a0a",
+                            border: "1px solid #dc2626",
+                            color: "#fee2e2",
+                            padding: "8px 14px",
+                            borderRadius: "6px",
+                            marginBottom: "8px",
+                            display: "flex",
+                            flexWrap: "wrap",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <AlertTriangle size={16} color="#ef4444" />
+                            <span style={{ fontWeight: 700, fontSize: "12px", letterSpacing: "0.5px" }}>
+                              SIMULATION MODE — Canonical investigation unchanged
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                            <div style={{ display: "inline-flex", background: "#1c1917", borderRadius: "4px", padding: "2px" }}>
+                              {(["canonical", "simulation", "overlay"] as const).map((m) => (
+                                <button
+                                  key={m}
+                                  className={`button compact ${simulationMode === m ? "primary" : ""}`}
+                                  style={{ fontSize: "10px", padding: "2px 8px" }}
+                                  onClick={() => setSimulationMode(m)}
+                                >
+                                  {m.charAt(0).toUpperCase() + m.slice(1)}
+                                </button>
+                              ))}
+                            </div>
+                            <label style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", cursor: "pointer", color: "#fca5a5" }}>
+                              <input
+                                type="checkbox"
+                                checked={showOnlyImpacted}
+                                onChange={(e) => setShowOnlyImpacted(e.target.checked)}
+                              />
+                              Only Impacted
+                            </label>
+                            <button
+                              className="button compact"
+                              style={{ background: "#dc2626", color: "#ffffff", border: "none", fontSize: "11px", fontWeight: 600 }}
+                              onClick={exitSimulation}
+                            >
+                              Exit Simulation
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {activeEvidenceTrail && (
+                        <div
+                          className="evidence-trail-banner"
+                          style={{
+                            background: "#0c4a6e",
+                            border: "1px solid #0284c7",
+                            color: "#e0f2fe",
+                            padding: "8px 14px",
+                            borderRadius: "6px",
+                            marginBottom: "8px",
+                            display: "flex",
+                            flexWrap: "wrap",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <Waypoints size={16} color="#38bdf8" />
+                            <span style={{ fontWeight: 700, fontSize: "12px" }}>EVIDENCE TRAIL:</span>
+                            <span style={{ fontSize: "12px" }}>
+                              {activeEvidenceTrail.fromLabel} &harr; {activeEvidenceTrail.toLabel}
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                            {activeEvidenceTrail.paths.map((p, idx) => (
+                              <button
+                                key={idx}
+                                className={`button compact ${selectedPathIndex === idx ? "primary" : ""}`}
+                                style={{ fontSize: "10px", padding: "2px 8px" }}
+                                onClick={() => setSelectedPathIndex(idx)}
+                              >
+                                Path {p.pathIndex} ({p.totalHops} hops)
+                              </button>
+                            ))}
+                            <button
+                              className="button compact"
+                              style={{ fontSize: "11px" }}
+                              onClick={clearEvidenceHighlight}
+                            >
+                              Clear Evidence Highlight
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {clickedEdgeDetail && (
+                        <div
+                          className="evidence-callout-overlay"
+                          style={{
+                            position: "relative",
+                            background: "#0f172a",
+                            border: "1px solid #38bdf8",
+                            borderRadius: "8px",
+                            padding: "12px 14px",
+                            marginBottom: "8px",
+                            color: "#f8fafc",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                            <span style={{ fontSize: "11px", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase" }}>
+                              EVIDENTIARY CONNECTION: {clickedEdgeDetail.edge.type}
+                            </span>
+                            <button
+                              style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "14px" }}
+                              onClick={() => setClickedEdgeDetail(null)}
+                            >
+                              &times;
+                            </button>
+                          </div>
+                          <div style={{ fontSize: "12px", lineHeight: "1.5" }}>
+                            <div>
+                              <b>From:</b> {clickedEdgeDetail.edge.source} &rarr; <b>To:</b> {clickedEdgeDetail.edge.target}
+                            </div>
+                            {clickedEdgeDetail.evidence.length > 0 && (
+                              <div style={{ marginTop: "4px" }}>
+                                <div>
+                                  <b>Source:</b> <code>{clickedEdgeDetail.evidence[0].sourceRecordId}</code> ({clickedEdgeDetail.evidence[0].sourceKind})
+                                  {clickedEdgeDetail.evidence[0].timestamp && <span> | <b>Time:</b> {clickedEdgeDetail.evidence[0].timestamp}</span>}
+                                  <span> | <b>Evidence ID:</b> <code>{clickedEdgeDetail.evidence[0].evidenceId}</code></span>
+                                </div>
+                                <div style={{ margin: "6px 0", padding: "6px 10px", background: "#1e293b", borderLeft: "3px solid #38bdf8", fontStyle: "italic", fontSize: "11px" }}>
+                                  &ldquo;{clickedEdgeDetail.evidence[0].rawExcerpt}&rdquo;
+                                </div>
+                                <button
+                                  className="button compact primary"
+                                  style={{ fontSize: "10px", marginTop: "2px" }}
+                                  onClick={() => {
+                                    setQuery(clickedEdgeDetail.evidence[0].sourceRecordId);
+                                    setNotice(`Showing evidence for record ${clickedEdgeDetail.evidence[0].sourceRecordId}`);
+                                  }}
+                                >
+                                  Open Source Record
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {replayActive && (
+                        <div
+                          className="replay-hud"
+                          style={{
+                            background: "#0f172a",
+                            border: "1px solid #10b981",
+                            borderRadius: "8px",
+                            padding: "12px 14px",
+                            marginBottom: "8px",
+                            color: "#f8fafc",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <RotateCcw size={16} color="#10b981" />
+                              <span style={{ fontWeight: 700, fontSize: "12px" }}>INVESTIGATION REPLAY</span>
+                              <span style={{ background: "#064e3b", color: "#6ee7b7", padding: "2px 8px", borderRadius: "9999px", fontSize: "11px", fontWeight: 600 }}>
+                                STEP {replayStepIndex} / {replayResponse?.steps.length ?? 121}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <button
+                                className="button compact"
+                                onClick={() => handleReplayStepChange(replayStepIndex - 1)}
+                                disabled={replayStepIndex <= 1}
+                                title="Previous Step"
+                              >
+                                <SkipBack size={12} />
+                              </button>
+                              <button
+                                className="button compact primary"
+                                onClick={() => setReplayPlaying(!replayPlaying)}
+                              >
+                                {replayPlaying ? <Pause size={12} /> : <Play size={12} />}
+                                {replayPlaying ? "Pause" : "Play"}
+                              </button>
+                              <button
+                                className="button compact"
+                                onClick={() => handleReplayStepChange(replayStepIndex + 1)}
+                                disabled={replayStepIndex >= (replayResponse?.steps.length ?? 121)}
+                                title="Next Step"
+                              >
+                                <SkipForward size={12} />
+                              </button>
+                              {[0.5, 1, 2, 5].map((s) => (
+                                <button
+                                  key={s}
+                                  className={`button compact ${replaySpeed === s ? "primary" : ""}`}
+                                  style={{ fontSize: "10px", padding: "2px 6px" }}
+                                  onClick={() => setReplaySpeed(s)}
+                                >
+                                  {s}x
+                                </button>
+                              ))}
+                              <button
+                                className="button compact"
+                                style={{ fontSize: "11px", marginLeft: "4px" }}
+                                onClick={() => setReplayActive(false)}
+                              >
+                                Exit Replay
+                              </button>
+                            </div>
+                          </div>
+
+                          <input
+                            type="range"
+                            aria-label="Replay scrubber"
+                            min={1}
+                            max={Math.max(1, replayResponse?.steps.length ?? 121)}
+                            value={replayStepIndex}
+                            onChange={(e) => handleReplayStepChange(Number(e.target.value))}
+                            onInput={(e: any) => handleReplayStepChange(Number(e.target.value))}
+                            style={{ width: "100%", accentColor: "#10b981", margin: "4px 0" }}
+                          />
+
+                          {replayResponse?.steps[replayStepIndex - 1] && (() => {
+                            const cur = replayResponse.steps[replayStepIndex - 1];
+                            return (
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px", color: "#94a3b8", marginTop: "4px", flexWrap: "wrap", gap: "6px" }}>
+                                <div>
+                                  Evidence:{" "}
+                                  <b
+                                    style={{ color: "#38bdf8", cursor: "pointer", textDecoration: "underline" }}
+                                    onClick={() => {
+                                      setQuery(cur.recordId);
+                                      setNotice(`Inspecting record ${cur.recordId}`);
+                                    }}
+                                  >
+                                    {cur.recordId}
+                                  </b>{" "}
+                                  ({cur.kind}) ingested
+                                  {" | "}
+                                  Changes: <span style={{ color: "#10b981" }}>+{cur.delta.nodesAdded.length} nodes</span>, <span style={{ color: "#10b981" }}>+{cur.delta.edgesAdded.length} edges</span>
+                                  {cur.delta.alertsTriggered.length > 0 && (
+                                    <span style={{ color: "#f59e0b" }}> ({cur.delta.alertsTriggered.join(", ")} activated)</span>
+                                  )}
+                                </div>
+                                <div>
+                                  Cumulative: <b>{cur.cumulative.nodeCount}</b> entities, <b>{cur.cumulative.edgeCount}</b> links
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
                       <div
                         style={{
                           display: viewMode === "2d" ? "block" : "none",
@@ -1091,6 +1610,14 @@ export default function App({ session }: { session: Session }) {
                           incomingHighlightNodes={incomingHighlightNodes}
                           onSelect={select}
                           onReady={onReady}
+                          simulationMode={simulationActive ? simulationMode : "canonical"}
+                          whatIfResponse={simulationActive ? whatIfResponse : null}
+                          showOnlyImpacted={showOnlyImpacted}
+                          evidencePath={activeEvidenceTrail ? activeEvidenceTrail.paths[selectedPathIndex] : null}
+                          replayVisibleNodes={replayActive ? replayCumulativeNodes : null}
+                          replayNewNodes={replayActive ? replayNewNodes : null}
+                          replayNewEdges={replayActive ? replayNewEdges : null}
+                          onEdgeSelect={handleEdgeClickOnCanvas}
                         />
                       </div>
                       {viewMode === "3d" ? (
@@ -1204,6 +1731,10 @@ export default function App({ session }: { session: Session }) {
                     setIntelligenceTab(t as any);
                     setPage("Investigation Intelligence");
                   }}
+                  whatIfResponse={simulationActive ? whatIfResponse : null}
+                  simulationMode={simulationActive ? simulationMode : "canonical"}
+                  previousSelectedNode={previousSelectedNode}
+                  onWhyConnected={handleWhyConnected}
                 />
               </div>
               {path ? (
@@ -1381,6 +1912,9 @@ export default function App({ session }: { session: Session }) {
                 setPage("Investigation");
                 setFocus(1);
               }}
+              onLaunchReplayOnCanvas={startReplayOnCanvas}
+              onLaunchWhatIfOnCanvas={startSimulationOnCanvas}
+              onLaunchEvidencePathOnCanvas={startEvidenceTrailOnCanvas}
             />
           ) : null}
 
@@ -1781,40 +2315,149 @@ export default function App({ session }: { session: Session }) {
                 <div className="report-icon">
                   <FileText size={42} />
                 </div>
-                <span className="eyebrow">EVIDENCE YOU CAN TAKE WITH YOU</span>
-                <h2>Investigation report</h2>
+                <span className="eyebrow">JUDICIAL EVIDENTIARY REPORTING</span>
+                <h2>Investigation Dossier Export</h2>
                 <p>
-                  Case summaries, entity influence, relationships, patterns,
-                  timeline, and supporting source records in one printable
-                  document.
+                  Comprehensive, court-ready dossier incorporating evidence manifests,
+                  entity influence, SCRFD+AdaFace biometric matching, explainable patterns (R1–R7),
+                  contradiction analysis, counterfactual simulations, investigation gaps, and SHA-256
+                  hash-chained audit verification.
                 </p>
-                <ul>
-                  <li>
-                    <Check size={16} />
-                    Evidence references for every connection
-                  </li>
-                  <li>
-                    <Check size={16} />
-                    Explainable patterns, including suppressed results
-                  </li>
-                  <li>
-                    <Check size={16} />
-                    Original source records and extraction spans
-                  </li>
-                </ul>
-                <button
-                  className="button primary"
-                  disabled={!graph.records.length || !!busy}
-                  onClick={exportReport}
+
+                {simulationActive && (
+                  <div
+                    style={{
+                      background: "#450a0a",
+                      border: "1px solid #dc2626",
+                      borderRadius: "6px",
+                      padding: "10px 14px",
+                      marginBottom: "14px",
+                      color: "#fecaca",
+                      fontSize: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <AlertTriangle size={18} color="#ef4444" />
+                    <div>
+                      <b>SIMULATION MODE ACTIVE:</b> Dossier will be watermarked with{" "}
+                      <code>SIMULATION / WHAT-IF HYPOTHETICAL — NOT CANONICAL EVIDENCE</code> and
+                      will include baseline vs simulation impact metrics.
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    background: "rgba(15, 23, 42, 0.6)",
+                    border: "1px solid #334155",
+                    borderRadius: "8px",
+                    padding: "10px",
+                    marginBottom: "14px",
+                    maxWidth: "100%",
+                    boxSizing: "border-box",
+                    overflow: "hidden",
+                  }}
                 >
-                  <ArrowDownToLine size={16} />
-                  Generate Investigation Report
-                </button>
-                <small>
-                  HTML download · open and print to PDF.
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "8px",
+                      borderBottom: "1px solid #334155",
+                      paddingBottom: "6px",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                    }}
+                  >
+                    <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Dossier Sections ({selectedDossierSections.size}/{DOSSIER_SECTIONS.length})
+                    </span>
+                    <div style={{ display: "flex", gap: "4px" }}>
+                      <button
+                        className="button compact"
+                        style={{ fontSize: "10px", padding: "2px 6px" }}
+                        onClick={selectAllDossierSections}
+                      >
+                        All
+                      </button>
+                      <button
+                        className="button compact"
+                        style={{ fontSize: "10px", padding: "2px 6px" }}
+                        onClick={deselectAllDossierSections}
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                      gap: "6px",
+                      maxHeight: "220px",
+                      overflowY: "auto",
+                      overflowX: "hidden",
+                      paddingRight: "2px",
+                      maxWidth: "100%",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    {DOSSIER_SECTIONS.map((sec) => (
+                      <label
+                        key={sec.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          padding: "4px 6px",
+                          borderRadius: "4px",
+                          background: selectedDossierSections.has(sec.id) ? "rgba(56, 189, 248, 0.08)" : "transparent",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedDossierSections.has(sec.id)}
+                          onChange={() => toggleDossierSection(sec.id)}
+                          style={{ cursor: "pointer" }}
+                        />
+                        <span style={{ color: selectedDossierSections.has(sec.id) ? "#f8fafc" : "#94a3b8" }}>
+                          {sec.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "12px" }}>
+                  <button
+                    className="button"
+                    disabled={!graph.records.length || !!busy}
+                    onClick={previewDossier}
+                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                  >
+                    <Eye size={16} />
+                    Preview Dossier
+                  </button>
+                  <button
+                    className="button primary"
+                    disabled={!graph.records.length || !!busy}
+                    onClick={exportDossier}
+                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                  >
+                    <ArrowDownToLine size={16} />
+                    Generate Investigation Report
+                  </button>
+                </div>
+                <small style={{ marginTop: "10px", display: "block", color: "#94a3b8" }}>
+                  Exported as an official standalone HTML dossier formatted for judicial review.
                   <br />
-                  Includes the current or most recently viewed graph image when
-                  available.
+                  Open in any browser and use <b>Print &rarr; Save as PDF</b> for an unassailable evidentiary record.
                 </small>
               </section>
               <AuditPanel/>
@@ -1878,6 +2521,110 @@ export default function App({ session }: { session: Session }) {
             setFocus(1);
           }}
         />
+
+        {dossierPreviewing && dossierPreviewHtml && (
+          <div
+            className="dossier-preview-backdrop"
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.75)",
+              zIndex: 9999,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "24px",
+            }}
+          >
+            <div
+              className="dossier-preview-modal"
+              style={{
+                width: "100%",
+                maxWidth: "1150px",
+                height: "90vh",
+                background: "#ffffff",
+                color: "#0f172a",
+                borderRadius: "8px",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "12px 20px",
+                  background: "#0f172a",
+                  color: "#ffffff",
+                  borderBottom: "1px solid #334155",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <FileText size={18} color="#38bdf8" />
+                  <span style={{ fontWeight: 700, fontSize: "14px", letterSpacing: "0.5px" }}>
+                    INVESTIGATION DOSSIER — LIVE PREVIEW
+                  </span>
+                  {simulationActive && (
+                    <span
+                      style={{
+                        background: "#7f1d1d",
+                        color: "#fecaca",
+                        border: "1px solid #ef4444",
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      SIMULATION MODE
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button
+                    className="button compact primary"
+                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                    onClick={() => {
+                      const iframe = document.getElementById("dossier-preview-frame") as HTMLIFrameElement | null;
+                      iframe?.contentWindow?.print();
+                    }}
+                  >
+                    <Printer size={14} />
+                    Print / Save to PDF
+                  </button>
+                  <button
+                    className="button compact"
+                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                    onClick={exportDossier}
+                  >
+                    <ArrowDownToLine size={14} />
+                    Download HTML
+                  </button>
+                  <button
+                    className="button compact"
+                    style={{ fontSize: "16px", padding: "4px 10px" }}
+                    onClick={() => setDossierPreviewing(false)}
+                    aria-label="Close preview"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+              <div style={{ flex: 1, position: "relative", background: "#f8fafc" }}>
+                <iframe
+                  id="dossier-preview-frame"
+                  srcDoc={dossierPreviewHtml}
+                  title="Investigation Dossier Preview"
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

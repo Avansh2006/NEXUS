@@ -187,7 +187,7 @@ test.describe('Visual Identity Search', () => {
     await expect(page.getByText('CONFIRMED').first()).toBeVisible();
 
     // Return to Investigation and verify graph was NOT automatically merged
-    await page.getByRole('button', { name: 'Investigation' }).click();
+    await page.getByRole('button', { name: 'Investigation', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Investigation workspace', exact: true })).toBeVisible();
     await expect(page.locator('.stat').filter({ hasText: 'Entities' }).locator('.animated-count')).toHaveAttribute('aria-label', '146');
 

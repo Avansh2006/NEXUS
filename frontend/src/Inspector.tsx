@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { FileText, Link2, ArrowUpRight, ScanFace, Plus, Trash2, Waypoints, GitBranch } from "lucide-react";
+import { FileText, Link2, ArrowUpRight, ScanFace, Plus, Trash2, Waypoints, GitBranch, AlertTriangle } from "lucide-react";
 import { SupportBadge } from "./Workflow";
 import { colors, api, apiForm, apiDelete } from "./types";
-import type { Graph, Source, PersonFace } from "./types";
+import type { Graph, Source, PersonFace, WhatIfResponse } from "./types";
 
 export function HighlightedText({ record }: { record: Source }) {
   const text = record.payload.text ?? "";
@@ -36,11 +36,19 @@ export default function Inspector({
   selected,
   onSelect,
   onNavigateToIntelligence,
+  whatIfResponse,
+  simulationMode,
+  previousSelectedNode,
+  onWhyConnected,
 }: {
   graph: Graph;
   selected: string;
   onSelect: (id: string) => void;
   onNavigateToIntelligence?: (tab: string, entityLabel?: string) => void;
+  whatIfResponse?: WhatIfResponse | null;
+  simulationMode?: "canonical" | "simulation" | "overlay";
+  previousSelectedNode?: string;
+  onWhyConnected?: (sourceId: string, targetId: string) => void;
 }) {
   const n = graph.nodes.find((n) => n.id === selected);
   if (!n)
@@ -171,6 +179,68 @@ export default function Inspector({
             <GitBranch size={12} /> Simulate Exclusion
           </button>
         </div>
+      )}
+
+      {whatIfResponse && (
+        <div style={{ background: "#450a0a", border: "1px solid #b91c1c", borderRadius: 8, padding: 10, margin: "10px 0", color: "#fee2e2" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "#fca5a5", textTransform: "uppercase" }}>
+            <AlertTriangle size={13} color="#ef4444" />
+            SIMULATION IMPACT ({simulationMode ?? "overlay"})
+          </div>
+          <div style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5 }}>
+            <div>
+              <b>Status:</b>{" "}
+              {whatIfResponse.delta.removedNodes.some((rn) => rn.id === n.id) ? (
+                <span style={{ color: "#ef4444", fontWeight: 700 }}>EXCLUDED IN SIMULATION</span>
+              ) : (
+                <span style={{ color: "#34d399", fontWeight: 600 }}>PERSISTED IN SIMULATION</span>
+              )}
+            </div>
+            <div>
+              <b>Degree:</b> {graph.edges.filter((e) => e.source === n.id || e.target === n.id).length} &rarr;{" "}
+              {whatIfResponse.simulatedGraph.edges.filter((e) => e.source === n.id || e.target === n.id).length}
+            </div>
+            {whatIfResponse.delta.affectedAlerts.length > 0 && (
+              <div style={{ marginTop: 4 }}>
+                <b>Alerts:</b>{" "}
+                {whatIfResponse.delta.affectedAlerts.map((a, i) => (
+                  <span key={i} style={{ color: "#fde047", marginRight: 4, display: "inline-block" }}>
+                    {typeof a === "object" && a.ruleId ? a.ruleId : "Alert"} RESOLVED
+                  </span>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: "#fca5a5", marginTop: 4 }}>
+              Supporting paths removed:{" "}
+              {whatIfResponse.delta.removedEdges.filter((e) => e.source === n.id || e.target === n.id).length}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previousSelectedNode && previousSelectedNode !== n.id && onWhyConnected && (
+        <button
+          onClick={() => onWhyConnected(previousSelectedNode, n.id)}
+          style={{
+            fontSize: 11,
+            padding: "6px 10px",
+            background: "#0c4a6e",
+            color: "#e0f2fe",
+            border: "1px solid #0284c7",
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            cursor: "pointer",
+            margin: "8px 0",
+            fontWeight: 600,
+            width: "100%",
+            justifyContent: "center",
+          }}
+        >
+          <Waypoints size={13} color="#38bdf8" />
+          Why Are These Connected?
+        </button>
       )}
 
       {n.type === "Person" && (

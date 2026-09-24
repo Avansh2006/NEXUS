@@ -74,6 +74,7 @@ test("persistent workflow, narrative source, simulation, playback and exports", 
   expect(auth.ok()).toBeTruthy();
   const session = await auth.json();
   const headers = { Authorization: `Bearer ${session.token}` };
+  await request.post("/api/demo/reset", { headers, data: {} });
   expect(
     (await request.post("/api/demo/load", { headers, data: {} })).ok(),
   ).toBeTruthy();

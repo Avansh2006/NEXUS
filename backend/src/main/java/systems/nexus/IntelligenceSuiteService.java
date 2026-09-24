@@ -246,7 +246,12 @@ public class IntelligenceSuiteService {
             simGraph = new Graph(keptNodes, keptEdges, simGraph.evidence(), simGraph.records(), simGraph.analysis(), false, simGraph.suggestions());
         }
 
-        JsonNode simAnalysis = engine.analyze(simGraph);
+        JsonNode simAnalysis;
+        try {
+            simAnalysis = engine.analyze(simGraph);
+        } catch (Exception e) {
+            simAnalysis = json.createObjectNode();
+        }
         simGraph = new Graph(simGraph.nodes(), simGraph.edges(), simGraph.evidence(), simGraph.records(), simAnalysis, true, simGraph.suggestions());
 
         Graph canonical = store.graph();

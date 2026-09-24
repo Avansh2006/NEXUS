@@ -14,9 +14,13 @@ import type { WhatIfRequest, WhatIfResponse } from "./types";
 
 interface Props {
   onSelectEntity?: (id: string) => void;
+  onLaunchWhatIfOnCanvas?: (whatIfResponse: WhatIfResponse) => void;
 }
 
-export default function CounterfactualAnalysis({ onSelectEntity }: Props) {
+export default function CounterfactualAnalysis({
+  onSelectEntity,
+  onLaunchWhatIfOnCanvas,
+}: Props) {
   const [excludeIdentifiers, setExcludeIdentifiers] = useState<string[]>([
     "SYN-PHONE-061",
   ]);
@@ -242,8 +246,20 @@ export default function CounterfactualAnalysis({ onSelectEntity }: Props) {
                 Counterfactual Analytical Impact
               </h3>
             </div>
-            <div className="text-xs text-slate-500 font-mono">
-              Excluded Items: <strong>{result.excludedCount}</strong>
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-slate-500 font-mono">
+                Excluded Items: <strong>{result.excludedCount}</strong>
+              </div>
+              {onLaunchWhatIfOnCanvas && (
+                <button
+                  onClick={() => onLaunchWhatIfOnCanvas(result)}
+                  className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                  title="Render Simulation Ghosting Overlay on Network Graph"
+                >
+                  <GitBranch size={13} />
+                  View on Graph Canvas
+                </button>
+              )}
             </div>
           </div>
 

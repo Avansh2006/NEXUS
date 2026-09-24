@@ -19,7 +19,17 @@ public final class Model {
     public record IngestRequest(List<JsonNode> records, String format, String content) {}
     public record RowError(int row, String message) {}
     public record IngestResult(int accepted, int duplicates, List<RowError> errors) {}
-    public record ReportRequest(String graphImage) {}
+    public record ReportRequest(
+        String graphImage,
+        List<String> sections,
+        String simulationMode,
+        WhatIfResponse whatIfData,
+        EvidenceTrailResponse evidenceTrail
+    ) {
+        public ReportRequest(String graphImage) {
+            this(graphImage, null, null, null, null);
+        }
+    }
     public record PathResult(List<String> nodeIds, List<Edge> edges) {}
     public record PersonFace(String id, String personNodeId, String imageHash, JsonNode embedding,
                              String modelName, String modelVersion, String createdAt,

@@ -11,9 +11,14 @@ import type { EvidenceTrailResponse, Graph } from "./types";
 interface Props {
   graph: Graph;
   onSelectEntity?: (id: string) => void;
+  onLaunchEvidencePathOnCanvas?: (trail: EvidenceTrailResponse) => void;
 }
 
-export default function EvidenceTrail({ graph, onSelectEntity }: Props) {
+export default function EvidenceTrail({
+  graph,
+  onSelectEntity,
+  onLaunchEvidencePathOnCanvas,
+}: Props) {
   const [fromId, setFromId] = useState<string>("");
   const [toId, setToId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -207,12 +212,24 @@ export default function EvidenceTrail({ graph, onSelectEntity }: Props) {
             <p className="text-xs text-indigo-800 leading-relaxed font-medium">
               {trail.chainSummary}
             </p>
-            <div className="flex items-center gap-3 pt-2 text-xs text-indigo-700 font-mono">
-              <span>Origin: <strong>{trail.fromLabel}</strong></span>
-              <span>\u2192</span>
-              <span>Target: <strong>{trail.toLabel}</strong></span>
-              <span>\u2022</span>
-              <span>Paths Found: <strong>{trail.paths.length}</strong></span>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-indigo-700 font-mono">
+              <div className="flex items-center gap-3">
+                <span>Origin: <strong>{trail.fromLabel}</strong></span>
+                <span>&rarr;</span>
+                <span>Target: <strong>{trail.toLabel}</strong></span>
+                <span>&bull;</span>
+                <span>Paths Found: <strong>{trail.paths.length}</strong></span>
+              </div>
+              {onLaunchEvidencePathOnCanvas && (
+                <button
+                  onClick={() => onLaunchEvidencePathOnCanvas(trail)}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition font-sans"
+                  title="Highlight Evidence Path on Interactive Cytoscape Canvas"
+                >
+                  <Waypoints size={13} />
+                  View on Graph Canvas
+                </button>
+              )}
             </div>
           </div>
 

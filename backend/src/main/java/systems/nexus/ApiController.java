@@ -13,7 +13,8 @@ import static systems.nexus.Model.*;
 public class ApiController {
     private final InvestigationService service;private final Store store;private final EngineClient engine;private final ObjectMapper json;
     private final Auth auth;
-    public ApiController(InvestigationService service,Store store,EngineClient engine,ObjectMapper json,Auth auth) {this.service=service;this.store=store;this.engine=engine;this.json=json;this.auth=auth;}
+    private final IntelligenceSuiteService suiteService;
+    public ApiController(InvestigationService service,Store store,EngineClient engine,ObjectMapper json,Auth auth,IntelligenceSuiteService suiteService) {this.service=service;this.store=store;this.engine=engine;this.json=json;this.auth=auth;this.suiteService=suiteService;}
     @GetMapping("/health") public Map<String,String> health() {return Map.of("status","ok");}
     @PostMapping("/data/{kind:fir|cdr|transactions|criminal-history|intel-report|surveillance-report}") public IngestResult ingest(@PathVariable String kind,@RequestBody IngestRequest body) {return service.ingest(kind,body);}
     @PostMapping("/demo/load") public Map<String,IngestResult> load() throws IOException {return service.load();}
@@ -47,9 +48,12 @@ public class ApiController {
         String r = (String) req.getAttribute("nexus.role");
         return Map.of("username", u, "role", r);
     }
-    @PostMapping(value="/reports",produces=MediaType.TEXT_HTML_VALUE) public String report(@RequestBody(required=false) ReportRequest request) {
+    @PostMapping(value="/reports",produces=MediaType.TEXT_HTML_VALUE) public String report(@RequestBody(required=false) ReportRequest request, jakarta.servlet.http.HttpServletRequest req) {
         String image=request==null?null:request.graphImage();
-        if(image!=null&&(!image.matches("data:image/png;base64,[A-Za-z0-9+/=]+")||image.length()>1500000)) throw new IllegalArgumentException("Report image must be a PNG data URL below 1.5 MB");
-        store.audit("report:export");return Report.render(service.graph(),image);
+        if(image!=null&&(!image.matches("data:image/png;base64,[A-Za-z0-9+/=]+")||image.length()>3000000)) throw new IllegalArgumentException("Report image must be a PNG data URL below 3 MB");
+        String user = (String) req.getAttribute("nexus.user");
+        if (user == null || user.isBlank()) user = "investigator";
+        store.audit("report:export", user, "", "dossier");
+        return Report.renderDossier(service.graph(), request, store, suiteService, user);
     }
 }
