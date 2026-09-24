@@ -489,8 +489,14 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
                     </div>
                   </div>
                   {selectedFile && (
-                    <div className="text-[11px] text-[#7f999b] font-mono">
-                      {selectedFile.name} · {(selectedFile.size / 1024).toFixed(1)} KB
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="text-[11px] text-[#7f999b] font-mono">
+                        {selectedFile.name} · {(selectedFile.size / 1024).toFixed(1)} KB
+                      </div>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#143d34] text-[#6ee7b7] border border-[#2a6859]">
+                        <CheckCircle2 size={12} className="text-[#34d399]" />
+                        Probe image ready
+                      </span>
                     </div>
                   )}
                 </div>
@@ -613,23 +619,38 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
                 AdaFace normalized cosine similarity metric. Lower values accommodate low-resolution CCTV, extreme angles, or sensor noise.
               </p>
 
-              <button
-                onClick={() => handleExecuteSearch()}
-                disabled={!selectedFile || searching}
-                className="mt-2 w-full py-2.5 rounded-lg bg-[#208b72] hover:bg-[#25a386] disabled:bg-[#142c26] text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40"
-              >
-                {searching ? (
-                  <>
-                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Searching Identity Gallery…
-                  </>
-                ) : (
-                  <>
-                    <Search size={15} />
-                    Run Visual Identity Search
-                  </>
+              <div className="pt-3 border-t border-[#1b3e39]/80 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleExecuteSearch()}
+                  disabled={!selectedFile || searching}
+                  className={`w-full py-3.5 px-5 rounded-xl font-extrabold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 shadow-2xl select-none ${
+                    selectedFile && !searching
+                      ? "bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 hover:from-emerald-300 hover:via-teal-200 hover:to-emerald-300 text-slate-950 shadow-emerald-500/40 ring-2 ring-emerald-300/80 hover:shadow-emerald-400/50 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                      : searching
+                      ? "bg-[#184e40] text-emerald-200 border border-[#2f6f60] cursor-wait"
+                      : "bg-[#132c25] text-[#71988d] border border-[#1e443b] opacity-80 cursor-not-allowed"
+                  }`}
+                >
+                  {searching ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-300 rounded-full animate-spin" />
+                      <span>Searching Identity Gallery…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Search size={18} className={selectedFile ? "stroke-[2.5] text-slate-950" : "text-[#71988d]"} />
+                      <span>Run Visual Identity Search</span>
+                    </>
+                  )}
+                </button>
+                {selectedFile && !searching && (
+                  <p className="text-[11px] text-emerald-400 font-medium text-center flex items-center justify-center gap-1.5 animate-pulse">
+                    <Sparkles size={13} className="text-amber-400" />
+                    Probe ready · Click to execute AdaFace similarity search
+                  </p>
                 )}
-              </button>
+              </div>
             </div>
           </div>
 
