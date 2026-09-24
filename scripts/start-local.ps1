@@ -10,7 +10,8 @@ $javaDir = Get-ChildItem -LiteralPath (Join-Path $projectRoot '.tools/java') -Di
 if ($javaDir) { $env:JAVA_HOME=$javaDir.FullName; $javaExe=Join-Path $env:JAVA_HOME 'bin/java.exe' } else { $javaExe=(Get-Command java -ErrorAction Stop).Source }
 $mavenExe = Join-Path $projectRoot '.tools/maven/apache-maven-3.9.9/bin/mvn.cmd'
 if (-not (Test-Path -LiteralPath $mavenExe)) { $mavenExe=(Get-Command mvn -ErrorAction Stop).Source }
-$nodeExe = (Get-Command node -ErrorAction SilentlyContinue)?.Source
+$nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+$nodeExe = if ($nodeCmd) { $nodeCmd.Source } else { $null }
 if (-not $nodeExe) {
     $candidatePaths = @(
         'C:\Program Files\nodejs\node.exe'
