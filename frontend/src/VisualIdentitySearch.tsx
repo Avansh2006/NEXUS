@@ -624,23 +624,23 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
                   type="button"
                   onClick={() => handleExecuteSearch()}
                   disabled={!selectedFile || searching}
-                  className={`w-full py-3.5 px-5 rounded-xl font-extrabold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 shadow-2xl select-none ${
+                  className={`w-full py-4 px-5 rounded-xl font-extrabold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 shadow-2xl select-none ${
                     selectedFile && !searching
-                      ? "bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 hover:from-emerald-300 hover:via-teal-200 hover:to-emerald-300 text-slate-950 shadow-emerald-500/40 ring-2 ring-emerald-300/80 hover:shadow-emerald-400/50 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                      ? "bg-gradient-to-r from-[#047857] via-[#0d9488] to-[#059669] hover:from-[#059669] hover:via-[#14b8a6] hover:to-[#10b981] text-white shadow-emerald-950/70 ring-2 ring-emerald-400 hover:shadow-emerald-500/40 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                       : searching
-                      ? "bg-[#184e40] text-emerald-200 border border-[#2f6f60] cursor-wait"
-                      : "bg-[#132c25] text-[#71988d] border border-[#1e443b] opacity-80 cursor-not-allowed"
+                      ? "bg-[#184e40] text-white border border-[#2f6f60] cursor-wait"
+                      : "bg-[#15342c] text-white/80 border border-[#235345] cursor-not-allowed"
                   }`}
                 >
                   {searching ? (
                     <>
-                      <span className="inline-block w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-300 rounded-full animate-spin" />
-                      <span>Searching Identity Gallery…</span>
+                      <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      <span className="text-white font-bold">Searching Identity Gallery…</span>
                     </>
                   ) : (
                     <>
-                      <Search size={18} className={selectedFile ? "stroke-[2.5] text-slate-950" : "text-[#71988d]"} />
-                      <span>Run Visual Identity Search</span>
+                      <Search size={19} className={`stroke-[2.5] ${selectedFile ? "text-white" : "text-white/80"}`} />
+                      <span className="text-white font-black tracking-wide drop-shadow-sm">Run Visual Identity Search</span>
                     </>
                   )}
                 </button>

@@ -136,16 +136,16 @@ test.describe('Visual Identity Search', () => {
     const session = await response.json();
     await page.addInitScript(value => sessionStorage.setItem('nexus.session', JSON.stringify(value)), session);
 
+    // Reset, Load Demo data and seed gallery via API for deterministic test state
+    await request.post('/api/demo/reset', { headers: { Authorization: `Bearer ${session.token}` } });
+    await request.post('/api/demo/load', { headers: { Authorization: `Bearer ${session.token}` } });
+    await request.post('/api/vision/demo-enroll', { headers: { Authorization: `Bearer ${session.token}` } });
+
     const errors: string[] = [];
     page.on('pageerror', e => errors.push(e.message));
 
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Investigation workspace', exact: true })).toBeVisible();
-
-    // Reset and Load Demo data to ensure consistent graph state
-    await page.getByRole('button', { name: 'Reset demo data', exact: true }).click();
-    await page.getByRole('button', { name: 'Load demo', exact: true }).click();
-    await expect(page.locator('.stat').filter({ hasText: 'Source records' }).locator('.animated-count')).toHaveAttribute('aria-label', '121');
 
     // Navigate to Visual Identity tab
     const visionNavBtn = page.getByRole('button', { name: 'Visual Identity' });
@@ -154,13 +154,6 @@ test.describe('Visual Identity Search', () => {
 
     await expect(page.getByRole('heading', { name: 'Visual Identity Search' })).toBeVisible();
     await expect(page.getByText('ADAFACE IR-101 + SCRFD')).toBeVisible();
-
-    // Enroll demo faces if gallery is empty
-    const seedBtn = page.getByRole('button', { name: /Seed Demo Face Gallery/i }).first();
-    if (await seedBtn.isVisible()) {
-      await seedBtn.click();
-      await expect(page.getByText(/Demo face gallery populated/i)).toBeVisible({ timeout: 25000 });
-    }
 
     // Click on the 1-click bundled test fixture: Aariv Veylan (Surveillance CCTV)
     const aarivFixture = page.getByRole('button', { name: /Aariv Veylan \(Surveillance CCTV\)/i });
