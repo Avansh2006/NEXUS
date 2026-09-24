@@ -36,8 +36,10 @@ import {
   SkipForward,
   Printer,
   Eye,
+  Layers,
 } from "lucide-react";
 import VisualIdentitySearch from "./VisualIdentitySearch";
+import MultimodalEvidence from "./MultimodalEvidence";
 import InvestigationIntelligence from "./InvestigationIntelligence";
 import { api, apiRaw, setSession, colors, emptyGraph } from "./types";
 import type {
@@ -79,6 +81,7 @@ const nav = [
   ["Dashboard", LayoutDashboard],
   ["Investigation", Network],
   ["Visual Identity", ScanFace],
+  ["Multimodal Evidence", Layers],
   ["Investigation Intelligence", Sparkles],
   ["Data Ingestion", Database],
   ["Alerts", Activity],
@@ -1895,6 +1898,19 @@ export default function App({ session }: { session: Session }) {
               session={session}
               onNavigateToPerson={(personId) => {
                 select(personId);
+                setPage("Investigation");
+                setFocus(1);
+              }}
+              onRefreshGraph={refresh}
+            />
+          ) : null}
+
+          {page === "Multimodal Evidence" ? (
+            <MultimodalEvidence
+              graph={graph}
+              session={session}
+              onNavigateToEntity={(entityId) => {
+                select(entityId);
                 setPage("Investigation");
                 setFocus(1);
               }}

@@ -26,4 +26,12 @@ CREATE TABLE IF NOT EXISTS face_decision (id VARCHAR(80) PRIMARY KEY, person_nod
 CREATE INDEX IF NOT EXISTS face_decision_node_idx ON face_decision(person_node_id);
 CREATE TABLE IF NOT EXISTS contradiction_review (id VARCHAR(100) PRIMARY KEY, rule_id VARCHAR(20) NOT NULL, status VARCHAR(30) NOT NULL, notes VARCHAR(2000) DEFAULT '', author VARCHAR(80) NOT NULL, updated_at VARCHAR(40) NOT NULL);
 CREATE INDEX IF NOT EXISTS contradiction_review_rule_idx ON contradiction_review(rule_id);
+CREATE TABLE IF NOT EXISTS evidence_asset (id VARCHAR(80) PRIMARY KEY, case_id VARCHAR(80) NOT NULL, file_name VARCHAR(255) NOT NULL, media_type VARCHAR(30) NOT NULL, mime_type VARCHAR(100) NOT NULL, file_size BIGINT NOT NULL, file_hash VARCHAR(64) NOT NULL, storage_path VARCHAR(500) NOT NULL, status VARCHAR(40) NOT NULL, created_at VARCHAR(40) NOT NULL, created_by VARCHAR(80) NOT NULL, metadata JSONB DEFAULT '{}');
+CREATE INDEX IF NOT EXISTS evidence_asset_case_idx ON evidence_asset(case_id);
+CREATE INDEX IF NOT EXISTS evidence_asset_type_idx ON evidence_asset(media_type);
+CREATE TABLE IF NOT EXISTS evidence_item (id VARCHAR(80) PRIMARY KEY, asset_id VARCHAR(80) NOT NULL, item_type VARCHAR(40) NOT NULL, page_or_frame INT DEFAULT 0, timestamp_start DOUBLE PRECISION DEFAULT 0.0, timestamp_end DOUBLE PRECISION DEFAULT 0.0, speaker VARCHAR(50) DEFAULT '', raw_content TEXT DEFAULT '', confidence DOUBLE PRECISION DEFAULT 1.0, embedding JSONB DEFAULT '[]', model_name VARCHAR(80) DEFAULT '', provenance JSONB DEFAULT '{}', created_at VARCHAR(40) NOT NULL);
+CREATE INDEX IF NOT EXISTS evidence_item_asset_idx ON evidence_item(asset_id);
+CREATE INDEX IF NOT EXISTS evidence_item_type_idx ON evidence_item(item_type);
+CREATE TABLE IF NOT EXISTS evidence_review (id VARCHAR(80) PRIMARY KEY, item_id VARCHAR(80) NOT NULL, case_id VARCHAR(80) NOT NULL, decision VARCHAR(30) NOT NULL, notes VARCHAR(1000) DEFAULT '', author VARCHAR(80) NOT NULL, created_at VARCHAR(40) NOT NULL);
+CREATE INDEX IF NOT EXISTS evidence_review_item_idx ON evidence_review(item_id);
 

@@ -83,4 +83,26 @@ public final class Model {
                                 String severity, String summary, List<String> affectedEntities,
                                 String previousState, String newState) {}
     public record NetworkChangesResponse(List<NetworkChange> changes, int totalChanges, Map<String, Integer> changesByType) {}
+
+    // Multimodal Evidence Fusion Records
+    public record EvidenceAsset(String id, String caseId, String fileName, String mediaType, String mimeType,
+                                 long fileSize, String fileHash, String storagePath, String status,
+                                 String createdAt, String createdBy, JsonNode metadata) {}
+
+    public record EvidenceItem(String id, String assetId, String itemType, int pageOrFrame,
+                                double timestampStart, double timestampEnd, String speaker,
+                                String rawContent, double confidence, JsonNode embedding,
+                                String modelName, JsonNode provenance, String createdAt) {}
+
+    public record EvidenceReviewDecision(String id, String itemId, String caseId, String decision,
+                                         String notes, String author, String createdAt) {}
+
+    public record EvidenceReviewRequest(String decision, String notes) {}
+
+    public record VisualMatchLead(String matchAssetId, String matchCaseId, int matchFrameIndex,
+                                  double matchTimestamp, double similarity, double similarityScore,
+                                  String similarityDisplay, String leadDisclaimer, String thumbnail,
+                                  JsonNode provenance) {}
+
+    public record VisualSearchResponse(List<VisualMatchLead> matches, int count, double threshold, String leadNotice) {}
 }

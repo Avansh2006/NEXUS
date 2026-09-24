@@ -45,7 +45,7 @@ public class RequestGuard extends OncePerRequestFilter {
             req.setAttribute("nexus.user",principal.username());
             req.setAttribute("nexus.role",principal.role());
             boolean adminOnly=path.startsWith("/api/demo/")||path.equals("/api/diagnostics");
-            boolean readPost=path.equals("/api/reports")||path.equals("/api/what-if/remove")||path.equals("/api/vision/search")||path.equals("/api/investigation/what-if");
+            boolean readPost=path.equals("/api/reports")||path.equals("/api/what-if/remove")||path.equals("/api/vision/search")||path.equals("/api/investigation/what-if")||path.equals("/api/evidence/visual-search");
             if((adminOnly&&!principal.role().equals("ADMIN"))||
                 ((req.getMethod().equals("POST")||req.getMethod().equals("DELETE"))&&!readPost&&principal.role().equals("VIEWER"))) {
                 fail(res,403,"FORBIDDEN","Your role is not authorized for this action");return;

@@ -635,3 +635,71 @@ export interface DossierRequest {
   whatIfData?: WhatIfResponse;
   evidenceTrail?: EvidenceTrailResponse;
 }
+
+// Multimodal Evidence Fusion types
+export interface EvidenceAsset {
+  id: string;
+  caseId: string;
+  fileName: string;
+  mediaType: "DOCUMENT" | "AUDIO" | "IMAGE" | "VIDEO";
+  mimeType: string;
+  fileSize: number;
+  fileHash: string;
+  storagePath: string;
+  analysisStatus: "PENDING" | "ANALYZED" | "FAILED";
+  createdAt: string;
+  createdBy: string;
+  metadata?: Record<string, any>;
+}
+
+export interface EvidenceItem {
+  id: string;
+  assetId: string;
+  itemType:
+    | "DOCUMENT_PAGE"
+    | "DOCUMENT_LINE"
+    | "AUDIO_TRANSCRIPT"
+    | "AUDIO_SEGMENT"
+    | "VISUAL_EMBEDDING"
+    | "EXTRACTED_ENTITY";
+  pageOrFrame: number;
+  timestampStart: number;
+  timestampEnd: number;
+  speaker: string;
+  rawText: string;
+  confidence: number;
+  embedding?: number[];
+  modelName: string;
+  provenance: Record<string, any>;
+  createdAt: string;
+}
+
+export interface VisualMatchLead {
+  matchAssetId: string;
+  matchCaseId: string;
+  matchFrameIndex: number;
+  matchTimestamp: number;
+  similarity: number;
+  similarityScore: number;
+  similarityDisplay: string;
+  leadDisclaimer: string;
+  thumbnail: string;
+  provenance: Record<string, any>;
+}
+
+export interface VisualSearchResponse {
+  matches: VisualMatchLead[];
+  totalMatches: number;
+  threshold: number;
+  disclaimer: string;
+}
+
+export interface EvidenceReviewDecision {
+  id: string;
+  itemId: string;
+  decision: "PENDING" | "ACCEPTED" | "REJECTED" | "CORROBORATED";
+  reviewedBy: string;
+  reviewedAt: string;
+  notes: string;
+}
+

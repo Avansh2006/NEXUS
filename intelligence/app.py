@@ -13,9 +13,11 @@ from extraction import extract
 from evaluate_multilingual import evaluate as evaluate_multilingual
 from intent import map_intent, IntentModel
 from vision.pipeline import VisionPipeline
+from multimodal.pipeline import MultimodalPipeline
 
 app = FastAPI(title='NEXUS intelligence', docs_url=None, redoc_url=None)
 vision_pipeline = VisionPipeline()
+multimodal_pipeline = MultimodalPipeline()
 
 
 class ExtractRequest(BaseModel):
@@ -196,3 +198,136 @@ def vision_compare(request: VisionCompareRequest):
             matches.append({'id': item.id, 'similarity': round(sim, 4)})
     matches.sort(key=lambda x: x['similarity'], reverse=True)
     return {'matches': matches, 'count': len(matches), 'threshold': request.threshold}
+
+
+# -------------------------------------------------------------
+# MULTIMODAL EVIDENCE FUSION ROUTES
+# -------------------------------------------------------------
+
+class DocumentOcrRequest(BaseModel):
+    file_base64: str
+    filename: str = 'document.pdf'
+    asset_id: str = ''
+
+
+class AudioTranscribeRequest(BaseModel):
+    audio_base64: str
+    filename: str = 'audio.wav'
+    asset_id: str = ''
+
+
+class VisualEmbedRequest(BaseModel):
+    file_base64: str
+    filename: str = 'image.jpg'
+    media_type: str = 'IMAGE'
+    asset_id: str = ''
+    case_id: str = ''
+
+
+class VisualSearchRequest(BaseModel):
+    query_embedding: List[float]
+    gallery: List[Dict[str, Any]]
+    threshold: float = 0.50
+    top_k: int = 15
+
+
+@app.get('/evidence/status')
+def evidence_status():
+    return multimodal_pipeline.get_status()
+
+
+@app.post('/evidence/document/ocr')
+def evidence_document_ocr(request: DocumentOcrRequest):
+    file_bytes = _decode_b64_image(request.file_base64)
+    try:
+        return multimodal_pipeline.process_document(file_bytes, request.filename, request.asset_id)
+    except Exception as e:
+        raise HTTPException(400, f'Document OCR processing error: {e}')
+
+
+@app.post('/evidence/document/ocr/file')
+async def evidence_document_ocr_file(
+    file: UploadFile = File(...),
+    asset_id: str = Form(''),
+):
+    file_bytes = await file.read()
+    try:
+        return multimodal_pipeline.process_document(file_bytes, file.filename or 'document.pdf', asset_id)
+    except Exception as e:
+        raise HTTPException(400, f'Document OCR processing error: {e}')
+
+
+@app.post('/evidence/audio/transcribe')
+def evidence_audio_transcribe(request: AudioTranscribeRequest):
+    audio_bytes = _decode_b64_image(request.audio_base64)
+    try:
+        return multimodal_pipeline.process_audio(audio_bytes, request.filename, request.asset_id)
+    except Exception as e:
+        raise HTTPException(400, f'Audio transcription error: {e}')
+
+
+@app.post('/evidence/audio/transcribe/file')
+async def evidence_audio_transcribe_file(
+    file: UploadFile = File(...),
+    asset_id: str = Form(''),
+):
+    audio_bytes = await file.read()
+    try:
+        return multimodal_pipeline.process_audio(audio_bytes, file.filename or 'audio.wav', asset_id)
+    except Exception as e:
+        raise HTTPException(400, f'Audio transcription error: {e}')
+
+
+@app.post('/evidence/visual/embed')
+def evidence_visual_embed(request: VisualEmbedRequest):
+    file_bytes = _decode_b64_image(request.file_base64)
+    try:
+        return multimodal_pipeline.process_visual(
+            file_bytes,
+            request.filename,
+            request.media_type,
+            request.asset_id,
+            request.case_id,
+        )
+    except Exception as e:
+        raise HTTPException(400, f'Visual embedding error: {e}')
+
+
+@app.post('/evidence/visual/embed/file')
+async def evidence_visual_embed_file(
+    file: UploadFile = File(...),
+    media_type: str = Form('IMAGE'),
+    asset_id: str = Form(''),
+    case_id: str = Form(''),
+):
+    file_bytes = await file.read()
+    try:
+        return multimodal_pipeline.process_visual(
+            file_bytes,
+            file.filename or 'image.jpg',
+            media_type,
+            asset_id,
+            case_id,
+        )
+    except Exception as e:
+        raise HTTPException(400, f'Visual embedding error: {e}')
+
+
+@app.post('/evidence/visual/search')
+def evidence_visual_search(request: VisualSearchRequest):
+    try:
+        matches = multimodal_pipeline.search_visual(
+            request.query_embedding,
+            request.gallery,
+            request.threshold,
+            request.top_k,
+        )
+        return {
+            'matches': matches,
+            'count': len(matches),
+            'threshold': request.threshold,
+            'leadNotice': 'Visual similarity indicates investigative lead only. Not proof of identity.'
+        }
+    except Exception as e:
+        raise HTTPException(400, f'Visual search error: {e}')
+

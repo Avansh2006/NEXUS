@@ -51,4 +51,45 @@ public class EngineClient {
     public JsonNode visionCompare(List<Double> queryEmbedding, List<Map<String, Object>> gallery, double threshold) {
         return client.post().uri("/vision/compare").body(Map.of("query_embedding", queryEmbedding, "gallery", gallery, "threshold", threshold)).retrieve().body(JsonNode.class);
     }
+
+    // MULTIMODAL EVIDENCE CLIENT METHODS
+    public JsonNode evidenceStatus() { return client.get().uri("/evidence/status").retrieve().body(JsonNode.class); }
+
+    public JsonNode evidenceDocumentOcr(byte[] fileBytes, String filename, String assetId) {
+        String b64 = Base64.getEncoder().encodeToString(fileBytes);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("file_base64", b64);
+        body.put("filename", filename);
+        body.put("asset_id", assetId);
+        return client.post().uri("/evidence/document/ocr").body(body).retrieve().body(JsonNode.class);
+    }
+
+    public JsonNode evidenceAudioTranscribe(byte[] audioBytes, String filename, String assetId) {
+        String b64 = Base64.getEncoder().encodeToString(audioBytes);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("audio_base64", b64);
+        body.put("filename", filename);
+        body.put("asset_id", assetId);
+        return client.post().uri("/evidence/audio/transcribe").body(body).retrieve().body(JsonNode.class);
+    }
+
+    public JsonNode evidenceVisualEmbed(byte[] fileBytes, String filename, String mediaType, String assetId, String caseId) {
+        String b64 = Base64.getEncoder().encodeToString(fileBytes);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("file_base64", b64);
+        body.put("filename", filename);
+        body.put("media_type", mediaType);
+        body.put("asset_id", assetId);
+        body.put("case_id", caseId);
+        return client.post().uri("/evidence/visual/embed").body(body).retrieve().body(JsonNode.class);
+    }
+
+    public JsonNode evidenceVisualSearch(List<Double> queryEmbedding, List<Map<String, Object>> gallery, double threshold, int topK) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("query_embedding", queryEmbedding);
+        body.put("gallery", gallery);
+        body.put("threshold", threshold);
+        body.put("top_k", topK);
+        return client.post().uri("/evidence/visual/search").body(body).retrieve().body(JsonNode.class);
+    }
 }
