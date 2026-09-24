@@ -417,9 +417,9 @@ public class VisionService {
         int enrolled = 0;
         List<Map<String, Object>> enrolledItems = new ArrayList<>();
         Map<String, String> fixtureMap = Map.of(
-                "aariv veylan", "aariv_veylan_ref.jpg",
-                "mira solven", "mira_solven_ref.jpg",
-                "dev neral", "dev_neral_ref.jpg"
+                "aariv", "aariv_veylan_ref.jpg",
+                "mira", "mira_solven_ref.jpg",
+                "dev", "dev_neral_ref.jpg"
         );
 
         for (Node p : people) {

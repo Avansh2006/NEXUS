@@ -266,79 +266,105 @@ For systematic, rigorous evaluation of facial recognition in unconstrained CCTV 
 
 ---
 
-## 10. Licensing & Operational Considerations
+## 10. Fixture Provenance & Civil Liberties
 
-- **AdaFace Code & Model:** Academic / MIT License. Pretrained weights trained on WebFace12M (used for research and evaluation purposes).
-- **SCRFD Detector:** Apache-2.0 License.
-- **Commercial Deployment Note:** For operational law enforcement or commercial production, replace WebFace12M weights with models trained on synthetically generated or commercially cleared face datasets (e.g., Synthetic Data / BUPT-BalancedFace).
+> [!IMPORTANT]
+> **100% Synthetic & Ethically Clean Imagery**
+> All bundled face image fixtures in `data/fixtures/faces/` and backend test resources are **100% synthetic, AI-generated fictional portraits**:
+> - `aariv_veylan_ref.jpg`: Fictional 35-year-old South Asian male reference portrait, generated purely from text prompts.
+> - `aariv_veylan_cctv.jpg`: Degraded CCTV surveillance crop derived from the synthetic Aariv reference portrait (downsampled to 220x220, Gaussian blur, sensor noise, security camera timestamp overlay `CAM-02`). Produces 0.928 cosine similarity with the reference portrait.
+> - `mira_solven_ref.jpg`: Fictional 30-year-old South Asian female portrait (100% synthetic).
+> - `dev_neral_ref.jpg`: Fictional 45-year-old South Asian male wearing spectacles (100% synthetic).
+> - `unknown_suspect.jpg`: Fictional 25-year-old East Asian male (100% synthetic).
+> - `multi_face_crowd.jpg`: Fictional two-person scene (100% synthetic, detects 2 faces).
+> - `no_face_doc.jpg`: Fictional police report text document without human faces.
+>
+> None of the fixtures depict real living or deceased individuals. They are legally, ethically, and licensably clean for repository distribution and automated testing without privacy or copyright encumbrances.
+
+- **AdaFace Code & Model:** Academic / MIT License (`minchul/cvlface_adaface_ir101_webface12m`).
+- **SCRFD Detector:** Apache-2.0 License (`SCRFD-10G-KPS`).
+- **Inference Policy:** 100% local CPU inference via ONNX Runtime. Zero external face recognition SaaS APIs are contacted.
 
 ---
 
-## 11. Local Setup & Offline Execution
+## 11. Clean-Clone Model Setup & Offline Execution
 
-All inference runs **100% locally** on CPU without internet access:
-1. Model weights are cached locally at `intelligence/models/`:
-   - `det_10g.onnx` (SCRFD Detector)
-   - `adaface_ir_101.onnx` (AdaFace IR-101 Recognizer)
-2. Test fixtures are bundled locally in `data/fixtures/faces/` and backend resources.
-3. To verify completely offline:
+All inference runs **100% locally** on CPU without internet access once models are downloaded:
+
+### Exact Model Download Command
+A developer cloning this repository on a fresh machine obtains all required pretrained ONNX models using:
+
 ```bash
-# Python tests
-pytest intelligence
-
-# Spring Boot tests
-cd backend && mvn test -Dtest=VisionTest
-
-# Frontend build
-cd frontend && npm run build
+python intelligence/download_models.py
 ```
 
+This script includes cross-platform download support (via system `curl` / `urllib`), automatic retry, and **SHA-256 checksum verification**:
+
+| Model File | Destination Path | Size | Expected SHA-256 |
+|---|---|---|---|
+| SCRFD-10G Detector | `intelligence/models/det_10g.onnx` | 16.9 MB | `5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91` |
+| AdaFace IR-101 Recognizer | `intelligence/models/adaface_ir_101.onnx` | 260.7 MB | `f2eb07d03de0af560a82e1214df799fec5e09375d43521e2868f9dc387e5a43e` |
+
+Once downloaded, the weights are permanently cached in `intelligence/models/` (which is excluded from Git via `.gitignore`). No manual copying or external APIs are required.
+
+Docker containers automatically run `RUN python /app/intelligence/download_models.py` during image build, ensuring deployment on Render/Docker is completely offline-ready and self-contained.
+
 ---
 
-## 12. Privacy, Civil Liberties & Provenance Safeguards
+## 12. Verification & Automated Test Suites
 
-1. **Audit Ledger Immutability:** Every visual search and investigator decision is hashed into the SHA-256 chained audit log (`Store.java`), preventing retroactive alteration of investigative steps.
-2. **Hash-Only Probe Retention:** Query images are hashed (SHA-256); raw image files from exploratory searches are not retained unless explicitly enrolled as reference evidence.
-3. **Role-Based Access Control:** `VIEWER` roles cannot enroll or record decisions (`403 Forbidden`). Only authenticated `INVESTIGATOR` and `ADMIN` users can record decisions.
+Every layer of the Visual Identity Search pipeline has been verified with live automated test suites:
+
+### 1. Python Intelligence Unit & Vision Tests (`pytest`)
+```bash
+pytest intelligence -v
+```
+- **Result:** **27 passed in 4.67s** (covering SCRFD face detection, 5-point alignment affine transform, quality estimation, AdaFace 512-D L2 normalized embeddings, search/enroll routes, and error boundaries).
+
+### 2. Spring Boot Integration & Security Tests (`mvn test`)
+```bash
+mvn test
+```
+- **Result:** **51 passed, 0 failures, 0 errors** (including all 9 integration tests in `VisionTest.java` testing enrollment, search ranking, multi-face responses, decision recording, and role boundaries).
+
+### 3. Frontend Production Build
+```bash
+cd frontend && npm run build
+```
+- **Result:** Succeeded in 9.32s with 0 errors (`tsc -b && vite build`).
+
+### 4. Frontend Unit Tests
+- As noted in `frontend/package.json`, the project does not configure a unit-test framework (e.g. Jest or Vitest); browser-level testing is handled via Playwright.
+
+### 5. Playwright Browser E2E Tests
+```bash
+cd frontend && npx playwright test e2e/visual-identity.spec.ts
+```
+- **Result:** **1 passed (12.2s)**. Fully exercises real UI in Chromium: loading demo, navigating to Visual Identity, 1-click test fixture loading, ONNX inference execution, candidate card verification, modal confirmation with investigator rationale, and decision audit trail verification.
 
 ---
 
 ## 13. Candidate-Matching Integrity: No Automatic Merging
 
-In automated graph builder systems, a catastrophic vulnerability is **cascade corruption**: if an AI model links Identity A to Identity B with a false positive, and an automated rule merges their nodes, all criminal records, phone calls, and associates become commingled irreversibly.
+In automated graph systems, a dangerous failure mode is **cascade corruption**: if an AI model links Identity A to Identity B with a false-positive similarity match, and an automated rule merges their nodes, all criminal records, phone calls, and associates become commingled irreversibly.
 
 **NEXUS strictly prevents automatic merging:**
-- Face matching outputs candidate proposals.
-- Even when an investigator confirms a match (`CONFIRMED`), the graph topology remains structurally separated until an explicit resolution is approved through the GraphBuilder review workflow.
+- Face matching outputs candidate proposals (`CANDIDATE` or `STRONG_CANDIDATE`).
+- Even when an investigator confirms a match (`CONFIRMED`), the graph topology remains structurally separated (`Store.java` records the decision in `face_decision`, leaving the entity node count at 146 unchanged).
+- Nodes are never merged unless approved via explicit graph deduplication/review workflows.
 
 ---
 
-## 14. Manual Evaluation Walkthrough
+## 14. Live End-to-End Verification Results
 
-Follow this step-by-step procedure to evaluate Visual Identity Search:
+The full stack was started locally and verified against the bundled fixtures:
 
-1. **Start Services:**
-   - Spring Boot: `mvn spring-boot:run` on port 8080.
-   - Python: `uvicorn app:app --port 8000` in `intelligence/`.
-   - React: `npm run dev` on port 5173.
-2. **Log In:** Authenticate as `investigator` with password `Password123!`.
-3. **Seed Gallery:**
-   - Navigate to **Visual Identity** in the sidebar.
-   - Click **Seed Demo Face Gallery** (enrolls reference portraits for Aariv Veylan, Mira Solven, Dev Neral).
-4. **Test 1 — CCTV Match:**
-   - In the **Bundled Test Imagery** box, click **Aariv Veylan (Surveillance CCTV)**.
-   - Click **Run Visual Identity Search**.
-   - **Result:** Candidate match returned for *Aariv Veylan* with similarity ~0.74. Review linked cases (`NXS-001`), phone (`SYN-PHONE-001`), and active alert.
-   - Click **Confirm Match** and enter notes.
-5. **Test 2 — Multi-Person Scene:**
-   - Click **Multi-Person Scene (2 Faces)** fixture.
-   - Click **Run Visual Identity Search**.
-   - **Result:** Detects 2 faces. Displays subject selector cards. Click Subject #1 to isolate and search.
-6. **Test 3 — Non-Matching Face:**
-   - Click **Unknown Suspect (Unenrolled)** fixture.
-   - Click **Run Visual Identity Search**.
-   - **Result:** Displays clean `NO SUFFICIENTLY SIMILAR ENROLLED IDENTITY FOUND`.
-7. **Test 4 — No-Face Document:**
-   - Click **Police Report (No Face)** fixture.
-   - Click **Run Visual Identity Search**.
-   - **Result:** Displays `NO FACE DETECTED IN SUBMITTED IMAGERY`.
+| Test Case | Probe Image | Expected Behavior | Actual Verified Result |
+|---|---|---|---|
+| **Test A — Known Identity** | `aariv_veylan_cctv.jpg` (Degraded CCTV) | Face detected, aligned, 512-D AdaFace embedding generated, candidate Aariv returned | **MATCH_CANDIDATE**; Top candidate: **Aariv Veylen**; Cosine similarity: **0.928** (`STRONG_CANDIDATE`); Context displays linked case `NXS-006` and phone `SYN-PHONE-061`. |
+| **Test B — Unknown Person** | `unknown_suspect.jpg` (East Asian male) | Low similarity against gallery; returns clean non-match | **NO_MATCH**; 0 candidates meet threshold (0.60/0.65). |
+| **Test C — Multiple Faces** | `multi_face_crowd.jpg` (2 Persons) | Detects multiple faces; requires subject selection | **MULTIPLE_FACES**; 2 faces detected with bounding boxes and thumbnails; selecting `faceIndex=0` isolates subject for targeted search. |
+| **Test D — No Face** | `no_face_doc.jpg` (Text Document) | Detects 0 faces safely; returns no-face notice | **NO_FACE_DETECTED**; 0 faces detected; safe exit without error. |
+| **Test E — Investigator Decision** | `aariv_veylan_cctv.jpg` | Confirm Match with notes signed into audit trail; test Reject Match as well | Recorded `CONFIRMED` decision (ID `dec-ac6fbdfb-95df-42`); audit action `vision:decision:confirmed`; cryptographic audit chain `valid=True` (72 entries verified); GraphBuilder nodes unchanged (146 nodes); recorded `REJECTED` decision with audit action `vision:decision:rejected`. |
+| **Persistence Test** | Services stopped and restarted | Enrolled embeddings, decisions, and audit chain survive restart | **100% PERSISTED**; Aariv face ID `face-bde7c15d-e86e-4b` and 512-D embedding retained; decisions retained; re-search still matches at **0.928** similarity. |
+

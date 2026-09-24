@@ -85,7 +85,15 @@ public class InvestigationService {
         store.persist(g); return g;
     }
     public synchronized Map<String,IngestResult> load() throws IOException {
-        JsonNode data=json.readTree(Files.readString(Path.of(demoDir,"dataset.json")));
+        Path path = Path.of(demoDir, "dataset.json");
+        if (!Files.exists(path)) {
+            if (Files.exists(Path.of("data/demo/dataset.json"))) {
+                path = Path.of("data/demo/dataset.json");
+            } else if (Files.exists(Path.of("../data/demo/dataset.json"))) {
+                path = Path.of("../data/demo/dataset.json");
+            }
+        }
+        JsonNode data=json.readTree(Files.readString(path));
         Map<String,IngestResult> results=new LinkedHashMap<>();
         for(String k:List.of("fir","cdr","transactions")) { List<JsonNode> rows=new ArrayList<>();data.path(k).forEach(rows::add);results.put(k,ingest(k,new IngestRequest(rows,null,null))); }
         store.audit("demo:load");return results;

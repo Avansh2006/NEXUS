@@ -28,6 +28,10 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
+# 0. Ensure pretrained vision models are available
+echo "[NEXUS] Verifying pretrained vision models..."
+python /app/intelligence/download_models.py || true
+
 # 1. Start Python Intelligence Engine in background
 echo "[NEXUS] Starting Python Intelligence Engine on 127.0.0.1:${INTELLIGENCE_PORT}..."
 uvicorn app:app --app-dir /app/intelligence --host 127.0.0.1 --port ${INTELLIGENCE_PORT} &

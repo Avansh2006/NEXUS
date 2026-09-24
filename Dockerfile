@@ -29,6 +29,7 @@ RUN pip install --no-cache-dir -r /app/intelligence/requirements.txt
 
 # Copy backend JAR and intelligence engine
 COPY intelligence /app/intelligence
+RUN python /app/intelligence/download_models.py
 COPY --from=java-builder /build/target/nexus-api-0.1.0.jar /app/app.jar
 COPY data/demo /data/demo
 COPY data/eval/evaluation_results.json /data/eval/evaluation_results.json
