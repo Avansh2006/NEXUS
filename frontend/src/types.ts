@@ -411,7 +411,7 @@ export interface FaceCandidate {
 }
 
 export interface VisionSearchResult {
-  status: "MATCH_CANDIDATE" | "NO_MATCH" | "NO_FACE_DETECTED" | "MULTIPLE_FACES" | "LOW_QUALITY";
+  status: "MATCH_CANDIDATE" | "NO_MATCH" | "NO_FACE_DETECTED" | "MULTIPLE_FACES" | "LOW_QUALITY" | "EMPTY_GALLERY";
   facesDetected: number;
   threshold: number;
   model: string;

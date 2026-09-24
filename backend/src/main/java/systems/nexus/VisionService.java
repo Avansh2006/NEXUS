@@ -205,6 +205,20 @@ public class VisionService {
         List<PersonFace> enrolled = store.faces();
         Graph graph = investigationService.graph();
 
+        if (enrolled.isEmpty()) {
+            store.audit("vision:search:empty_gallery", user, "", imageHash);
+            return new VisionSearchResult(
+                    "EMPTY_GALLERY",
+                    facesDetected,
+                    threshold,
+                    modelName,
+                    imageHash,
+                    List.of(),
+                    detectedFaces,
+                    alignedThumbnail
+            );
+        }
+
         // Group enrolled faces by person to pick the best similarity match per person
         Map<String, List<PersonFace>> byPerson = new LinkedHashMap<>();
         for (PersonFace pf : enrolled) {
@@ -411,10 +425,17 @@ public class VisionService {
         Graph g = investigationService.graph();
         List<Node> people = g.nodes().stream().filter(n -> n.type().equals("Person")).toList();
         if (people.isEmpty()) {
+            try {
+                investigationService.load();
+                g = investigationService.graph();
+                people = g.nodes().stream().filter(n -> n.type().equals("Person")).toList();
+            } catch (Exception ignored) {}
+        }
+        if (people.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No Person nodes found in workspace. Load the demo dataset first.");
         }
 
-        int enrolled = 0;
+        int newlyEnrolled = 0;
         List<Map<String, Object>> enrolledItems = new ArrayList<>();
         Map<String, String> fixtureMap = Map.of(
                 "aariv", "aariv_veylan_ref.jpg",
@@ -436,20 +457,22 @@ public class VisionService {
                 }
             }
 
+            if (fixtureFile == null) {
+                continue;
+            }
+
             try {
                 byte[] imageBytes = null;
-                if (fixtureFile != null) {
-                    var res = new org.springframework.core.io.ClassPathResource("fixtures/faces/" + fixtureFile);
-                    if (res.exists()) {
-                        imageBytes = res.getInputStream().readAllBytes();
-                    }
+                var res = new org.springframework.core.io.ClassPathResource("fixtures/faces/" + fixtureFile);
+                if (res.exists()) {
+                    imageBytes = res.getInputStream().readAllBytes();
                 }
                 if (imageBytes == null) {
-                    imageBytes = generateSyntheticFaceImage(p.label());
+                    continue;
                 }
 
-                PersonFace face = enrollFace(p.id(), imageBytes, fixtureFile != null ? fixtureFile : (p.label().replace(" ", "_").toLowerCase() + "_ref.jpg"), user);
-                enrolled++;
+                PersonFace face = enrollFace(p.id(), imageBytes, fixtureFile, user);
+                newlyEnrolled++;
                 enrolledItems.add(Map.of(
                         "personId", p.id(),
                         "name", p.label(),
@@ -460,10 +483,12 @@ public class VisionService {
             }
         }
 
-        store.audit("vision:demo:enroll", user, "", String.valueOf(enrolled));
+        int totalInGallery = store.faces().size();
+        store.audit("vision:demo:enroll", user, "", String.valueOf(newlyEnrolled));
         return Map.of(
                 "status", "ok",
-                "enrolledCount", enrolled,
+                "enrolledCount", totalInGallery,
+                "newlyEnrolled", newlyEnrolled,
                 "items", enrolledItems
         );
     }

@@ -382,4 +382,61 @@ class VisionTest extends TestCredentials {
                 .anyMatch(a -> "vision:delete".equals(a.get("action")));
         assertTrue(hasDeleteAudit);
     }
+
+    @Test
+    void testSearchEmptyGalleryReturnsEmptyGalleryStatus() throws Exception {
+        assertTrue(store.faces().isEmpty(), "Gallery should start empty");
+
+        var engineSearchResp = json.createObjectNode()
+                .put("status", "FACE_EXTRACTED")
+                .put("faces_detected", 1)
+                .put("model_name", "adaface_ir101_webface12m")
+                .put("aligned_thumbnail", "data:image/jpeg;base64,thumb");
+        engineSearchResp.set("embedding", createEmbedding(0.95, 0.05));
+        when(engine.visionSearch(any(byte[].class), any(), anyDouble())).thenReturn(engineSearchResp);
+
+        MockMultipartFile queryFile = new MockMultipartFile("file", "aariv_cctv.jpg", "image/jpeg", new byte[]{1, 2, 3});
+
+        mvc.perform(multipart("/api/vision/search")
+                        .file(queryFile)
+                        .header("Authorization", bearer("investigator")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("EMPTY_GALLERY"))
+                .andExpect(jsonPath("$.facesDetected").value(1))
+                .andExpect(jsonPath("$.matches").isEmpty());
+
+        var audits = store.audit();
+        assertTrue(audits.stream().anyMatch(a -> "vision:search:empty_gallery".equals(a.get("action"))));
+    }
+
+    @Test
+    void testDemoEnrollRbacAndViewerDenied() throws Exception {
+        // 1. Viewer is rejected with 403 Forbidden
+        mvc.perform(post("/api/vision/demo-enroll")
+                        .header("Authorization", bearer("viewer")))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+
+        // 2. Unauthenticated is rejected with 401
+        mvc.perform(post("/api/vision/demo-enroll"))
+            .andExpect(status().isUnauthorized());
+
+        // 3. Mock engine enrollment for investigator
+        var engineEnrollResp = json.createObjectNode()
+                .put("image_hash", "mock_hash")
+                .put("model_name", "adaface_ir101_webface12m")
+                .put("model_version", "1.0.0")
+                .put("thumbnail", "data:image/jpeg;base64,mock_thumb");
+        engineEnrollResp.set("embedding", createEmbedding(1.0, 0.0));
+        when(engine.visionEnroll(any(byte[].class))).thenReturn(engineEnrollResp);
+
+        // 4. Investigator is authorized and successfully seeds gallery
+        mvc.perform(post("/api/vision/demo-enroll")
+                        .header("Authorization", bearer("investigator")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.enrolledCount").isNumber())
+            .andExpect(jsonPath("$.status").value("ok"));
+
+        assertFalse(store.faces().isEmpty(), "Face gallery should have enrolled faces after seeding");
+    }
 }

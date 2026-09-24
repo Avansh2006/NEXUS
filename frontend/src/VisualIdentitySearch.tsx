@@ -120,7 +120,7 @@ export default function VisualIdentitySearch({
     loadStatus();
     loadFixtures();
     loadDecisions();
-  }, [loadStatus, loadFixtures, loadDecisions]);
+  }, [loadStatus, loadFixtures, loadDecisions, graph]);
 
   // Handle Drag & Drop
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -152,8 +152,20 @@ export default function VisualIdentitySearch({
     reader.readAsDataURL(file);
   };
 
+function dataUrlToFile(dataUrl: string, filename: string): File {
+  const arr = dataUrl.split(",");
+  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+}
+
   // Load sample test fixture
-  const handleLoadFixture = async (fix: SampleFixture) => {
+  const handleLoadFixture = (fix: SampleFixture) => {
     if (!fix.dataUrl) return;
     try {
       setError("");
@@ -161,10 +173,7 @@ export default function VisualIdentitySearch({
       setSelectedFaceIndex(null);
       setPreviewUrl(fix.dataUrl);
 
-      // Convert data URL to File object
-      const res = await fetch(fix.dataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], fix.filename, { type: "image/jpeg" });
+      const file = dataUrlToFile(fix.dataUrl, fix.filename);
       setSelectedFile(file);
       setNotice(`Loaded sample test fixture: ${fix.label}`);
     } catch (err: any) {
@@ -177,7 +186,10 @@ export default function VisualIdentitySearch({
     try {
       setError("");
       setNotice("Enrolling reference faces for active demo personas…");
-      const res = await api<{ enrolledCount: number }>("/vision/demo-enroll", {});
+      const res = await api<{ enrolledCount: number; newlyEnrolled?: number }>("/vision/demo-enroll", {});
+      if (res && typeof res.enrolledCount === "number") {
+        setEnrolledCount(res.enrolledCount);
+      }
       await loadStatus();
       await onRefreshGraph?.();
       setNotice(`Demo face gallery populated: ${res.enrolledCount} persona reference portraits enrolled.`);
@@ -222,6 +234,8 @@ export default function VisualIdentitySearch({
       setSearchResult(result);
       if (result.status === "MATCH_CANDIDATE") {
         setNotice(`Found ${result.matches.length} candidate match(es) meeting similarity threshold >= ${result.threshold.toFixed(2)}.`);
+      } else if (result.status === "EMPTY_GALLERY") {
+        setNotice("Face gallery is currently empty (0 enrolled identities). Seed demo gallery or enroll reference portraits.");
       } else if (result.status === "NO_MATCH") {
         setNotice(`Search complete: 0 enrolled identities met similarity threshold >= ${result.threshold.toFixed(2)}.`);
       } else if (result.status === "MULTIPLE_FACES") {
@@ -288,15 +302,25 @@ export default function VisualIdentitySearch({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {enrolledCount === 0 && canEdit && (
+          {canEdit ? (
             <button
               onClick={handleSeedDemo}
-              className="px-3.5 py-2 rounded-lg bg-[#143d34] hover:bg-[#1a4f43] text-[#6ee7b7] text-xs font-semibold border border-[#2a6859] transition-all flex items-center gap-1.5 shadow"
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 shadow ${
+                enrolledCount === 0
+                  ? "bg-[#143d34] hover:bg-[#1a4f43] text-[#6ee7b7] border-[#2a6859] ring-2 ring-emerald-500/50"
+                  : "bg-[#0f2923] hover:bg-[#153a31] text-[#a7f3d0] border-[#1d4d42]"
+              }`}
               title="Enroll demo reference faces for active people in workspace"
             >
               <Users size={14} />
-              Seed Demo Face Gallery
+              {enrolledCount === 0 ? "Seed Demo Face Gallery" : "Re-seed Demo Gallery"}
             </button>
+          ) : (
+            enrolledCount === 0 && (
+              <span className="px-3 py-1.5 rounded-lg bg-[#291e14] border border-[#664219] text-[#fcd34d] text-xs font-mono flex items-center gap-1">
+                <Info size={12} /> Gallery empty (Viewer: Read-only)
+              </span>
+            )
           )}
 
           <div className="flex rounded-lg bg-[#0a1518] p-1 border border-[#1b3e39]">
@@ -500,6 +524,34 @@ export default function VisualIdentitySearch({
                 }}
               />
             </div>
+
+            {/* Empty Gallery Alert in Left Column */}
+            {enrolledCount === 0 && (
+              <div className="bg-[#1b2318] border border-[#6b581e] rounded-xl p-4 shadow flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={16} className="text-amber-400 flex-shrink-0" />
+                  <span className="text-xs font-bold text-amber-300">
+                    Gallery Contains 0 Enrolled Faces
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#cbd5e1] leading-relaxed">
+                  Identity search requires enrolled reference portraits in the gallery. Seed the demo gallery to enroll portraits for active persons.
+                </p>
+                {canEdit ? (
+                  <button
+                    onClick={handleSeedDemo}
+                    className="mt-1 w-full py-2 rounded-lg bg-[#143d34] hover:bg-[#1a4f43] text-[#6ee7b7] text-xs font-semibold border border-[#2a6859] transition-all flex items-center justify-center gap-1.5 shadow"
+                  >
+                    <Users size={14} />
+                    Seed Demo Face Gallery
+                  </button>
+                ) : (
+                  <span className="text-[10px] text-amber-400 font-mono mt-1">
+                    Viewer mode: Administrator or Investigator needed to enroll reference faces.
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Quick Test Fixtures */}
             {fixtures.length > 0 && (
@@ -935,6 +987,60 @@ export default function VisualIdentitySearch({
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* EMPTY GALLERY STATE */}
+                {searchResult.status === "EMPTY_GALLERY" && (
+                  <div className="bg-[#0f1f24] border border-[#d97706]/50 rounded-xl p-8 text-center flex flex-col items-center justify-center gap-4 shadow-xl">
+                    <div className="w-14 h-14 rounded-full bg-[#2a1d0d] text-[#f59e0b] flex items-center justify-center border border-[#78350f]">
+                      <Users size={28} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white tracking-wide">
+                        NO REFERENCE IDENTITIES ENROLLED (EMPTY GALLERY)
+                      </h3>
+                      <p className="text-xs text-[#cbd5e1] max-w-md mt-1 leading-relaxed">
+                        Visual identity search requires enrolled reference portraits in the gallery to compare against. Currently, the gallery contains <b>0 enrolled identities</b>.
+                      </p>
+                    </div>
+
+                    {searchResult.alignedThumbnail && (
+                      <div className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-[#0a1619] border border-[#1b3e39]">
+                        <img
+                          src={searchResult.alignedThumbnail}
+                          alt="Detected probe face"
+                          className="w-20 h-20 rounded-md object-cover border border-[#2f5a4e]"
+                        />
+                        <span className="text-[10px] text-[#6ee7b7] font-mono">
+                          Probe face detected and aligned successfully
+                        </span>
+                      </div>
+                    )}
+
+                    {canEdit ? (
+                      <div className="flex flex-col items-center gap-2 mt-2">
+                        <button
+                          onClick={async () => {
+                            await handleSeedDemo();
+                            if (selectedFile) {
+                              await handleExecuteSearch();
+                            }
+                          }}
+                          className="px-5 py-2.5 rounded-lg bg-[#143d34] hover:bg-[#1a4f43] text-[#6ee7b7] text-xs font-bold border border-[#2a6859] transition-all flex items-center gap-2 shadow-lg hover:shadow-emerald-900/40"
+                        >
+                          <Sparkles size={15} className="text-amber-400" />
+                          Seed Demo Gallery & Re-run Search
+                        </button>
+                        <span className="text-[11px] text-[#7f999b]">
+                          Automatically enrolls bundled reference portraits (Aariv, Mira, Dev) and executes search.
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="bg-[#1b1c24] border border-[#3b3e59] p-3 rounded-lg text-xs text-[#94a3b8] max-w-sm">
+                        <span className="font-semibold text-white">Viewer Role:</span> Read-only access. An investigator or administrator must enroll identities or seed the gallery.
+                      </div>
+                    )}
                   </div>
                 )}
 
