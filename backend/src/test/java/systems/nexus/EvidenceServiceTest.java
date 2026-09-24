@@ -31,6 +31,9 @@ public class EvidenceServiceTest extends TestCredentials {
     @Autowired
     private ObjectMapper json;
 
+    @Autowired
+    private InvestigationService investigationService;
+
     @MockBean
     private EngineClient engine;
 
@@ -39,7 +42,7 @@ public class EvidenceServiceTest extends TestCredentials {
     @BeforeEach
     void setUp() {
         store.reset();
-        service = new EvidenceService(store, engine, json, "target/test-evidence");
+        service = new EvidenceService(store, engine, json, investigationService, "target/test-evidence");
     }
 
     @Test
@@ -247,5 +250,45 @@ public class EvidenceServiceTest extends TestCredentials {
 
         List<EvidenceAsset> assets = service.listAssets(null, null);
         assertTrue(assets.size() >= 4);
+    }
+
+    @Test
+    void testPromoteEntityToCanonicalGraph() {
+        EvidenceAsset asset = service.uploadEvidence("Evidence narrative".getBytes(), "fir_scan.pdf", "NXS-007", "DOCUMENT", "Scanned FIR", "investigator", false);
+
+        ObjectNode prov = json.createObjectNode();
+        prov.put("entityType", "Person");
+        prov.put("citation", "Suspect Aariv Veylan was spotted fleeing");
+
+        EvidenceItem item = new EvidenceItem(
+                "ITM-ENT-999",
+                asset.id(),
+                "EXTRACTED_ENTITY",
+                1,
+                0.0,
+                0.0,
+                "",
+                "Aariv Veylan",
+                0.95,
+                json.createArrayNode(),
+                "PP-OCRv5",
+                prov,
+                java.time.Instant.now().toString()
+        );
+        store.saveEvidenceItem(item);
+
+        when(engine.extract(anyString(), anyString())).thenReturn(new Extraction(
+                List.of(new Extracted("Person", "Aariv Veylan", 0, 12, 0.95, "Aariv Veylan", "Suspect", "src-1"))
+        ));
+
+        Map<String, Object> res = service.promoteEntityToGraph("ITM-ENT-999", "Corroborated by field unit", "investigator");
+        assertNotNull(res);
+        assertTrue((Boolean) res.get("promoted"));
+        assertEquals("Aariv Veylan", res.get("entityLabel"));
+
+        // Verify entity was added to store records/graph
+        Graph g = (Graph) res.get("graph");
+        assertNotNull(g);
+        assertTrue(g.records().stream().anyMatch(r -> r.payload().path("text").asText().contains("Aariv Veylan")));
     }
 }

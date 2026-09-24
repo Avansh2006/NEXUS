@@ -18,6 +18,10 @@ import {
   Film,
   Camera,
   Info,
+  Play,
+  Pause,
+  Plus,
+  Volume2,
 } from "lucide-react";
 import { api, apiForm } from "./types";
 import type {
@@ -28,6 +32,42 @@ import type {
   VisualSearchResponse,
   EvidenceReviewDecision,
 } from "./types";
+
+const WAVEFORM_BARS = [
+  25, 42, 68, 85, 52, 34, 48, 76, 92, 88, 62, 44, 72, 96, 82, 64,
+  38, 58, 74, 88, 92, 78, 42, 64, 82, 68, 48, 32, 54, 64, 42, 22
+];
+
+function formatAudioTime(seconds: number): string {
+  const safe = Math.max(0, seconds || 0);
+  const mins = Math.floor(safe / 60);
+  const secs = (safe % 60).toFixed(1);
+  return `${mins.toString().padStart(2, "0")}:${parseFloat(secs) < 10 ? "0" : ""}${secs}`;
+}
+
+function getEntityBox(item: EvidenceItem, index: number, _total: number) {
+  if (item.provenance?.bbox && Array.isArray(item.provenance.bbox) && item.provenance.bbox.length === 4) {
+    const [x, y, w, h] = item.provenance.bbox;
+    return { x, y, width: w, height: h };
+  }
+  // Deterministic simulation layout across document page lines
+  const row = (index % 6) + 2; // lines 2 to 7
+  const col = index % 2; // 0 or 1
+  const x = col === 0 ? 10 : 54;
+  const y = row * 13 + 5;
+  const width = Math.min(36, Math.max(20, (item.rawText?.length || 8) * 1.5));
+  const height = 7.5;
+  return { x, y, width, height };
+}
+
+function getEntityTypeColor(type?: string) {
+  const t = (type || "").toUpperCase();
+  if (t === "PERSON") return { stroke: "#10b981", fill: "rgba(16, 185, 129, 0.22)", text: "#34d399", label: "Person" };
+  if (t === "PHONE") return { stroke: "#f59e0b", fill: "rgba(245, 158, 11, 0.22)", text: "#fbbf24", label: "Phone" };
+  if (t === "ACCOUNT") return { stroke: "#a855f7", fill: "rgba(168, 85, 247, 0.22)", text: "#c084fc", label: "Account" };
+  if (t === "VEHICLE") return { stroke: "#06b6d4", fill: "rgba(6, 182, 212, 0.22)", text: "#22d3ee", label: "Vehicle" };
+  return { stroke: "#f43f5e", fill: "rgba(244, 63, 94, 0.22)", text: "#fb7185", label: "Location" };
+}
 
 interface MultimodalEvidenceProps {
   graph: Graph;
@@ -88,6 +128,70 @@ export default function MultimodalEvidence({
 
   // Sidecar Status State
   const [sidecarStatus, setSidecarStatus] = useState<Record<string, any> | null>(null);
+
+  // Audio Playback & Waveform Simulation State
+  const [audioPlaying, setAudioPlaying] = useState<boolean>(false);
+  const [audioCurrentTime, setAudioCurrentTime] = useState<number>(0.0);
+  const [audioSpeed, setAudioSpeed] = useState<number>(1.0);
+  const audioIntervalRef = useRef<number | null>(null);
+
+  // Document Bounding Box Canvas Hover State
+  const [hoveredEntityId, setHoveredEntityId] = useState<string | null>(null);
+
+  const audioDuration = (() => {
+    const transcriptItem = assetItems.find((i) => i.itemType === "AUDIO_TRANSCRIPT");
+    if (transcriptItem && (transcriptItem.timestampEnd ?? 0) > 0) return transcriptItem.timestampEnd!;
+    const segments = assetItems.filter((i) => i.itemType === "AUDIO_SEGMENT");
+    if (segments.length > 0) {
+      const maxEnd = Math.max(...segments.map((s) => s.timestampEnd ?? 0));
+      return maxEnd > 0 ? maxEnd : 8.5;
+    }
+    return 8.5;
+  })();
+
+  useEffect(() => {
+    if (audioPlaying) {
+      audioIntervalRef.current = window.setInterval(() => {
+        setAudioCurrentTime((prev) => {
+          const next = prev + 0.1 * audioSpeed;
+          if (next >= audioDuration) {
+            setAudioPlaying(false);
+            return 0;
+          }
+          return next;
+        });
+      }, 100);
+    } else if (audioIntervalRef.current) {
+      clearInterval(audioIntervalRef.current);
+    }
+    return () => {
+      if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
+    };
+  }, [audioPlaying, audioSpeed, audioDuration]);
+
+  const activeSpeakerSegment = assetItems.find(
+    (i) =>
+      i.itemType === "AUDIO_SEGMENT" &&
+      audioCurrentTime >= (i.timestampStart ?? 0) &&
+      audioCurrentTime <= (i.timestampEnd ?? 9999)
+  );
+
+  const handlePromoteToGraph = async (item: EvidenceItem) => {
+    const label = item.rawContent || item.rawText || "entity";
+    setBusy(`Promoting ${label} to canonical graph with verified A1 provenance…`);
+    setError("");
+    setNotice("");
+    try {
+      await api<any>(`/evidence/promote?itemId=${encodeURIComponent(item.id)}&notes=Investigator corroborated lead via multimodal workbench`, {});
+      setNotice(`Successfully promoted "${label}" into canonical graph with verified A1 provenance!`);
+      await fetchReviews();
+      if (onRefreshGraph) void onRefreshGraph();
+    } catch (e: any) {
+      setError(e.message || "Promotion to graph failed");
+    } finally {
+      setBusy("");
+    }
+  };
 
   const fetchAssets = useCallback(async () => {
     try {
@@ -706,8 +810,144 @@ export default function MultimodalEvidence({
 
             {selectedAsset && selectedAsset.mediaType === "DOCUMENT" ? (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4">
-                {/* Document Information & Raw Text */}
+                {/* Left Column: Interactive Document Canvas & Recognized OCR Text */}
                 <div className="lg:col-span-6 space-y-4">
+                  {/* SVG Document Page Canvas with Bounding Boxes */}
+                  <div className="bg-[#0e131a] border border-[#233549] rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
+                        <FileText size={14} className="text-amber-400" />
+                        Interactive Scanned Document Canvas (Bounding Box Overlay)
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-mono">
+                        Page 1 of 1
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400">
+                      Hover over any recognized bounding box or entity card to cross-reference location on the evidentiary document sheet.
+                    </p>
+
+                    <div className="relative bg-[#0b1017] rounded-lg border border-[#1e2a3a] p-2 flex justify-center items-center overflow-hidden">
+                      <svg
+                        viewBox="0 0 100 120"
+                        className="w-full max-w-[420px] h-auto rounded shadow-2xl select-none"
+                        style={{ background: "linear-gradient(180deg, #131b26 0%, #0d131c 100%)" }}
+                      >
+                        {/* Document Header Decorator */}
+                        <rect x="6" y="6" width="88" height="108" rx="2" fill="none" stroke="#233549" strokeWidth="0.8" />
+                        <rect x="9" y="9" width="82" height="14" rx="1.5" fill="#182332" />
+                        <text x="50" y="15" fill="#94a3b8" fontSize="3.2" fontWeight="bold" textAnchor="middle" letterSpacing="0.3">
+                          OFFICIAL POLICE INCIDENT REPORT / SCANNED FIR
+                        </text>
+                        <text x="50" y="19.5" fill="#64748b" fontSize="2.1" textAnchor="middle">
+                          Case Reference: {selectedAsset.caseId} • Ingested: {selectedAsset.fileName}
+                        </text>
+
+                        {/* Faint document lines representing body text */}
+                        {[27, 33, 39, 45, 51, 57, 63, 69, 75, 81, 87, 93, 99].map((ly) => (
+                          <line key={ly} x1="12" y1={ly} x2="88" y2={ly} stroke="#1b2736" strokeWidth="0.6" strokeDasharray="2, 1" />
+                        ))}
+
+                        {/* Render Bounding Boxes for Extracted Entities */}
+                        {assetItems
+                          .filter((i) => i.itemType === "EXTRACTED_ENTITY")
+                          .map((item, idx, arr) => {
+                            const box = getEntityBox(item, idx, arr.length);
+                            const style = getEntityTypeColor(item.provenance?.entityType);
+                            const isHovered = hoveredEntityId === item.id;
+
+                            return (
+                              <g
+                                key={item.id}
+                                className="cursor-pointer transition-all duration-150"
+                                onMouseEnter={() => setHoveredEntityId(item.id)}
+                                onMouseLeave={() => setHoveredEntityId(null)}
+                                onClick={() => {
+                                  if (onNavigateToEntity) {
+                                    const match = graph.nodes.find(
+                                      (n) => n.label.toLowerCase() === item.rawText?.toLowerCase() || n.id === item.rawText
+                                    );
+                                    if (match) onNavigateToEntity(match.id);
+                                  }
+                                }}
+                              >
+                                <rect
+                                  x={box.x}
+                                  y={box.y}
+                                  width={box.width}
+                                  height={box.height}
+                                  rx="1"
+                                  fill={isHovered ? style.fill.replace("0.22", "0.45") : style.fill}
+                                  stroke={isHovered ? "#ffffff" : style.stroke}
+                                  strokeWidth={isHovered ? "1.2" : "0.7"}
+                                  strokeDasharray={isHovered ? "none" : "1, 0.5"}
+                                />
+                                <text
+                                  x={box.x + 1.2}
+                                  y={box.y + 4.8}
+                                  fill={isHovered ? "#ffffff" : style.text}
+                                  fontSize="2.8"
+                                  fontWeight={isHovered ? "bold" : "normal"}
+                                >
+                                  {item.rawText && item.rawText.length > 18 ? `${item.rawText.slice(0, 16)}…` : item.rawText}
+                                </text>
+                                {isHovered && (
+                                  <g>
+                                    <rect
+                                      x={Math.max(4, Math.min(65, box.x))}
+                                      y={Math.max(4, box.y - 7)}
+                                      width="32"
+                                      height="6"
+                                      rx="1"
+                                      fill="#020617"
+                                      stroke="#38bdf8"
+                                      strokeWidth="0.6"
+                                    />
+                                    <text
+                                      x={Math.max(4, Math.min(65, box.x)) + 16}
+                                      y={Math.max(4, box.y - 7) + 4.2}
+                                      fill="#38bdf8"
+                                      fontSize="2.4"
+                                      fontWeight="bold"
+                                      textAnchor="middle"
+                                    >
+                                      {style.label} • {Math.round(item.confidence * 100)}% conf
+                                    </text>
+                                  </g>
+                                )}
+                              </g>
+                            );
+                          })}
+                      </svg>
+                    </div>
+
+                    {/* Canvas Legend */}
+                    <div className="flex flex-wrap items-center justify-center gap-3 pt-1 text-[10px] text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/40 border border-emerald-400" />
+                        Person
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-amber-500/40 border border-amber-400" />
+                        Phone
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-purple-500/40 border border-purple-400" />
+                        Account
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-cyan-500/40 border border-cyan-400" />
+                        Vehicle
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-rose-500/40 border border-rose-400" />
+                        Location
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Document Information & Raw Text */}
                   <div className="bg-[#0e131a] border border-[#233549] rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-200 uppercase tracking-wide">
@@ -718,7 +958,7 @@ export default function MultimodalEvidence({
                       </span>
                     </div>
 
-                    <div className="bg-[#141c26] p-3 rounded border border-[#1e2a3a] text-xs font-mono text-slate-300 max-h-96 overflow-y-auto leading-relaxed whitespace-pre-wrap">
+                    <div className="bg-[#141c26] p-3 rounded border border-[#1e2a3a] text-xs font-mono text-slate-300 max-h-56 overflow-y-auto leading-relaxed whitespace-pre-wrap">
                       {assetItems.find((i) => i.itemType === "DOCUMENT_PAGE")?.rawText ||
                         "No OCR text extracted yet. Click 'Analyze Document' below to run PP-OCRv5."}
                     </div>
@@ -737,7 +977,7 @@ export default function MultimodalEvidence({
                   </div>
                 </div>
 
-                {/* Extracted Entities with Verbatim Citations */}
+                {/* Right Column: Extracted Entities with Verbatim Citations & Canonical Graph Promotion */}
                 <div className="lg:col-span-6 space-y-4">
                   <div className="bg-[#0e131a] border border-[#233549] rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
@@ -749,7 +989,7 @@ export default function MultimodalEvidence({
                       </span>
                     </div>
 
-                    <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+                    <div className="space-y-2.5 max-h-[640px] overflow-y-auto pr-1">
                       {assetItems.filter((i) => i.itemType === "EXTRACTED_ENTITY").length === 0 ? (
                         <div className="p-4 text-center text-xs text-slate-500">
                           No entities extracted yet.
@@ -760,10 +1000,19 @@ export default function MultimodalEvidence({
                           .map((item) => {
                             const entType = item.provenance?.entityType || "Entity";
                             const decision = reviews.find((r) => r.itemId === item.id);
+                            const isHovered = hoveredEntityId === item.id;
+                            const isCorroborated = decision?.decision === "CORROBORATED";
+
                             return (
                               <div
                                 key={item.id}
-                                className="p-3 bg-[#141c26] border border-[#233549] rounded-lg space-y-2 hover:border-slate-600 transition"
+                                onMouseEnter={() => setHoveredEntityId(item.id)}
+                                onMouseLeave={() => setHoveredEntityId(null)}
+                                className={`p-3 bg-[#141c26] border rounded-lg space-y-2 transition-all duration-150 ${
+                                  isHovered
+                                    ? "border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.2)] bg-[#192433]"
+                                    : "border-[#233549] hover:border-slate-600"
+                                }`}
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
@@ -775,7 +1024,7 @@ export default function MultimodalEvidence({
                                       onClick={() => {
                                         if (onNavigateToEntity) {
                                           const match = graph.nodes.find(
-                                            (n) => n.label.toLowerCase() === item.rawText.toLowerCase() || n.id === item.rawText
+                                            (n) => n.label.toLowerCase() === item.rawText?.toLowerCase() || n.id === item.rawText
                                           );
                                           if (match) onNavigateToEntity(match.id);
                                         }
@@ -796,7 +1045,7 @@ export default function MultimodalEvidence({
                                   </div>
                                 )}
 
-                                <div className="flex items-center justify-between pt-1">
+                                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                                   <div className="flex items-center gap-1.5 text-[10px]">
                                     <span className="text-slate-500">Status:</span>
                                     <span
@@ -815,17 +1064,33 @@ export default function MultimodalEvidence({
                                   </div>
 
                                   {canEdit && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setReviewNoteModalItem(item);
-                                        setReviewDecisionChoice("ACCEPTED");
-                                        setReviewNotes(decision?.notes || "");
-                                      }}
-                                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px] font-medium transition"
-                                    >
-                                      Review Lead
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => void handlePromoteToGraph(item)}
+                                        disabled={!!busy}
+                                        title="Promote verified lead directly to canonical graph with verified A1 provenance"
+                                        className={`px-2 py-1 rounded text-[11px] font-medium transition flex items-center gap-1 shadow-sm ${
+                                          isCorroborated
+                                            ? "bg-emerald-900/60 text-emerald-300 border border-emerald-700/60 hover:bg-emerald-800/80"
+                                            : "bg-teal-900/80 hover:bg-teal-800 text-teal-200 border border-teal-700/60"
+                                        }`}
+                                      >
+                                        <Plus size={11} />
+                                        {isCorroborated ? "Re-Promote" : "Promote to Graph"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setReviewNoteModalItem(item);
+                                          setReviewDecisionChoice("ACCEPTED");
+                                          setReviewNotes(decision?.notes || "");
+                                        }}
+                                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px] font-medium transition"
+                                      >
+                                        Review Lead
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -920,6 +1185,110 @@ export default function MultimodalEvidence({
                   )}
                 </div>
 
+                {/* Synchronized Wiretap Player & 32-Bar Visual Audio Waveform Scrubber */}
+                <div className="p-4 bg-[#0e131a] border border-[#233549] rounded-lg space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
+                      <Volume2 size={15} className="text-sky-400" />
+                      Synchronized Wiretap Player & 32-Bar Visual Waveform Scrubber
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-sky-400 font-bold">
+                        {formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}
+                      </span>
+                      {activeSpeakerSegment && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-950 text-sky-300 border border-sky-700 animate-pulse">
+                          {activeSpeakerSegment.speaker || "SPEAKER_00"} ACTIVE
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 32-Bar Interactive Waveform Scrubber */}
+                  <div
+                    className="relative h-20 bg-[#0a0f16] rounded-lg p-2.5 flex items-end justify-between gap-1 border border-[#1e2a3a] cursor-pointer group select-none"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                      setAudioCurrentTime(clickRatio * audioDuration);
+                    }}
+                    title="Click anywhere to scrub audio playback position"
+                  >
+                    {WAVEFORM_BARS.map((heightPercent, idx) => {
+                      const barProgress = idx / 32;
+                      const currentProgress = audioDuration > 0 ? audioCurrentTime / audioDuration : 0;
+                      const isPassed = barProgress <= currentProgress;
+                      return (
+                        <div
+                          key={idx}
+                          style={{ height: `${heightPercent}%` }}
+                          className={`w-full rounded-sm transition-all duration-75 ${
+                            isPassed
+                              ? "bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.5)]"
+                              : "bg-[#1e2d3d] group-hover:bg-[#2a3c50]"
+                          }`}
+                        />
+                      );
+                    })}
+
+                    {/* Scrubber Needle Cursor */}
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-amber-400 shadow-[0_0_8px_#f59e0b] pointer-events-none transition-all duration-75"
+                      style={{
+                        left: `${Math.max(0, Math.min(100, (audioDuration > 0 ? audioCurrentTime / audioDuration : 0) * 100))}%`,
+                      }}
+                    >
+                      <div className="w-2.5 h-2.5 bg-amber-400 rounded-full -ml-1 -mt-1 shadow-md" />
+                    </div>
+                  </div>
+
+                  {/* Playback Controls Row */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAudioPlaying((p) => !p)}
+                        className="px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-md"
+                      >
+                        {audioPlaying ? <Pause size={13} /> : <Play size={13} />}
+                        {audioPlaying ? "Pause Audio" : "Play Wiretap"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAudioPlaying(false);
+                          setAudioCurrentTime(0);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition flex items-center gap-1"
+                        title="Reset to beginning"
+                      >
+                        <RotateCcw size={12} />
+                        Reset
+                      </button>
+                    </div>
+
+                    {/* Playback Speed Controls */}
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                      <span>Speed:</span>
+                      {[0.75, 1.0, 1.25, 1.5].map((speed) => (
+                        <button
+                          key={speed}
+                          type="button"
+                          onClick={() => setAudioSpeed(speed)}
+                          className={`px-2 py-0.5 rounded text-[11px] font-mono transition ${
+                            audioSpeed === speed
+                              ? "bg-teal-800 text-teal-200 border border-teal-600 font-bold"
+                              : "bg-[#141c26] text-slate-400 hover:text-slate-200 border border-[#233549]"
+                          }`}
+                        >
+                          {speed}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Diarized Segments List */}
                 <div className="p-4 bg-[#0e131a] border border-[#233549] rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
@@ -940,24 +1309,37 @@ export default function MultimodalEvidence({
                       assetItems
                         .filter((i) => i.itemType === "AUDIO_SEGMENT")
                         .map((seg) => {
-                          const startSec = seg.timestampStart.toFixed(2);
-                          const endSec = seg.timestampEnd.toFixed(2);
+                          const startSec = (seg.timestampStart ?? 0).toFixed(2);
+                          const endSec = (seg.timestampEnd ?? 0).toFixed(2);
+                          const isSegActive = activeSpeakerSegment?.id === seg.id;
                           const entitiesInSeg = assetItems.filter(
                             (it) =>
                               it.itemType === "EXTRACTED_ENTITY" &&
                               it.speaker === seg.speaker &&
-                              it.timestampStart >= seg.timestampStart - 0.5 &&
-                              it.timestampEnd <= seg.timestampEnd + 0.5
+                              (it.timestampStart ?? 0) >= (seg.timestampStart ?? 0) - 0.5 &&
+                              (it.timestampEnd ?? 0) <= (seg.timestampEnd ?? 0) + 0.5
                           );
 
                           return (
                             <div
                               key={seg.id}
-                              className="p-3 bg-[#141c26] border border-[#233549] rounded-lg space-y-2"
+                              onClick={() => {
+                                setAudioCurrentTime(seg.timestampStart ?? 0);
+                                setAudioPlaying(true);
+                              }}
+                              className={`p-3 bg-[#141c26] border rounded-lg space-y-2 cursor-pointer transition-all duration-150 ${
+                                isSegActive
+                                  ? "border-sky-400 bg-sky-950/40 shadow-[0_0_12px_rgba(56,189,248,0.25)]"
+                                  : "border-[#233549] hover:border-slate-600"
+                              }`}
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-900/60 text-sky-300">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                    isSegActive
+                                      ? "bg-sky-700 text-white animate-pulse"
+                                      : "bg-sky-900/60 text-sky-300"
+                                  }`}>
                                     {seg.speaker || "SPEAKER_00"}
                                   </span>
                                   <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
@@ -975,13 +1357,30 @@ export default function MultimodalEvidence({
                               {entitiesInSeg.length > 0 && (
                                 <div className="flex flex-wrap gap-1.5 pt-1">
                                   {entitiesInSeg.map((e) => (
-                                    <span
+                                    <div
                                       key={e.id}
-                                      className="px-2 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300 font-mono text-[10px] flex items-center gap-1"
+                                      className="flex items-center gap-1.5 bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded font-mono text-[10px]"
                                     >
-                                      <Tag size={10} />
-                                      {e.provenance?.entityType}: <strong>{e.rawText}</strong>
-                                    </span>
+                                      <span className="text-amber-300 flex items-center gap-1">
+                                        <Tag size={10} />
+                                        {e.provenance?.entityType}: <strong>{e.rawText}</strong>
+                                      </span>
+                                      {canEdit && (
+                                        <button
+                                          type="button"
+                                          onClick={(evt) => {
+                                            evt.stopPropagation();
+                                            void handlePromoteToGraph(e);
+                                          }}
+                                          disabled={!!busy}
+                                          title="Promote verified telephony lead to canonical graph"
+                                          className="ml-1 px-1.5 py-0.5 rounded bg-teal-800 hover:bg-teal-700 text-teal-200 font-sans text-[9px] transition flex items-center gap-0.5"
+                                        >
+                                          <Plus size={9} />
+                                          Promote
+                                        </button>
+                                      )}
+                                    </div>
                                   ))}
                                 </div>
                               )}

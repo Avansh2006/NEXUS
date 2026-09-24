@@ -145,4 +145,13 @@ public class EvidenceController {
     public Map<String, Object> seedDemo(HttpServletRequest req) {
         return evidenceService.seedDemoMultimodalEvidence(currentUser(req));
     }
+
+    @PostMapping("/promote")
+    public Map<String, Object> promoteToGraph(
+            @RequestParam("itemId") String itemId,
+            @RequestParam(value = "notes", required = false) String notes,
+            HttpServletRequest req
+    ) {
+        return evidenceService.promoteEntityToGraph(itemId, notes, currentUser(req));
+    }
 }

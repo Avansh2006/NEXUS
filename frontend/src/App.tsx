@@ -114,6 +114,7 @@ export const DOSSIER_SECTIONS = [
   { id: "audit", label: "12. Cryptographic Audit Certificate" },
   { id: "bsa", label: "13. BSA 2023 Section 63 Template" },
   { id: "limitations", label: "14. Safeguards & Limitations Statement" },
+  { id: "multimodal", label: "15. Multimodal Evidence & Acoustic/Visual Forensics Manifest" },
 ] as const;
 
 const TacticalGlobe3D = lazy(() => import("./TacticalGlobe3D"));

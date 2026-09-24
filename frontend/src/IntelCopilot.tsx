@@ -37,6 +37,9 @@ export default function IntelCopilot({
   const [history, setHistory] = useState<CopilotResponse[]>([]);
 
   const sampleQueries = [
+    "What did the wiretap audio say?",
+    "What vehicles were matched in visual search?",
+    "Show scanned FIR document OCR text",
     "How did this investigation evolve over time?",
     "What if we remove SYN-PHONE-061?",
     "Are there any contradictions or conflicting evidence?",
@@ -48,6 +51,9 @@ export default function IntelCopilot({
   ];
 
   const defaultSuggestions = [
+    "What did the wiretap audio say?",
+    "What vehicles were matched in visual search?",
+    "Show scanned FIR document OCR text",
     "Which entities have the highest betweenness centrality?",
     "Find accounts matching the pass-through pattern with high fan-in",
     "Who links Case NXS-001 to NXS-003?",
@@ -77,6 +83,32 @@ export default function IntelCopilot({
       mappedIntent = "out_of_scope";
       summary = "I can't answer that from the graph data. I can help you query suspects, communication hubs, pass-through accounts, or shared identifiers in the active cases.";
       suggestions = defaultSuggestions;
+    } else if (q.includes("wiretap") || q.includes("audio") || q.includes("recording") || q.includes("whisper") || q.includes("say") || q.includes("spoken")) {
+      mappedIntent = "multimodal_audio_intel";
+      summary = "Acoustic Intelligence (faster-whisper small-int8): Wiretap intercept for Case NXS-007 captured conversation between SPEAKER_00 and SPEAKER_01 discussing unauthorized remittance authorized via SYN-PHONE-001 into beneficiary account SYN-ACCOUNT-001 (INR 75,000). At 00:03.20, speaker directly referenced Aariv Veylan.";
+      const aariv = nodes.find((n) => n.label.includes("Aariv"));
+      if (aariv) matchedEntities.push({ id: aariv.id, label: aariv.label, type: aariv.type, role: "Spoken Subject" });
+      const phone = nodes.find((n) => n.label.includes("SYN-PHONE-001"));
+      if (phone) matchedEntities.push({ id: phone.id, label: phone.label, type: phone.type, role: "Intercept Target" });
+      evidence.push("ITM-AUD-NXS007", "ITM-SEG-01");
+      rules.push("Voice Intelligence", "Diarized Telephony Citation");
+      suggestions = ["Show scanned FIR document OCR text", "What vehicles were matched in visual search?", "Why are Aariv Veylan and Mira Solven connected?"];
+    } else if (q.includes("vehicle") || q.includes("visual") || q.includes("clip") || q.includes("camera") || q.includes("openclip") || q.includes("car")) {
+      mappedIntent = "multimodal_visual_intel";
+      summary = "Visual Evidence Search (OpenCLIP ViT-B-32): Query probe CCTV_Vehicle_NXS007.jpg (MH-04-AB-1234 departing Navapur Sector 4) matches Seized_Vehicle_CASE019.jpg in Case CASE-019 with 95% visual cosine similarity. Note: Mandatory judicial safeguard applies — visual similarity is an investigative lead, not proof of identical ownership.";
+      const veh = nodes.find((n) => n.type === "Vehicle" || n.label.includes("MH-04"));
+      if (veh) matchedEntities.push({ id: veh.id, label: veh.label, type: veh.type, role: "Visual Match Lead" });
+      evidence.push("ITM-VIS-CASE019-01", "ITM-VIS-NXS007-01");
+      rules.push("OpenCLIP ViT-B-32 Cross-Case Visual Lead");
+      suggestions = ["What did the wiretap audio say?", "Show scanned FIR document OCR text"];
+    } else if (q.includes("ocr") || (q.includes("scanned") && q.includes("fir")) || q.includes("document") || q.includes("paddle")) {
+      mappedIntent = "multimodal_document_ocr";
+      summary = "Document OCR Intelligence (PaddleOCR PP-OCRv5): Scanned FIR No. 104/2026 (Navapur Police Station) extracted verbatim text mentioning accused Aariv Veylan, co-accused Dev Neral, getaway vehicle MH-04-AB-1234, and transfer of INR 75,000 into account SYN-ACCOUNT-001.";
+      const aariv = nodes.find((n) => n.label.includes("Aariv"));
+      if (aariv) matchedEntities.push({ id: aariv.id, label: aariv.label, type: aariv.type, role: "Accused (FIR 104/2026)" });
+      evidence.push("ITM-DOC-FIR104", "ITM-PAGE-01");
+      rules.push("PaddleOCR Multilingual Devanagari/English Extraction");
+      suggestions = ["What did the wiretap audio say?", "What vehicles were matched in visual search?"];
     } else if (q.includes("nxs-001") || q.includes("nxs-003") || (q.includes("link") && q.includes("case"))) {
       mappedIntent = "shared_identifiers";
       const shared = nodes.find((n) => n.label === "SYN-PHONE-001");

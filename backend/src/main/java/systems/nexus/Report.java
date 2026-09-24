@@ -365,6 +365,31 @@ public final class Report {
             out.append("</ul></div>");
         }
 
+        // SECTION 15: MULTIMODAL EVIDENCE & FORENSICS MANIFEST
+        if (inc.test("multimodal") || inc.test("evidence")) {
+            out.append("<h2>SECTION 15 — Multimodal Evidence &amp; Acoustic/Visual Forensics Manifest</h2>");
+            List<EvidenceAsset> multimodalAssets = store != null ? store.evidenceAssets() : List.of();
+            if (multimodalAssets.isEmpty()) {
+                out.append("<p>No multimodal evidence assets (scanned documents, wiretaps, or surveillance imagery) ingested.</p>");
+            } else {
+                out.append("<table><tr><th>Asset ID</th><th>Case ID</th><th>Media</th><th>File Name</th><th>File Size</th><th>SHA-256 Hash</th><th>Status</th></tr>");
+                for (EvidenceAsset a : multimodalAssets) {
+                    out.append("<tr><td><code>").append(escape(a.id())).append("</code></td><td>").append(escape(a.caseId())).append("</td><td><b>").append(escape(a.mediaType())).append("</b></td><td>").append(escape(a.fileName())).append("</td><td>").append(a.fileSize() / 1024).append(" KB</td><td><code>").append(escape(a.fileHash().substring(0, Math.min(16, a.fileHash().length())))).append("...</code></td><td>").append(escape(a.status())).append("</td></tr>");
+                }
+                out.append("</table>");
+
+                out.append("<h3>Extracted Multimodal Intelligence &amp; Human Determinations</h3>");
+                List<EvidenceReviewDecision> decisions = store != null ? store.evidenceReviews() : List.of();
+                if (!decisions.isEmpty()) {
+                    out.append("<table><tr><th>Decision ID</th><th>Item ID</th><th>Determination</th><th>Investigator</th><th>Timestamp</th><th>Corroboration Notes</th></tr>");
+                    for (EvidenceReviewDecision d : decisions) {
+                        out.append("<tr><td><code>").append(escape(d.id())).append("</code></td><td><code>").append(escape(d.itemId())).append("</code></td><td><b>").append(escape(d.decision())).append("</b></td><td>").append(escape(d.author())).append("</td><td>").append(escape(d.createdAt())).append("</td><td><i>").append(escape(d.notes())).append("</i></td></tr>");
+                    }
+                    out.append("</table>");
+                }
+            }
+        }
+
         out.append("</body></html>");
         return out.toString();
     }

@@ -28,22 +28,35 @@ public class EvidenceService {
     private final EngineClient engine;
     private final ObjectMapper json;
     private final Path storageRoot;
+    private final InvestigationService investigationService;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public EvidenceService(
             Store store,
             EngineClient engine,
             ObjectMapper json,
+            InvestigationService investigationService,
             @Value("${nexus.evidence.storage-dir:data/evidence}") String storageDir
     ) {
         this.store = store;
         this.engine = engine;
         this.json = json;
+        this.investigationService = investigationService;
         this.storageRoot = Paths.get(storageDir).toAbsolutePath();
         try {
             Files.createDirectories(this.storageRoot);
         } catch (IOException e) {
             // fallback to tmp
         }
+    }
+
+    public EvidenceService(
+            Store store,
+            EngineClient engine,
+            ObjectMapper json,
+            String storageDir
+    ) {
+        this(store, engine, json, null, storageDir);
     }
 
     public static String detectMediaType(String filename, String mimeType) {
@@ -552,6 +565,51 @@ public class EvidenceService {
             return store.evidenceReviewsByCase(caseId);
         }
         return store.evidenceReviews();
+    }
+
+    public Map<String, Object> promoteEntityToGraph(String itemId, String notes, String user) {
+        EvidenceItem item = store.evidenceItem(itemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evidence item not found: " + itemId));
+        EvidenceAsset asset = store.evidenceAsset(item.assetId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parent asset not found for item: " + itemId));
+
+        if (investigationService == null) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "InvestigationService unavailable for promotion");
+        }
+
+        String entityType = item.provenance().path("entityType").asText("");
+        String entityLabel = item.rawContent();
+        String citation = item.provenance().path("citation").asText(item.rawContent());
+
+        // Construct verified narrative entry for GraphBuilder
+        ObjectNode recordNode = json.createObjectNode();
+        recordNode.put("caseId", asset.caseId());
+        recordNode.put("text", "CORROBORATED MULTIMODAL EVIDENCE: In " + asset.mediaType() + " asset (" + asset.fileName() + "), verified presence of " +
+                (entityType.isBlank() ? "entity" : entityType) + " '" + entityLabel + "'. Context citation: \"" + citation + "\". Human determination: " +
+                (notes != null && !notes.isBlank() ? notes : "Corroborated by investigator."));
+        recordNode.put("date", Instant.now().toString());
+        recordNode.put("sourceReliability", "A");
+        recordNode.put("informationCredibility", "1");
+        recordNode.put("crimeType", "Verified Lead");
+
+        // Ingest into canonical GraphBuilder pipeline
+        IngestResult ingestRes = investigationService.ingest("intel-report", new IngestRequest(List.of(recordNode), null, null));
+
+        // Record human review decision as CORROBORATED
+        EvidenceReviewDecision decision = recordReviewDecision(itemId, "CORROBORATED", notes != null ? notes : "Promoted to canonical graph", user);
+
+        store.audit("EVIDENCE_PROMOTED_TO_GRAPH", user, itemId, entityLabel);
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("promoted", true);
+        res.put("itemId", itemId);
+        res.put("entityLabel", entityLabel);
+        res.put("entityType", entityType);
+        res.put("caseId", asset.caseId());
+        res.put("decision", decision);
+        res.put("ingestResult", ingestRes);
+        res.put("graph", investigationService.graph());
+        return res;
     }
 
     public Map<String, Object> seedDemoMultimodalEvidence(String user) {

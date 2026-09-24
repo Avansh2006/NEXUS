@@ -252,6 +252,14 @@ public class Store {
                 decode(rs.getString(10)), rs.getString(11), decode(rs.getString(12)), rs.getString(13)));
     }
 
+    public Optional<Model.EvidenceItem> evidenceItem(String id) {
+        var rows = db.query("SELECT id, asset_id, item_type, page_or_frame, timestamp_start, timestamp_end, speaker, raw_content, confidence, embedding, model_name, provenance, created_at FROM evidence_item WHERE id=?",
+            (rs, n) -> new Model.EvidenceItem(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4),
+                rs.getDouble(5), rs.getDouble(6), rs.getString(7), rs.getString(8), rs.getDouble(9),
+                decode(rs.getString(10)), rs.getString(11), decode(rs.getString(12)), rs.getString(13)), id);
+        return rows.stream().findFirst();
+    }
+
     public void saveEvidenceReview(Model.EvidenceReviewDecision d) {
         db.update("DELETE FROM evidence_review WHERE id=?", d.id());
         db.update("INSERT INTO evidence_review(id, item_id, case_id, decision, notes, author, created_at) VALUES(?,?,?,?,?,?,?)",

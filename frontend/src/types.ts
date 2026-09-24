@@ -666,7 +666,8 @@ export interface EvidenceItem {
   timestampStart: number;
   timestampEnd: number;
   speaker: string;
-  rawText: string;
+  rawText?: string;
+  rawContent?: string;
   confidence: number;
   embedding?: number[];
   modelName: string;
