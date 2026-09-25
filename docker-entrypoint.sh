@@ -61,9 +61,10 @@ for i in $(seq 1 30); do
     sleep 1
 done
 
-# 3. Launch Spring Boot in foreground
+# 3. Launch Spring Boot in foreground with strict 512MB container memory bounds
 echo "[NEXUS] Starting Spring Boot API on port ${PORT}..."
-exec java -Dserver.port=${PORT} \
+exec java -Xmx160m -Xms48m -XX:+UseSerialGC \
+          -Dserver.port=${PORT} \
           -Dnexus.intelligence-url=${INTELLIGENCE_URL} \
           -Dnexus.demo-dir=${DEMO_DIR} \
           -Dnexus.frontend-origin="${FRONTEND_ORIGIN}" \

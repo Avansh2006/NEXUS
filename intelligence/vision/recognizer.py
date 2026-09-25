@@ -16,19 +16,25 @@ class AdaFaceRecognizer:
         self.std = 127.5
         self.model_name = "adaface_ir101_webface12m"
         self.model_version = "1.0.0"
+        self.model_path = model_path
+        self._initialized = False
 
-        path = model_path or get_recognizer_path()
-        if path is not None:
-            try:
-                self.session = create_session(path)
-                self.input_name = self.session.get_inputs()[0].name
-                self.output_name = self.session.get_outputs()[0].name
-                logger.info(f"AdaFace recognizer loaded from {path}")
-            except Exception as e:
-                logger.warning(f"Failed to initialize AdaFace recognizer: {e}")
-                self.session = None
+    def _ensure_session(self):
+        if not self._initialized:
+            self._initialized = True
+            path = self.model_path or get_recognizer_path()
+            if path is not None:
+                try:
+                    self.session = create_session(path)
+                    self.input_name = self.session.get_inputs()[0].name
+                    self.output_name = self.session.get_outputs()[0].name
+                    logger.info(f"AdaFace recognizer loaded from {path}")
+                except Exception as e:
+                    logger.warning(f"Failed to initialize AdaFace recognizer: {e}")
+                    self.session = None
 
     def is_available(self) -> bool:
+        self._ensure_session()
         return self.session is not None
 
     def embed(self, aligned_bgr: np.ndarray) -> List[float]:

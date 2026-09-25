@@ -19,7 +19,12 @@ class DocumentOcrEngine:
         self.ocr_engine = None
         self.is_paddle_loaded = False
         self.model_name = "PaddleOCR-PP-OCRv5"
-        self._initialize_model()
+        self._initialized = False
+
+    def _ensure_model(self):
+        if not self._initialized:
+            self._initialized = True
+            self._initialize_model()
 
     def _initialize_model(self):
         """Attempt to initialize PaddleOCR in CPU mode."""
@@ -57,6 +62,7 @@ class DocumentOcrEngine:
         then routes text into extraction.py pipeline.
         """
         is_pdf = filename.lower().endswith('.pdf') or file_bytes.startswith(b'%PDF')
+        self._ensure_model()
         pages_data = []
 
         if is_pdf:

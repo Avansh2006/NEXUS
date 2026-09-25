@@ -27,7 +27,12 @@ class VisualEvidenceEngine:
         self.clip_preprocess = None
         self.model_name = "OpenCLIP-ViT-B-32-laion2b_s34b_b79k"
         self.vector_dim = 512
-        self._initialize_clip()
+        self._initialized = False
+
+    def _ensure_clip(self):
+        if not self._initialized:
+            self._initialized = True
+            self._initialize_clip()
 
     def _initialize_clip(self):
         """Attempt to load OpenCLIP ViT-B-32 in CPU mode."""
@@ -177,7 +182,7 @@ class VisualEvidenceEngine:
             image = Image.new('RGB', (224, 224), color=(60, 80, 100))
 
         thumbnail_b64 = self._make_thumbnail(image)
-
+        self._ensure_clip()
         if self.clip_model and self.clip_preprocess:
             embedding = self._compute_clip_embedding(image)
         else:

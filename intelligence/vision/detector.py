@@ -127,19 +127,25 @@ class SCRFDDetector:
         self.feat_strides = [8, 16, 32]
         self.num_anchors = 2
         self.anchor_cache: Dict[Tuple[int, int, int], np.ndarray] = {}
+        self.model_path = model_path
+        self._initialized = False
 
-        path = model_path or get_detector_path()
-        if path is not None:
-            try:
-                self.session = create_session(path)
-                self.input_name = self.session.get_inputs()[0].name
-                self.output_names = [o.name for o in self.session.get_outputs()]
-                logger.info(f"SCRFD face detector loaded from {path}")
-            except Exception as e:
-                logger.warning(f"Failed to initialize SCRFD detector: {e}")
-                self.session = None
+    def _ensure_session(self):
+        if not self._initialized:
+            self._initialized = True
+            path = self.model_path or get_detector_path()
+            if path is not None:
+                try:
+                    self.session = create_session(path)
+                    self.input_name = self.session.get_inputs()[0].name
+                    self.output_names = [o.name for o in self.session.get_outputs()]
+                    logger.info(f"SCRFD face detector loaded from {path}")
+                except Exception as e:
+                    logger.warning(f"Failed to initialize SCRFD detector: {e}")
+                    self.session = None
 
     def is_available(self) -> bool:
+        self._ensure_session()
         return self.session is not None
 
     def detect(self, image: np.ndarray, conf_threshold: float = 0.5, iou_threshold: float = 0.4) -> List[FaceDetection]:

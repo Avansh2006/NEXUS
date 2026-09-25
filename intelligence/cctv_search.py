@@ -195,7 +195,12 @@ class CctvHuntEngine:
         self.dino_model = None
         self.sam_predictor = None
         self.pipeline_mode = "FALLBACK_TRACKER"
-        self._initialize_models()
+        self._models_initialized = False
+
+    def _ensure_models(self):
+        if not self._models_initialized:
+            self._models_initialized = True
+            self._initialize_models()
 
     def _initialize_models(self):
         """Attempts to load Grounding DINO and SAM 2, falling back cleanly if unavailable."""
@@ -545,6 +550,7 @@ class CctvHuntEngine:
         """
         start_time = time.time()
         parsed = QueryParser.parse(query)
+        self._ensure_models()
         box_thresh = box_threshold if box_threshold is not None else self.config["box_threshold"]
         text_thresh = text_threshold if text_threshold is not None else self.config["text_threshold"]
 

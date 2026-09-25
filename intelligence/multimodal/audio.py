@@ -24,8 +24,18 @@ class AudioIntelligenceEngine:
         self.model_name = "faster-whisper-small-int8"
         self.diarization_model_name = "pyannote/speaker-diarization-community-1"
         self.diarization_enabled = False
-        self._initialize_whisper()
-        self._initialize_diarization()
+        self._whisper_initialized = False
+        self._diarization_initialized = False
+
+    def _ensure_whisper(self):
+        if not self._whisper_initialized:
+            self._whisper_initialized = True
+            self._initialize_whisper()
+
+    def _ensure_diarization(self):
+        if not self._diarization_initialized:
+            self._diarization_initialized = True
+            self._initialize_diarization()
 
     def _initialize_whisper(self):
         """Attempt to load faster-whisper small int8 on CPU."""
@@ -80,6 +90,7 @@ class AudioIntelligenceEngine:
             tmp_path = tmp.name
 
         try:
+            self._ensure_whisper()
             if self.whisper_model:
                 result = self._transcribe_whisper(tmp_path, asset_id)
             else:
