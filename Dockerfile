@@ -15,12 +15,15 @@ FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
-# Install OpenJDK 17 headless, curl for healthchecks and clean apt cache
+# Install OpenJDK 17 headless, curl, OpenGL/GLib libraries for OpenCV/ONNX, and clean apt cache
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         openjdk-17-jre-headless \
         curl \
-        ca-certificates && \
+        ca-certificates \
+        libgl1 \
+        libglib2.0-0 \
+        libgomp1 && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python intelligence dependencies

@@ -16,11 +16,11 @@ services:
       - key: NEXUS_JWT_SECRET
         generateValue: true
       - key: NEXUS_ADMIN_PASSWORD_HASH
-        sync: false
+        value: "$2b$12$1lQL7QRyFmdCa7da0lTuRegEini5CmjBkVRx1oa.EHJHRBFtyrD6i"
       - key: NEXUS_INVESTIGATOR_PASSWORD_HASH
-        sync: false
+        value: "$2b$12$cKRppxj45xgKBsZIP351YuqjIQVUtp6oC1az.CG.IMTNRbQnPNgaq"
       - key: NEXUS_VIEWER_PASSWORD_HASH
-        sync: false
+        value: "$2b$12$Ap4ctJ/JDiuUK4Qk3uZI3uIgXwD9IHowft3jYf1QGn5FzJlWdiGGm"
       - key: PORT
         value: 10000
       - key: FRONTEND_ORIGIN
