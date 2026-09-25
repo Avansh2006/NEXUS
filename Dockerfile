@@ -26,6 +26,9 @@ RUN apt-get update && \
         libgomp1 && \
     rm -rf /var/lib/apt/lists/*
 
+# Pre-install lightweight CPU-only PyTorch (saves 3.5GB of CUDA packages on CPU cloud hosts)
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
 # Install Python intelligence dependencies
 COPY intelligence/requirements.txt /app/intelligence/requirements.txt
 RUN pip install --no-cache-dir -r /app/intelligence/requirements.txt
