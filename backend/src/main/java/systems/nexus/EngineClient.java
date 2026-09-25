@@ -11,6 +11,7 @@ import java.util.*;
 public class EngineClient {
     private final RestClient client;
     private final RestClient healthClient;
+    private final RestClient cctvClient;
     public EngineClient(@Value("${nexus.intelligence-url}") String url) {
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(3000); factory.setReadTimeout(15000);
@@ -18,6 +19,9 @@ public class EngineClient {
         var healthFactory = new SimpleClientHttpRequestFactory();
         healthFactory.setConnectTimeout(2000); healthFactory.setReadTimeout(2000);
         healthClient = RestClient.builder().baseUrl(url).requestFactory(healthFactory).build();
+        var cctvFactory = new SimpleClientHttpRequestFactory();
+        cctvFactory.setConnectTimeout(5000); cctvFactory.setReadTimeout(120000);
+        cctvClient = RestClient.builder().baseUrl(url).requestFactory(cctvFactory).build();
     }
     public Model.Extraction extract(String text, String id) {
         return utf16(text,client.post().uri("/extract").body(Map.of("text",text,"recordId",id)).retrieve().body(Model.Extraction.class));
@@ -91,5 +95,27 @@ public class EngineClient {
         body.put("threshold", threshold);
         body.put("top_k", topK);
         return client.post().uri("/evidence/visual/search").body(body).retrieve().body(JsonNode.class);
+    }
+
+    // NATURAL-LANGUAGE CCTV HUNT CLIENT METHODS
+    public JsonNode cctvStatus() {
+        return cctvClient.get().uri("/vision/cctv/status").retrieve().body(JsonNode.class);
+    }
+
+    public JsonNode cctvSearch(byte[] videoBytes, String filename, String query, String assetId, String caseId, Double boxThreshold, Double textThreshold) {
+        String b64 = Base64.getEncoder().encodeToString(videoBytes);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("video_base64", b64);
+        body.put("filename", filename);
+        body.put("query", query);
+        body.put("asset_id", assetId);
+        body.put("case_id", caseId);
+        if (boxThreshold != null) body.put("box_threshold", boxThreshold);
+        if (textThreshold != null) body.put("text_threshold", textThreshold);
+        return cctvClient.post().uri("/vision/cctv/search").body(body).retrieve().body(JsonNode.class);
+    }
+
+    public JsonNode cctvAnalysis(String analysisId) {
+        return cctvClient.get().uri("/vision/cctv/search/" + analysisId).retrieve().body(JsonNode.class);
     }
 }

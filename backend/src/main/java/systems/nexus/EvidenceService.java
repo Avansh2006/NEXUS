@@ -674,14 +674,47 @@ public class EvidenceService {
                 true
         );
 
+        // Seed 5: CCTV Video Footage (Active Case NXS-007)
+        byte[] cctvBytes;
+        try {
+            java.nio.file.Path cctvFixturePath = java.nio.file.Paths.get("data/fixtures/cctv/synthetic_cctv_junction.mp4");
+            if (java.nio.file.Files.exists(cctvFixturePath)) {
+                cctvBytes = java.nio.file.Files.readAllBytes(cctvFixturePath);
+            } else {
+                cctvBytes = new byte[] { 0, 0, 0, 24, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm' };
+            }
+        } catch (Exception ex) {
+            cctvBytes = new byte[] { 0, 0, 0, 24, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm' };
+        }
+        EvidenceAsset cctvAsset = uploadEvidence(
+                cctvBytes,
+                "CCTV_Junction_Cam04_NXS007.mp4",
+                "NXS-007",
+                "VIDEO",
+                "Surveillance video from Navapur Junction Cam-04 covering vehicle transit and pedestrian corridor",
+                user,
+                false
+        );
+
         Map<String, Object> res = new LinkedHashMap<>();
         res.put("seeded", true);
         res.put("documentAssetId", docAsset.id());
         res.put("audioAssetId", audioAsset.id());
         res.put("visualTargetAssetId", visualTarget.id());
         res.put("visualProbeAssetId", visualProbe.id());
+        res.put("cctvAssetId", cctvAsset.id());
         res.put("message", "Multimodal evidence fixtures successfully seeded across NXS-007 and CASE-019");
         return res;
+    }
+
+    public Optional<EvidenceAsset> getAsset(String assetId) {
+        return store.evidenceAsset(assetId);
+    }
+
+    public byte[] getAssetFileBytes(String assetId) {
+        EvidenceAsset asset = store.evidenceAsset(assetId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evidence asset not found: " + assetId));
+        return readFileBytes(asset.storagePath());
     }
 
     private byte[] createSyntheticImage(int r, int g, int b) {
@@ -701,7 +734,7 @@ public class EvidenceService {
         }
     }
 
-    private byte[] readFileBytes(String pathStr) {
+    public byte[] readFileBytes(String pathStr) {
         try {
             return Files.readAllBytes(Paths.get(pathStr));
         } catch (IOException e) {

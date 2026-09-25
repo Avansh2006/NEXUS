@@ -73,6 +73,7 @@ interface MultimodalEvidenceProps {
   graph: Graph;
   session: Session;
   onNavigateToEntity?: (entityId: string) => void;
+  onNavigateToCctvHunt?: (assetId: string) => void;
   onRefreshGraph?: () => Promise<unknown>;
 }
 
@@ -80,6 +81,7 @@ export default function MultimodalEvidence({
   graph,
   session,
   onNavigateToEntity,
+  onNavigateToCctvHunt,
   onRefreshGraph,
 }: MultimodalEvidenceProps) {
   const canEdit = session.role !== "VIEWER";
@@ -703,6 +705,20 @@ export default function MultimodalEvidence({
                                   Analyze
                                 </button>
                               )}
+                              {asset.mediaType === "VIDEO" && onNavigateToCctvHunt && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onNavigateToCctvHunt(asset.id);
+                                  }}
+                                  className="px-2 py-0.5 bg-purple-900/80 hover:bg-purple-800 text-purple-200 border border-purple-700 rounded text-[11px] transition flex items-center gap-1 font-semibold"
+                                  title="Open in Natural-Language CCTV Hunt"
+                                >
+                                  <Film size={11} />
+                                  <span>Hunt</span>
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -762,6 +778,19 @@ export default function MultimodalEvidence({
                   <p className="text-xs text-slate-300 italic bg-[#141b24] p-2 rounded border border-[#233549]">
                     "{selectedAsset.metadata.description}"
                   </p>
+                )}
+
+                {selectedAsset.mediaType === "VIDEO" && onNavigateToCctvHunt && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToCctvHunt(selectedAsset.id)}
+                      className="button compact primary text-xs py-2 px-4 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white flex items-center gap-2 font-semibold shadow-md"
+                    >
+                      <Film size={14} />
+                      <span>Launch Natural-Language CCTV Hunt for this Video</span>
+                    </button>
+                  </div>
                 )}
               </div>
             )}

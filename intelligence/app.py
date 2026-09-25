@@ -14,10 +14,13 @@ from evaluate_multilingual import evaluate as evaluate_multilingual
 from intent import map_intent, IntentModel
 from vision.pipeline import VisionPipeline
 from multimodal.pipeline import MultimodalPipeline
+from cctv_search import CctvHuntEngine
 
 app = FastAPI(title='NEXUS intelligence', docs_url=None, redoc_url=None)
 vision_pipeline = VisionPipeline()
 multimodal_pipeline = MultimodalPipeline()
+cctv_engine = CctvHuntEngine()
+cctv_analyses_cache: Dict[str, Any] = {}
 
 
 class ExtractRequest(BaseModel):
@@ -330,4 +333,93 @@ def evidence_visual_search(request: VisualSearchRequest):
         }
     except Exception as e:
         raise HTTPException(400, f'Visual search error: {e}')
+
+
+# -------------------------------------------------------------
+# NATURAL-LANGUAGE CCTV HUNT ROUTES (Grounding DINO + SAM 2)
+# -------------------------------------------------------------
+
+class CctvSearchRequest(BaseModel):
+    video_base64: Optional[str] = None
+    video_path: Optional[str] = None
+    filename: str = 'cctv.mp4'
+    query: str
+    asset_id: str = ''
+    case_id: str = ''
+    box_threshold: Optional[float] = None
+    text_threshold: Optional[float] = None
+
+
+@app.get('/vision/cctv/status')
+def cctv_status():
+    return cctv_engine.get_status()
+
+
+@app.post('/vision/cctv/search')
+def cctv_search(request: CctvSearchRequest):
+    if not request.query or not request.query.strip():
+        raise HTTPException(400, 'Query cannot be empty')
+
+    if request.video_base64:
+        video_bytes = _decode_b64_image(request.video_base64)
+    elif request.video_path and os.path.exists(request.video_path):
+        with open(request.video_path, 'rb') as f:
+            video_bytes = f.read()
+    else:
+        raise HTTPException(400, 'Either video_base64 or valid video_path must be provided')
+
+    try:
+        res = cctv_engine.search_video(
+            video_bytes=video_bytes,
+            filename=request.filename,
+            query=request.query,
+            asset_id=request.asset_id,
+            case_id=request.case_id,
+            box_threshold=request.box_threshold,
+            text_threshold=request.text_threshold,
+        )
+        cctv_analyses_cache[res['analysisId']] = res
+        return res
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f'CCTV hunt processing failed: {e}')
+
+
+@app.post('/vision/cctv/search/file')
+async def cctv_search_file(
+    file: UploadFile = File(...),
+    query: str = Form(...),
+    asset_id: str = Form(''),
+    case_id: str = Form(''),
+    box_threshold: Optional[float] = Form(None),
+    text_threshold: Optional[float] = Form(None),
+):
+    if not query or not query.strip():
+        raise HTTPException(400, 'Query cannot be empty')
+
+    video_bytes = await file.read()
+    try:
+        res = cctv_engine.search_video(
+            video_bytes=video_bytes,
+            filename=file.filename or 'cctv.mp4',
+            query=query,
+            asset_id=asset_id,
+            case_id=case_id,
+            box_threshold=box_threshold,
+            text_threshold=text_threshold,
+        )
+        cctv_analyses_cache[res['analysisId']] = res
+        return res
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f'CCTV hunt processing failed: {e}')
+
+
+@app.get('/vision/cctv/search/{analysis_id}')
+def cctv_get_analysis(analysis_id: str):
+    if analysis_id in cctv_analyses_cache:
+        return cctv_analyses_cache[analysis_id]
+    raise HTTPException(404, f'CCTV analysis not found: {analysis_id}')
 

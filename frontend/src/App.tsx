@@ -37,10 +37,12 @@ import {
   Printer,
   Eye,
   Layers,
+  Video,
 } from "lucide-react";
 import VisualIdentitySearch from "./VisualIdentitySearch";
 import MultimodalEvidence from "./MultimodalEvidence";
 import InvestigationIntelligence from "./InvestigationIntelligence";
+import CctvHunt from "./CctvHunt";
 import { api, apiRaw, setSession, colors, emptyGraph } from "./types";
 import type {
   Session,
@@ -82,6 +84,7 @@ const nav = [
   ["Investigation", Network],
   ["Visual Identity", ScanFace],
   ["Multimodal Evidence", Layers],
+  ["CCTV Hunt", Video],
   ["Investigation Intelligence", Sparkles],
   ["Data Ingestion", Database],
   ["Alerts", Activity],
@@ -132,6 +135,7 @@ export default function App({ session }: { session: Session }) {
   const [intelligenceTab, setIntelligenceTab] = useState<
     "replay" | "what-if" | "contradictions" | "trail" | "gaps" | "radar"
   >("replay");
+  const [cctvTargetAssetId, setCctvTargetAssetId] = useState<string>("");
   const pageRef = useRef(page);
   pageRef.current = page;
   const [busy, setBusy] = useState(""),
@@ -1915,7 +1919,25 @@ export default function App({ session }: { session: Session }) {
                 setPage("Investigation");
                 setFocus(1);
               }}
+              onNavigateToCctvHunt={(assetId) => {
+                setCctvTargetAssetId(assetId);
+                setPage("CCTV Hunt");
+              }}
               onRefreshGraph={refresh}
+            />
+          ) : null}
+
+          {page === "CCTV Hunt" ? (
+            <CctvHunt
+              graph={graph}
+              session={session}
+              initialAssetId={cctvTargetAssetId}
+              onNavigateToEntity={(entityId) => {
+                select(entityId);
+                setPage("Investigation");
+                setFocus(1);
+              }}
+              onNavigateToMultimodal={() => setPage("Multimodal Evidence")}
             />
           ) : null}
 

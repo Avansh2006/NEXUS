@@ -34,4 +34,9 @@ CREATE INDEX IF NOT EXISTS evidence_item_asset_idx ON evidence_item(asset_id);
 CREATE INDEX IF NOT EXISTS evidence_item_type_idx ON evidence_item(item_type);
 CREATE TABLE IF NOT EXISTS evidence_review (id VARCHAR(80) PRIMARY KEY, item_id VARCHAR(80) NOT NULL, case_id VARCHAR(80) NOT NULL, decision VARCHAR(30) NOT NULL, notes VARCHAR(1000) DEFAULT '', author VARCHAR(80) NOT NULL, created_at VARCHAR(40) NOT NULL);
 CREATE INDEX IF NOT EXISTS evidence_review_item_idx ON evidence_review(item_id);
+CREATE TABLE IF NOT EXISTS cctv_analysis (id VARCHAR(80) PRIMARY KEY, evidence_asset_id VARCHAR(80) NOT NULL, case_id VARCHAR(80) NOT NULL, query VARCHAR(300) NOT NULL, status VARCHAR(40) NOT NULL, model_metadata_json JSONB DEFAULT '{}', created_at VARCHAR(40) NOT NULL, created_by VARCHAR(80) NOT NULL);
+CREATE INDEX IF NOT EXISTS cctv_analysis_asset_idx ON cctv_analysis(evidence_asset_id);
+CREATE INDEX IF NOT EXISTS cctv_analysis_case_idx ON cctv_analysis(case_id);
+CREATE TABLE IF NOT EXISTS cctv_track (id VARCHAR(80) PRIMARY KEY, analysis_id VARCHAR(80) NOT NULL REFERENCES cctv_analysis(id) ON DELETE CASCADE, track_id VARCHAR(40) NOT NULL, label VARCHAR(200) NOT NULL, first_seen_ms BIGINT NOT NULL, last_seen_ms BIGINT NOT NULL, best_confidence DOUBLE PRECISION NOT NULL, representative_frame_json JSONB DEFAULT '{}', metadata_json JSONB DEFAULT '{}');
+CREATE INDEX IF NOT EXISTS cctv_track_analysis_idx ON cctv_track(analysis_id);
 

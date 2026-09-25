@@ -387,6 +387,20 @@ public final class Report {
                     }
                     out.append("</table>");
                 }
+
+                List<CctvAnalysis> cctvAnalyses = store != null ? store.cctvAnalyses() : List.of();
+                if (!cctvAnalyses.isEmpty()) {
+                    out.append("<h3>CCTV Natural-Language Hunt Detections (Grounding DINO + SAM 2)</h3>");
+                    out.append("<table><tr><th>Analysis ID</th><th>Case ID</th><th>Query</th><th>Candidate Tracks</th><th>Pipeline &amp; Models</th><th>Investigator</th></tr>");
+                    for (CctvAnalysis ca : cctvAnalyses) {
+                        List<CctvTrack> trks = store.cctvTracksByAnalysis(ca.id());
+                        out.append("<tr><td><code>").append(escape(ca.id())).append("</code></td><td>").append(escape(ca.caseId()))
+                                .append("</td><td><b>&ldquo;").append(escape(ca.query())).append("&rdquo;</b></td><td>").append(trks.size()).append(" tracks</td><td>")
+                                .append(escape(ca.modelMetadata().path("dinoModel").asText("GroundingDINO") + " + " + ca.modelMetadata().path("samModel").asText("SAM 2.1")))
+                                .append("</td><td>").append(escape(ca.createdBy())).append("</td></tr>");
+                    }
+                    out.append("</table>");
+                }
             }
         }
 

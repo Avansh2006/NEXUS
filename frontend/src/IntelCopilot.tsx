@@ -37,6 +37,7 @@ export default function IntelCopilot({
   const [history, setHistory] = useState<CopilotResponse[]>([]);
 
   const sampleQueries = [
+    "What objects were detected in CCTV footage?",
     "What did the wiretap audio say?",
     "What vehicles were matched in visual search?",
     "Show scanned FIR document OCR text",
@@ -51,6 +52,7 @@ export default function IntelCopilot({
   ];
 
   const defaultSuggestions = [
+    "What objects were detected in CCTV footage?",
     "What did the wiretap audio say?",
     "What vehicles were matched in visual search?",
     "Show scanned FIR document OCR text",
@@ -83,6 +85,14 @@ export default function IntelCopilot({
       mappedIntent = "out_of_scope";
       summary = "I can't answer that from the graph data. I can help you query suspects, communication hubs, pass-through accounts, or shared identifiers in the active cases.";
       suggestions = defaultSuggestions;
+    } else if (q.includes("cctv") || q.includes("hunt") || q.includes("backpack") || q.includes("suv") || q.includes("dino") || q.includes("sam") || (q.includes("video") && q.includes("detect"))) {
+      mappedIntent = "cctv_hunt_intel";
+      summary = "Natural-Language CCTV Hunt (Grounding DINO + SAM 2.1): Open-vocabulary video tracking on CCTV Junction Cam-04 detected Track TRACK-01 (white SUV, 88% conf, 00:00.3–00:03.3) and Track TRACK-02 (person with red backpack, 87% conf, 00:01.0–00:03.6, compound proximity persisted 4 frames). Representative crop thumbnails can be passed directly to Cross-Case Visual Search.";
+      const veh = nodes.find((n) => n.type === "Vehicle" || n.label.includes("MH-04"));
+      if (veh) matchedEntities.push({ id: veh.id, label: veh.label, type: veh.type, role: "CCTV Vehicle Track" });
+      evidence.push("CCTV_Junction_Cam04_NXS007.mp4", "TRACK-01", "TRACK-02");
+      rules.push("Grounding DINO Detection", "SAM 2.1 Temporal Tracking", "Machine-Generated Lead");
+      suggestions = ["What vehicles were matched in visual search?", "What did the wiretap audio say?", "Show scanned FIR document OCR text"];
     } else if (q.includes("wiretap") || q.includes("audio") || q.includes("recording") || q.includes("whisper") || q.includes("say") || q.includes("spoken")) {
       mappedIntent = "multimodal_audio_intel";
       summary = "Acoustic Intelligence (faster-whisper small-int8): Wiretap intercept for Case NXS-007 captured conversation between SPEAKER_00 and SPEAKER_01 discussing unauthorized remittance authorized via SYN-PHONE-001 into beneficiary account SYN-ACCOUNT-001 (INR 75,000). At 00:03.20, speaker directly referenced Aariv Veylan.";

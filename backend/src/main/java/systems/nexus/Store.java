@@ -31,7 +31,7 @@ public class Store {
         if(!n.has("nodes")) return new Model.Graph(List.of(),List.of(),List.of(),List.of(),json.createObjectNode(),false,List.of());
         try { return json.treeToValue(n,Model.Graph.class); } catch(JsonProcessingException e) { throw new IllegalStateException(e); }
     }
-    public void reset() { db.update("DELETE FROM evidence_review"); db.update("DELETE FROM evidence_item"); db.update("DELETE FROM evidence_asset"); db.update("DELETE FROM contradiction_review"); db.update("DELETE FROM face_decision"); db.update("DELETE FROM person_face"); db.update("DELETE FROM entity_note"); db.update("DELETE FROM watchlist_entry"); db.update("DELETE FROM workflow_user"); db.update("DELETE FROM alert_triage"); db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
+    public void reset() { db.update("DELETE FROM cctv_track"); db.update("DELETE FROM cctv_analysis"); db.update("DELETE FROM evidence_review"); db.update("DELETE FROM evidence_item"); db.update("DELETE FROM evidence_asset"); db.update("DELETE FROM contradiction_review"); db.update("DELETE FROM face_decision"); db.update("DELETE FROM person_face"); db.update("DELETE FROM entity_note"); db.update("DELETE FROM watchlist_entry"); db.update("DELETE FROM workflow_user"); db.update("DELETE FROM alert_triage"); db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
     public void saveContradictionReview(Model.ContradictionReview r) {
         db.update("DELETE FROM contradiction_review WHERE id=?", r.id());
         db.update("INSERT INTO contradiction_review(id, rule_id, status, notes, author, updated_at) VALUES(?,?,?,?,?,?)",
@@ -276,5 +276,50 @@ public class Store {
         return db.query("SELECT id, item_id, case_id, decision, notes, author, created_at FROM evidence_review WHERE case_id=? ORDER BY created_at DESC",
             (rs, n) -> new Model.EvidenceReviewDecision(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
                 rs.getString(5), rs.getString(6), rs.getString(7)), caseId);
+    }
+
+    // NATURAL-LANGUAGE CCTV HUNT PERSISTENCE
+    public void saveCctvAnalysis(Model.CctvAnalysis a) {
+        db.update("DELETE FROM cctv_analysis WHERE id=?", a.id());
+        db.update("INSERT INTO cctv_analysis(id, evidence_asset_id, case_id, query, status, model_metadata_json, created_at, created_by) VALUES(?,?,?,?,?,CAST(? AS JSONB),?,?)",
+            a.id(), a.evidenceAssetId(), a.caseId(), a.query(), a.status(), encode(a.modelMetadata()), a.createdAt(), a.createdBy());
+    }
+
+    public List<Model.CctvAnalysis> cctvAnalyses() {
+        return db.query("SELECT id, evidence_asset_id, case_id, query, status, model_metadata_json, created_at, created_by FROM cctv_analysis ORDER BY created_at DESC",
+            (rs, n) -> new Model.CctvAnalysis(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), decode(rs.getString(6)), rs.getString(7), rs.getString(8)));
+    }
+
+    public List<Model.CctvAnalysis> cctvAnalysesByAsset(String assetId) {
+        return db.query("SELECT id, evidence_asset_id, case_id, query, status, model_metadata_json, created_at, created_by FROM cctv_analysis WHERE evidence_asset_id=? ORDER BY created_at DESC",
+            (rs, n) -> new Model.CctvAnalysis(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), decode(rs.getString(6)), rs.getString(7), rs.getString(8)), assetId);
+    }
+
+    public Optional<Model.CctvAnalysis> cctvAnalysis(String id) {
+        var rows = db.query("SELECT id, evidence_asset_id, case_id, query, status, model_metadata_json, created_at, created_by FROM cctv_analysis WHERE id=?",
+            (rs, n) -> new Model.CctvAnalysis(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), decode(rs.getString(6)), rs.getString(7), rs.getString(8)), id);
+        return rows.stream().findFirst();
+    }
+
+    public void saveCctvTrack(Model.CctvTrack t) {
+        db.update("DELETE FROM cctv_track WHERE id=?", t.id());
+        db.update("INSERT INTO cctv_track(id, analysis_id, track_id, label, first_seen_ms, last_seen_ms, best_confidence, representative_frame_json, metadata_json) VALUES(?,?,?,?,?,?,?,CAST(? AS JSONB),CAST(? AS JSONB))",
+            t.id(), t.analysisId(), t.trackId(), t.label(), t.firstSeenMs(), t.lastSeenMs(), t.bestConfidence(), encode(t.representativeFrame()), encode(t.metadata()));
+    }
+
+    public List<Model.CctvTrack> cctvTracksByAnalysis(String analysisId) {
+        return db.query("SELECT id, analysis_id, track_id, label, first_seen_ms, last_seen_ms, best_confidence, representative_frame_json, metadata_json FROM cctv_track WHERE analysis_id=? ORDER BY best_confidence DESC",
+            (rs, n) -> new Model.CctvTrack(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getLong(5), rs.getLong(6), rs.getDouble(7), decode(rs.getString(8)), decode(rs.getString(9))), analysisId);
+    }
+
+    public Optional<Model.CctvTrack> cctvTrack(String id) {
+        var rows = db.query("SELECT id, analysis_id, track_id, label, first_seen_ms, last_seen_ms, best_confidence, representative_frame_json, metadata_json FROM cctv_track WHERE id=?",
+            (rs, n) -> new Model.CctvTrack(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getLong(5), rs.getLong(6), rs.getDouble(7), decode(rs.getString(8)), decode(rs.getString(9))), id);
+        return rows.stream().findFirst();
     }
 }

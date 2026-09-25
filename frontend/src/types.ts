@@ -704,3 +704,85 @@ export interface EvidenceReviewDecision {
   notes: string;
 }
 
+export interface CctvDetection {
+  frameIndex: number;
+  timestampMs: number;
+  timestampSec: number;
+  bbox: [number, number, number, number];
+  confidence: number;
+  association?: {
+    primary: string;
+    primaryBbox: [number, number, number, number];
+    secondary: string;
+    secondaryBbox: [number, number, number, number];
+    relation: string;
+    proximityScore: number;
+  };
+}
+
+export interface CctvTrack {
+  id: string;
+  analysisId: string;
+  trackId: string;
+  label: string;
+  firstSeenMs: number;
+  lastSeenMs: number;
+  bestConfidence: number;
+  representativeFrame: {
+    frameIndex: number;
+    timestampMs: number;
+    timestampSec: number;
+    bbox: [number, number, number, number];
+    thumbnail: string;
+    cropThumbnail: string;
+  };
+  metadata?: {
+    query?: string;
+    durationMs?: number;
+    firstSeenDisplay?: string;
+    lastSeenDisplay?: string;
+    detectionCount?: number;
+    compoundAssociation?: {
+      primary: string;
+      secondary: string;
+      relation: string;
+      persistenceFrames: number;
+      description: string;
+    };
+    detections?: CctvDetection[];
+  };
+}
+
+export interface CctvAnalysis {
+  id: string;
+  evidenceAssetId: string;
+  caseId: string;
+  query: string;
+  status: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+  modelMetadata?: {
+    dinoModel?: string;
+    samModel?: string;
+    pipelineMode?: string;
+    device?: string;
+    boxThreshold?: number;
+    textThreshold?: number;
+    groundInterval?: number;
+    sampleFps?: number;
+    processingTimeSec?: number;
+  };
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface CctvSearchResponse {
+  analysisId: string;
+  assetId: string;
+  caseId: string;
+  query: string;
+  status: string;
+  trackCount: number;
+  tracks: CctvTrack[];
+  modelMetadata: Record<string, any>;
+  leadNotice: string;
+}
+

@@ -78,6 +78,18 @@ public class EvidenceController {
         return evidenceService.getAssetDetail(assetId);
     }
 
+    @GetMapping("/assets/{assetId}/file")
+    public org.springframework.http.ResponseEntity<byte[]> getAssetFile(@PathVariable String assetId) {
+        EvidenceAsset asset = evidenceService.getAsset(assetId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evidence asset not found: " + assetId));
+        byte[] bytes = evidenceService.getAssetFileBytes(assetId);
+        String mime = asset.mimeType() != null && !asset.mimeType().isBlank() ? asset.mimeType() : "application/octet-stream";
+        return org.springframework.http.ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, mime)
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + asset.fileName() + "\"")
+                .body(bytes);
+    }
+
     @PostMapping("/document/analyze")
     public Map<String, Object> analyzeDocument(
             @RequestBody Map<String, String> request,

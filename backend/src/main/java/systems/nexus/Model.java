@@ -105,4 +105,20 @@ public final class Model {
                                   JsonNode provenance) {}
 
     public record VisualSearchResponse(List<VisualMatchLead> matches, int count, double threshold, String leadNotice) {}
+
+    // Natural-Language CCTV Hunt Records
+    public record CctvAnalysis(String id, String evidenceAssetId, String caseId, String query,
+                                String status, JsonNode modelMetadata, String createdAt, String createdBy) {}
+
+    public record CctvTrack(String id, String analysisId, String trackId, String label,
+                            long firstSeenMs, long lastSeenMs, double bestConfidence,
+                            JsonNode representativeFrame, JsonNode metadata) {}
+
+    public record CctvSearchRequest(String assetId, String query, Double boxThreshold, Double textThreshold) {}
+
+    public record CctvSearchResponse(String analysisId, String assetId, String caseId, String query,
+                                     String status, int trackCount, List<CctvTrack> tracks,
+                                     JsonNode modelMetadata, String leadNotice) {}
+
+    public record CctvTrackReviewRequest(String decision, String notes) {}
 }
