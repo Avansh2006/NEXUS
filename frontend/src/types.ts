@@ -232,7 +232,7 @@ export const emptyGraph: Graph = {
 export const API_BASE =
   (import.meta.env.VITE_API_URL
     ? String(import.meta.env.VITE_API_URL).replace(/\/+$/, "")
-    : "") + "/api";
+    : "https://nexus-app-3n8a.onrender.com") + "/api";
 
 export interface EvidenceSupport {
   level: "Low" | "Medium" | "High";

@@ -8,9 +8,10 @@
 
 ## 🌐 Live Interactive Deployment
 
-- **Hosted Workbench:** [https://nexus-workbench-avansh.netlify.app](https://nexus-workbench-avansh.netlify.app)
+- **Hosted Workbench (Frontend):** [https://nexus-workbench-avansh.netlify.app](https://nexus-workbench-avansh.netlify.app)
+- **Live Production API (Backend & ML Sidecar):** [https://nexus-app-3n8a.onrender.com](https://nexus-app-3n8a.onrender.com) (Health endpoint: [`/api/health`](https://nexus-app-3n8a.onrender.com/api/health))
 - **Live Demo Access:** Click **`⚡ 1-Click Evaluator Access (Admin)`** on the landing screen to instantly explore the pre-seeded multi-case intelligence graph without manual credential entry.
-- **Technical Presentation Deck (PDF):** [docs/NEXUS_Hackathon_Deck.pdf](docs/NEXUS_Hackathon_Deck.pdf)
+- **Technical Presentation Deck (PDF):** [docs/TeamID_Event_Deck.pdf](docs/TeamID_Event_Deck.pdf) · [docs/NEXUS_Hackathon_Deck.pdf](docs/NEXUS_Hackathon_Deck.pdf)
 
 ---
 
