@@ -8,7 +8,7 @@
 # Reverse proxy /api to the Render backend (can also be configured via VITE_API_URL environment variable)
 [[redirects]]
   from = "/api/*"
-  to = "https://816f7b2e55ea95.lhr.life/api/:splat"
+  to = "https://nexus-app-3n8a.onrender.com/api/:splat"
   status = 200
   force = true
   headers = {X-Proxied-By = "NEXUS-Netlify"}
