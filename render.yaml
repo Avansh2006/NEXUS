@@ -10,7 +10,7 @@ services:
     runtime: docker
     dockerfilePath: Dockerfile
     plan: free
-    region: oregon
+    region: ohio
     healthCheckPath: /api/health
     envVars:
       - key: NEXUS_JWT_SECRET
@@ -35,6 +35,6 @@ services:
 databases:
   - name: nexus-db
     plan: free
-    region: oregon
+    region: ohio
     databaseName: nexus
     user: nexus
