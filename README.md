@@ -1,26 +1,24 @@
 # NEXUS: Network Exploration & eXtraction for Unified Intelligence Systems
 
 > **Evidence-Linked Criminal Network Intelligence & Forensic Workbench**  
-> *Official Hackathon Submission · Software Track · 26 September 2026*  
-> **PROTOTYPE · SYNTHETIC DATA ONLY** · Designed under the strict **"Assist, Never Accuse"** doctrine.
+> An evidence-anchored intelligence workbench for multi-source crime narratives, call records, financial transactions, and biometric surveillance.  
+> **PROTOTYPE · SYNTHETIC BENCHMARK DATA** · Engineered under the strict **"Assist, Never Accuse"** doctrine.
 
 ---
 
-## 🌐 Live Hosted Demo & Access
+## 🌐 Live Interactive Deployment
 
-- **Public Hosted Workbench (Netlify Edge):** [https://nexus-workbench-avansh.netlify.app](https://nexus-workbench-avansh.netlify.app)
-  *(Permanent, non-expiring, zero-downtime deployment)*
-- **Evaluator Access:** **No login wall!** Simply click **`⚡ 1-Click Evaluator Access (Admin)`** on the landing screen to immediately explore the pre-seeded multi-case intelligence graph.
-- **Presentation Deck (PDF, 10 Slides):** [artifacts/NEXUS_Hackathon_Deck.pdf](artifacts/NEXUS_Hackathon_Deck.pdf) · [TeamID_Event_Deck.pdf](artifacts/TeamID_Event_Deck.pdf)
-- **Video Walkthrough Guide (5-Min Max):** [Section 7: 5-Minute Video Walkthrough](#-7-5-minute-demo-video-walkthrough-structure)
+- **Hosted Workbench:** [https://nexus-workbench-avansh.netlify.app](https://nexus-workbench-avansh.netlify.app)
+- **Live Demo Access:** Click **`⚡ 1-Click Evaluator Access (Admin)`** on the landing screen to instantly explore the pre-seeded multi-case intelligence graph without manual credential entry.
+- **Technical Presentation Deck (PDF):** [docs/NEXUS_Hackathon_Deck.pdf](docs/NEXUS_Hackathon_Deck.pdf)
 
 ---
 
-## 👥 Team Members
+## 👥 Engineering & Architecture
 
 | Name | Role | Responsibilities |
 | :--- | :--- | :--- |
-| **Avansh Yadav** | Team Lead & Full-Stack Architect | Distributed architecture, Spring Boot backend, React 19 UI, ML sidecar integration, Netlify deployment |
+| **Avansh Yadav** | Lead & Full-Stack Architect | Distributed architecture, Spring Boot backend, React 19 UI, ML sidecar integration, Netlify deployment |
 
 ---
 
@@ -135,8 +133,6 @@ The system enforces strict Role-Based Access Control (RBAC):
 | **Investigator** | `investigator` | `TFw3vJQtf9b37aPWSq0OhBHBha2oOqLo` | Source ingestion, CCTV face search, link review, entity notes |
 | **Viewer** | `viewer` | `-GxYeD8f13u58HMGtgZ8J4Fa88utj5Os` | Read-only inspection, dossiers, simulations, exports |
 
-*(Note: In the live demo, prefilled 1-click login buttons allow instant evaluation without typing passwords).*
-
 ---
 
 ## 🧪 5. Testing & Verification Results
@@ -173,34 +169,12 @@ Under Section 63 of the *Bharatiya Sakshya Adhiniyam, 2023* (formerly Section 65
 
 ---
 
-## 📹 7. 5-Minute Demo Video Walkthrough Structure
+## 📄 7. Technical Documentation Index
 
-For recording or evaluating the submission video (under 5 minutes):
-
-- **[0:00 - 0:45] The Problem & The Mission**
-  - Fragmentation of FIRs, CDR records, and CCTV surveillance.
-  - The "Assist, Never Accuse" doctrine: human-in-the-loop intelligence without hallucinations.
-- **[0:45 - 1:30] Architecture & Tech Stack**
-  - React 19 UI with 2D/3D physics + Spring Boot 3.4.3 enterprise backend + Python FastAPI ML sidecar.
-  - Deterministic spaCy NLP and unconstrained AdaFace IR-101 / SCRFD-10G biometrics.
-- **[1:30 - 3:30] Live Product Walkthrough**
-  - **Graph Ingestion & Resolution:** 146 nodes and 313 edges mapped across 5 Louvain communities.
-  - **3D Tactical Globe Canvas:** Spatial correlation of suspect movements across districts.
-  - **CCTV Face Hunt:** Uploading unconstrained probe images, detecting faces, and retrieving candidate matches (similarity 0.928) with human confirm/reject decisions.
-  - **Counterfactual Analysis:** Excluding disputed evidence in-memory to observe network collapse.
-- **[3:30 - 4:15] Security & Legal Compliance (BSA 2023)**
-  - Demonstrating the SHA-256 hash-chained audit ledger and real-time cryptographic verification.
-  - One-click export of Section 63 BSA 2023 court-admissible investigation dossier.
-- **[4:15 - 5:00] Impact & Roadmap**
-  - Transition to distributed graph DBs (Neo4j), real-time WebRTC CCTV streams, and multi-agency STIX/TAXII protocols.
-
----
-
-## 📄 8. Submission Documents & Deliverables Index
-
-- **Source Code Repository:** [https://github.com/Avansh2006/NEXUS](https://github.com/Avansh2006/NEXUS)
-- **Live Demo URL:** [https://nexus-workbench-avansh.netlify.app](https://nexus-workbench-avansh.netlify.app)
-- **Presentation Deck (PDF):** [artifacts/NEXUS_Hackathon_Deck.pdf](artifacts/NEXUS_Hackathon_Deck.pdf)
-- **Audit Verification Report:** [docs/PROJECT_SUBMISSION_REPORT.md](docs/PROJECT_SUBMISSION_REPORT.md)
-- **Architecture Documentation:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- **Visual Forensics Specification:** [docs/VISUAL_IDENTITY_SEARCH.md](docs/VISUAL_IDENTITY_SEARCH.md)
+- **Interactive Hosted Workbench:** [https://nexus-workbench-avansh.netlify.app](https://nexus-workbench-avansh.netlify.app)
+- **Technical Presentation Deck (PDF):** [docs/NEXUS_Hackathon_Deck.pdf](docs/NEXUS_Hackathon_Deck.pdf)
+- **System Architecture & Data Model:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **REST API Contract & Specifications:** [docs/API.md](docs/API.md)
+- **Visual Forensics & Biometrics Guide:** [docs/VISUAL_IDENTITY_SEARCH.md](docs/VISUAL_IDENTITY_SEARCH.md)
+- **Prototype Security & Threat Model:** [docs/SECURITY.md](docs/SECURITY.md)
+- **Deployment & Cloud Infrastructure:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
