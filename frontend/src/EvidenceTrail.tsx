@@ -45,9 +45,9 @@ export default function EvidenceTrail({
 
   // Auto-fill initial IDs if nodes exist
   useEffect(() => {
-    if (graph.nodes.length > 0 && !fromId && !toId) {
-      const aariv = graph.nodes.find((n) => n.label === "Aariv Veylan");
-      const mira = graph.nodes.find((n) => n.label === "Mira Solven");
+    if ((graph?.nodes?.length ?? 0) > 0 && !fromId && !toId) {
+      const aariv = graph?.nodes?.find((n) => n.label === "Aariv Veylan");
+      const mira = graph?.nodes?.find((n) => n.label === "Mira Solven");
       if (aariv && mira) {
         setFromId(aariv.id);
         setToId(mira.id);
@@ -55,7 +55,7 @@ export default function EvidenceTrail({
         fetchTrail(aariv.id, mira.id);
       }
     }
-  }, [graph.nodes]);
+  }, [graph?.nodes]);
 
   const fetchTrail = async (sourceId: string, targetId: string) => {
     if (!sourceId || !targetId) return;
@@ -75,8 +75,8 @@ export default function EvidenceTrail({
   };
 
   const handleApplyPreset = (p: typeof presets[0]) => {
-    const fNode = graph.nodes.find((n) => n.label === p.from);
-    const tNode = graph.nodes.find((n) => n.label === p.to);
+    const fNode = graph?.nodes?.find((n) => n.label === p.from);
+    const tNode = graph?.nodes?.find((n) => n.label === p.to);
     if (fNode && tNode) {
       setFromId(fNode.id);
       setToId(tNode.id);

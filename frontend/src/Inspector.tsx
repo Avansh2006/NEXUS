@@ -50,7 +50,7 @@ export default function Inspector({
   previousSelectedNode?: string;
   onWhyConnected?: (sourceId: string, targetId: string) => void;
 }) {
-  const n = graph.nodes.find((n) => n.id === selected);
+  const n = graph?.nodes?.find((n) => n.id === selected);
   if (!n)
     return (
       <aside className="inspector">
@@ -69,18 +69,18 @@ export default function Inspector({
         </div>
       </aside>
     );
-  const metric = graph.analysis.metrics?.find((m) => m.entityId === n.id);
-  const edges = graph.edges.filter(
+  const metric = graph?.analysis?.metrics?.find((m) => m.entityId === n.id);
+  const edges = (graph?.edges ?? []).filter(
     (e) => e.source === n.id || e.target === n.id,
   );
   const edgeIds = new Set(edges.map((e) => e.id));
-  const evidence = graph.evidence.filter(
+  const evidence = (graph?.evidence ?? []).filter(
     (e) => e.entityId === n.id || (e.edgeId && edgeIds.has(e.edgeId)),
   );
   const recordIds = new Set(evidence.map((e) => e.recordId));
-  const records = graph.records.filter((r) => recordIds.has(r.id));
+  const records = (graph?.records ?? []).filter((r) => recordIds.has(r.id));
   const alerts =
-    graph.analysis.alerts?.filter((a) => a.entityIds.includes(n.id)) ?? [];
+    graph?.analysis?.alerts?.filter((a) => a.entityIds.includes(n.id)) ?? [];
 
   const [faces, setFaces] = useState<PersonFace[]>([]);
   const [enrolling, setEnrolling] = useState(false);
@@ -468,7 +468,7 @@ export default function Inspector({
       </h3>
       <div className="connections">
         {edges.slice(0, 20).map((e) => {
-          const other = graph.nodes.find(
+          const other = graph?.nodes?.find(
             (x) => x.id === (e.source === n.id ? e.target : e.source),
           );
           return (

@@ -1209,7 +1209,7 @@ export default function CctvHunt({
                           <button
                             type="button"
                             onClick={() => {
-                              const match = _graph.nodes.find(
+                              const match = _graph?.nodes?.find(
                                 (n) => n.label.toLowerCase().includes(trk.label.toLowerCase()) || trk.label.toLowerCase().includes(n.label.toLowerCase())
                               );
                               if (match) onNavigateToEntity(match.id);

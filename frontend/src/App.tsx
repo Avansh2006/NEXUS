@@ -127,7 +127,16 @@ export default function App({ session }: { session: Session }) {
   const [workflow, setWorkflow] = useState<Workflow>(emptyWorkflow);
   const [playback, setPlayback] = useState<number | null>(null);
   const refreshWorkflow = useCallback(async () => {
-    setWorkflow(await api<Workflow>("/workflow"));
+    try {
+      const res = await api<Workflow>("/workflow");
+      setWorkflow({
+        notes: Array.isArray(res?.notes) ? res.notes : [],
+        watchlist: Array.isArray(res?.watchlist) ? res.watchlist : [],
+        triage: Array.isArray(res?.triage) ? res.triage : [],
+      });
+    } catch {
+      setWorkflow(emptyWorkflow);
+    }
   }, []);
   const [page, setPage] = useState("Investigation"),
     [graph, setGraph] = useState<Graph>(emptyGraph),
@@ -208,16 +217,31 @@ export default function App({ session }: { session: Session }) {
     cy.current = c;
   }, []);
   const refresh = useCallback(async () => {
-    const g = await api<Graph>("/graph");
-    lastGraphImage.current = undefined;
-    setGraph(g);
-    if (!g.records.some((r) => r.payload.caseId === "NXS-007"))
-      setIncomingResult(null);
-    setIncomingActive(g.records.some((r) => r.payload.caseId === "NXS-007"));
-    setPlayback(null);
-    await refreshWorkflow();
-    setPath(null);
-    return g;
+    try {
+      const g = await api<Graph>("/graph");
+      lastGraphImage.current = undefined;
+      const safeG: Graph = {
+        ...emptyGraph,
+        ...g,
+        nodes: Array.isArray(g?.nodes) ? g.nodes : [],
+        edges: Array.isArray(g?.edges) ? g.edges : [],
+        records: Array.isArray(g?.records) ? g.records : [],
+        evidence: Array.isArray(g?.evidence) ? g.evidence : [],
+        suggestions: Array.isArray(g?.suggestions) ? g.suggestions : [],
+        analysis: g?.analysis ?? {},
+      };
+      setGraph(safeG);
+      const hasNxs007 = safeG.records.some((r) => r?.payload?.caseId === "NXS-007");
+      if (!hasNxs007) setIncomingResult(null);
+      setIncomingActive(hasNxs007);
+      setPlayback(null);
+      await refreshWorkflow();
+      setPath(null);
+      return safeG;
+    } catch (err) {
+      setGraph(emptyGraph);
+      throw err;
+    }
   }, [refreshWorkflow]);
   useEffect(() => {
     void refresh().catch((e) => setError(String(e)));
@@ -1779,7 +1803,7 @@ export default function App({ session }: { session: Session }) {
                           select(
                             a.entityIds.find(
                               (id) =>
-                                graph.nodes.find((n) => n.id === id)?.type ===
+                                graph?.nodes?.find((n) => n.id === id)?.type ===
                                 "Phone",
                             ) ?? a.entityIds[0],
                           );
@@ -1792,7 +1816,7 @@ export default function App({ session }: { session: Session }) {
                           <p>{a.explanation}</p>
                           <AlertTriage
                             alertId={a.id}
-                            triage={workflow.triage.find(
+                            triage={workflow?.triage?.find(
                               (t) => t.alertId === a.id,
                             )}
                             canEdit={canEdit}
@@ -2160,7 +2184,7 @@ export default function App({ session }: { session: Session }) {
                     <p>{a.explanation}</p>
                     <AlertTriage
                       alertId={a.id}
-                      triage={workflow.triage.find((t) => t.alertId === a.id)}
+                      triage={workflow?.triage?.find((t) => t.alertId === a.id)}
                       canEdit={canEdit}
                       onRefresh={refreshWorkflow}
                     />
@@ -2195,10 +2219,10 @@ export default function App({ session }: { session: Session }) {
                   <div className="review-row" key={s.id}>
                     <div>
                       <b>
-                        {graph.nodes.find((n) => n.id === s.left)?.label ??
+                        {graph?.nodes?.find((n) => n.id === s.left)?.label ??
                           s.left}{" "}
                         ↔{" "}
-                        {graph.nodes.find((n) => n.id === s.right)?.label ??
+                        {graph?.nodes?.find((n) => n.id === s.right)?.label ??
                           "Merged entity"}
                       </b>
                       <p>{s.reason}</p>
@@ -2254,7 +2278,7 @@ export default function App({ session }: { session: Session }) {
                     </span>
                     <h2>{c.entityIds.length} entities</h2>
                     {c.entityIds.map((id) => {
-                      const n = graph.nodes.find((n) => n.id === id);
+                      const n = graph?.nodes?.find((n) => n.id === id);
                       return (
                         <button
                           className="community-entity"
@@ -2325,12 +2349,12 @@ export default function App({ session }: { session: Session }) {
                       <b>{event.edge.type.replaceAll("_", " ")}</b>
                       <p>
                         {
-                          graph.nodes.find((n) => n.id === event.edge.source)
+                          graph?.nodes?.find((n) => n.id === event.edge.source)
                             ?.label
                         }{" "}
                         →{" "}
                         {
-                          graph.nodes.find((n) => n.id === event.edge.target)
+                          graph?.nodes?.find((n) => n.id === event.edge.target)
                             ?.label
                         }
                       </p>
@@ -2518,14 +2542,14 @@ export default function App({ session }: { session: Session }) {
           {page === "Investigation" && (
             <section className="workflow-panel">
               <h3>My watchlist</h3>
-              {workflow.watchlist.length ? (
+              {workflow?.watchlist?.length ? (
                 workflow.watchlist.map((id) => (
                   <button
                     className="button compact"
                     key={id}
                     onClick={() => select(id)}
                   >
-                    {graph.nodes.find((n) => n.id === id)?.label ?? id}
+                    {graph?.nodes?.find((n) => n.id === id)?.label ?? id}
                   </button>
                 ))
               ) : (

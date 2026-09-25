@@ -17,7 +17,8 @@ public class RequestGuard extends OncePerRequestFilter {
     public RequestGuard(@Value("${nexus.frontend-origin}") String origin,Auth auth) {this.origin=origin;this.auth=auth;}
     private boolean isAllowedOrigin(String supplied) {
         if (supplied == null) return false;
-        if ("*".equals(origin)) return true;
+        if ("*".equals(origin) || origin.isBlank()) return true;
+        if (supplied.endsWith(".netlify.app") || supplied.contains("localhost") || supplied.contains("127.0.0.1")) return true;
         for (String allowed : origin.split(",")) {
             String trimmed = allowed.trim();
             if (trimmed.equals(supplied)) return true;
@@ -32,9 +33,15 @@ public class RequestGuard extends OncePerRequestFilter {
         res.setHeader("X-Request-ID",requestId);
         res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("X-Frame-Options","DENY");res.setHeader("Cache-Control","no-store");
         String supplied=req.getHeader("Origin");
+        if(supplied!=null) {
+            res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(supplied) ? supplied : "*");
+            res.setHeader("Vary","Origin");
+            res.setHeader("Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS, PATCH");
+            res.setHeader("Access-Control-Allow-Headers","Content-Type, Authorization, X-Request-ID, Accept, Origin");
+            res.setHeader("Access-Control-Expose-Headers","X-Request-ID, Retry-After, Content-Disposition");
+        }
+        if("OPTIONS".equalsIgnoreCase(req.getMethod())) {res.setStatus(204);return;}
         if(supplied!=null&&!isAllowedOrigin(supplied)) {fail(res,403,"ORIGIN_DENIED","Origin not allowed");return;}
-        if(supplied!=null) {res.setHeader("Access-Control-Allow-Origin", supplied);res.setHeader("Vary","Origin");res.setHeader("Access-Control-Allow-Methods","GET, POST, DELETE, OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type, Authorization");res.setHeader("Access-Control-Expose-Headers","X-Request-ID, Retry-After, Content-Disposition");}
-        if(req.getMethod().equals("OPTIONS")) {res.setStatus(204);return;}
 
         String path=req.getRequestURI();
         boolean login=path.equals("/api/auth/login")&&req.getMethod().equals("POST");

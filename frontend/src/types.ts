@@ -230,9 +230,11 @@ export const emptyGraph: Graph = {
   suggestions: [],
 };
 export const API_BASE =
-  (import.meta.env.VITE_API_URL
-    ? String(import.meta.env.VITE_API_URL).replace(/\/+$/, "")
-    : "https://nexus-app-3n8a.onrender.com") + "/api";
+  import.meta.env.VITE_API_URL
+    ? String(import.meta.env.VITE_API_URL).replace(/\/+$/, "") + "/api"
+    : (typeof window !== "undefined" && window.location.hostname.includes("netlify.app")
+        ? "/api"
+        : "https://nexus-app-3n8a.onrender.com/api");
 
 export interface EvidenceSupport {
   level: "Low" | "Medium" | "High";
@@ -287,6 +289,19 @@ function getFallbackResponse(path: string, body?: unknown): Response {
     };
   } else if (p === "/auth/me") {
     data = { username: getSession()?.username || "admin", role: getSession()?.role || "ADMIN" };
+  } else if (p === "/workflow") {
+    data = { notes: [], watchlist: [], triage: [] };
+  } else if (p === "/cases") {
+    data = ["NXS-001", "NXS-002", "NXS-003", "NXS-004", "NXS-005", "NXS-006", "NXS-007"];
+  } else if (p.startsWith("/evidence-trail")) {
+    data = {
+      sourceEntityId: "person-aariv-veylan",
+      targetEntityId: "person-mira-solven",
+      paths: [],
+      synthesis: "Corroborated cross-case investigation trail.",
+    };
+  } else if (p === "/evidence/cctv/assets" || p === "/evidence/multimodal/assets" || p === "/evidence/multimodal/reviews") {
+    data = [];
   } else if (p === "/graph") {
     data = (demoFallbackData as { graph: unknown }).graph;
   } else if (p === "/clusters") {
@@ -323,7 +338,7 @@ function getFallbackResponse(path: string, body?: unknown): Response {
   } else if (p.startsWith("/entities/")) {
     const id = decodeURIComponent(p.split("/")[2] || "");
     const graphData = (demoFallbackData as { graph: { nodes: Array<{ id: string }> } }).graph;
-    const node = graphData.nodes.find((n) => n.id === id);
+    const node = graphData?.nodes?.find((n) => n.id === id);
     data = node ? { entity: node, neighbors: [] } : { error: "Not found" };
   } else {
     data = { status: "ok", ok: true };
@@ -350,7 +365,7 @@ export async function apiRaw(path: string, body?: unknown): Promise<Response> {
     if (response.status >= 400 && response.status !== 401 && response.status !== 403) {
       return getFallbackResponse(path, body);
     }
-    if (response.status === 401 && path !== "/auth/login" && token && getSession()?.token === token)
+    if (response.status === 401 && path !== "/auth/login" && path !== "/auth/me" && token && getSession()?.token === token)
       setSession(null, true);
     const error = (await response.json().catch(() => null)) as {
       error?: { message?: string };

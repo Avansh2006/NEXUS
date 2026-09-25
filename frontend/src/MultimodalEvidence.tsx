@@ -894,7 +894,7 @@ export default function MultimodalEvidence({
                                 onMouseLeave={() => setHoveredEntityId(null)}
                                 onClick={() => {
                                   if (onNavigateToEntity) {
-                                    const match = graph.nodes.find(
+                                    const match = graph?.nodes?.find(
                                       (n) => n.label.toLowerCase() === item.rawText?.toLowerCase() || n.id === item.rawText
                                     );
                                     if (match) onNavigateToEntity(match.id);
@@ -1052,7 +1052,7 @@ export default function MultimodalEvidence({
                                       className="text-xs font-bold text-white cursor-pointer hover:underline"
                                       onClick={() => {
                                         if (onNavigateToEntity) {
-                                          const match = graph.nodes.find(
+                                          const match = graph?.nodes?.find(
                                             (n) => n.label.toLowerCase() === item.rawText?.toLowerCase() || n.id === item.rawText
                                           );
                                           if (match) onNavigateToEntity(match.id);
