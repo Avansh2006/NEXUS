@@ -1,46 +1,169 @@
 # API contract
 
-Base /api. JSON unless stated. Errors: `{error:{code,message}}`; validation 400,
-unknown ID 404, body too large 413, rate limit 429, unavailable engine 503.
-IDs are opaque strings. POST responses 200; partial row success is 200 with errors.
-No stack traces. All endpoints operate on the local synthetic investigation.
+Base path: `/api`. JSON unless indicated. All investigation routes require
+`Authorization: Bearer <token>`. Only `GET /health` and `POST /auth/login` are public.
+IDs are opaque; URL-encode them in path parameters. This API operates on synthetic data.
 
-## Types
-Node: `{id,type,label,properties:{caseIds,evidenceIds,...}}`.
-Edge: `{id,source,target,type,properties:{caseIds,evidenceIds,firstSeen,lastSeen,events}}`.
-Graph: `{nodes,edges,evidence,records,analysis,analyzed,suggestions}`.
-Evidence: `{id,recordId,entityId,edgeId,start,end,row,raw,confidence}` (nullable spans).
-Alert: `{id,ruleId,entityIds,evidenceIds,explanation,suppressed}`.
-Metrics: `{entityId,degree,betweenness,caseComponent,influence,community}`.
+Errors use `{error:{code,message}}`: validation 400, authentication 401, permission 403,
+unknown identifier 404, stale workflow conflict 409, oversized body 413, throttling 429,
+and unavailable intelligence service 503. Responses carry a server-generated
+`X-Request-ID`; retain that ID when checking service logs. Ingestion partial success
+returns 200 with individual row errors. See [security](SECURITY.md) for controls.
 
-| Method/path | Request | Response and purpose | Errors |
-|---|---|---|---|
-| POST /data/fir | `{records:[{caseId,text,date,crimeType}]}` or `{format:"csv",content:"..."}` | `{accepted,duplicates,errors:[{row,message}]}` ingest | 400/413/429/503 |
-| POST /data/cdr | `{records:[{caseId,from,to,timestamp,duration,location}]}` or CSV envelope | ingestion result | 400/413/429 |
-| POST /data/transactions | `{records:[{caseId,from,to,timestamp,amount}]}` or CSV envelope | ingestion result | 400/413/429 |
-| POST /analyze | `{}` | analysis `{metrics,alerts,communities,counts}` | 429/503 |
-| GET /graph | none | Graph, empty before load | 503 |
-| GET /network/{entityId} | `?hops=1` (1–2) | Graph subset around entity | 400/404 |
-| GET /entities/{id} | none | `{node,edges,evidence,records,alerts}` | 404 |
-| GET /entities/search | `?q=` (max 100 chars) | Node[] case-insensitive match | 400 |
-| GET /clusters | none | `{id,entityIds}[]` | — |
-| GET /case-links | none | `{caseIds,entityIds,evidenceIds,explanation}[]` shared non-public identifier leads | — |
-| GET /influencers | none | Metrics[] descending influence | — |
-| GET /suspicious-patterns | none | Alert[] including suppressed | — |
-| GET /timeline/{entityId} | none | `{edgeId,timestamp,evidenceId,type}[]` sorted | 404 |
-| GET /paths | `?from=&to=` | `{nodeIds,edges}` shortest unweighted path | 404 (ID/no path) |
-| GET /link-suggestions | none | `{id,left,right,score,reason,status}[]` name review | — |
-| POST /link-suggestions/{id}/accept | `{}` | Graph after provenance-preserving merge | 404/409 |
-| POST /link-suggestions/{id}/reject | `{}` | Graph after reject or undo | 404/409 |
-| POST /reports | `{graphImage?:"data:image/png;base64,..."}` | printable `text/html` evidence report | 400/413 |
-| POST /demo/load | `{}` | ingestion counts; idempotent raw seed load | 503 |
-| POST /demo/reset | `{}` | `{reset:true}` clear investigation | — |
-| GET /quality | none | gold-set micro precision/recall and counts | 503 |
-| GET /audit | none | recent `{action,createdAt}` events | — |
-| GET /health | none | `{status:"ok"}` API liveness | — |
+## Authentication and roles
 
-Sidecar: POST /extract `{text,recordId}` → `{entities:[{type,raw,start,end,
-confidence,normalized,role}]}`. POST /analyze Graph → analysis.
-GET /quality evaluates committed gold labels. GET /health returns liveness.
-Limits: 2 MiB request, 500 rows/request, 10000 characters/FIR; bounded graph 1500
-nodes/10000 edges, 30 mutations/minute/client. UTF-8 CSV/JSON/TXT client decoding.
+| Method/path | Request | Response |
+| --- | --- | --- |
+| POST /auth/login | `{username,password}` | `{token,username,role,expiresAt}`; expiry is an ISO instant |
+| GET /auth/me | none | `{username,role}` |
+| GET /health | none | `{status:"ok"}`; API liveness only |
+| GET /diagnostics | none, ADMIN only | `{status,database:{status},intelligence:{status},versions:{java,api,intelligence}}` |
+
+Tokens expire after one hour by default. VIEWER can read/export and POST `/reports`
+and `/what-if/remove`; INVESTIGATOR also performs ingestion, analysis, resolution and
+workflow mutations. ADMIN additionally owns all `/demo/*` routes and `/diagnostics`.
+There are no role-header overrides or public default credentials.
+
+## Graph and evidence types
+
+- Node: `{id,type,label,properties:{caseIds,evidenceIds,support,...}}`.
+  Types include Person, Phone, Account, Location, Vehicle, Organization, Case and SocialHandle.
+- Edge: `{id,source,target,type,properties:{caseIds,evidenceIds,firstSeen,lastSeen,events,support}}`.
+- Graph: `{nodes,edges,evidence,records,analysis,analyzed,suggestions}`.
+- Evidence: `{id,recordId,entityId,edgeId,start,end,row,raw,confidence}`; spans may be null.
+  Client-facing offsets address the original JavaScript/Java UTF-16 source string.
+- Alert: `{id,ruleId,entityIds,evidenceIds,explanation,suppressed}`.
+- Support: `{level,recordCount,sourceKindCount,minimumExtractionConfidence,
+  credibilityAssessed,lowCredibility,explanation}`.
+
+Support is a transparent evidence summary, not truth probability. High requires at least
+2 independent records, 2 source kinds, minimum confidence 0.9 and all credibility assessed
+without low grades. Medium requires 2 records, minimum confidence 0.8 and no low grades.
+Otherwise support is Low. Reliability E/F or information credibility 5/6 is low; missing
+grades are unassessed. Repeated spans from one record do not count as independent support.
+
+## Sources, analysis and navigation
+
+| Method/path | Request or query | Response |
+| --- | --- | --- |
+| POST /data/{kind} | `{records:[...]}` or `{format:"csv",content:"..."}` | `{accepted,duplicates,errors:[{row,message}]}` |
+| POST /analyze | `{}` | Analysis, including metrics/alerts/communities/counts |
+| GET /graph | none | Full Graph |
+| GET /network/{id} | `hops=1` or `2` | Graph subset |
+| GET /entities/{id} | none | `{node,edges,evidence,records,alerts}` |
+| GET /entities/search | `q`, maximum 100 characters | Node array |
+| GET /clusters | none | `{id,entityIds}[]` |
+| GET /case-links | none | `{caseIds,entityIds,evidenceIds,explanation}[]` |
+| GET /influencers | none | Descriptive metrics array |
+| GET /suspicious-patterns | none | Alert array, including suppressed leads |
+| GET /timeline/{id} | none | Sorted relationship events |
+| GET /paths | `from`, `to` | `{nodeIds,edges}` shortest unweighted path |
+| GET /link-suggestions | none | `{id,left,right,score,reason,status}[]` |
+| POST /link-suggestions/{id}/accept | `{}` | Graph after reviewed merge |
+| POST /link-suggestions/{id}/reject | `{}` | Graph after reject/undo |
+
+Narrative kinds are `fir`, `criminal-history`, `intel-report`, `surveillance-report`.
+Each requires `caseId`, UTC ISO `date`, and `text`; `crimeType` is optional.
+Optional `sourceReliability` is A-F and `informationCredibility` is 1-6. Invalid supplied
+grades reject that row. Narratives remain source records; social handles require
+explicit platform context and use normalized platform/handle identity.
+
+`cdr` rows require `caseId,from,to,timestamp,duration` with optional `location`.
+`transactions` rows require `caseId,from,to,timestamp,amount`. Numeric values must be
+finite and nonnegative. Source batches preserve original text and independent row errors.
+Limits: 2 MiB POST body, 500 rows, 10,000 characters per narrative; analysis is bounded
+at 1,500 nodes/10,000 edges. Authenticated POST requests are limited to 30/minute/account;
+login attempts have a separate 30/minute/remote-address bucket.
+
+## Persistent workflow
+
+| Method/path | Request | Response |
+| --- | --- | --- |
+| GET /workflow | none | `{notes:Note[],watchlist:string[],triage:Triage[]}` |
+| GET /entities/{id}/notes | none | Note array, resolving active merge aliases |
+| POST /entities/{id}/notes | `{text}` | Created Note |
+| GET /watchlist | none | Current user's watched entity IDs |
+| POST /entities/{id}/watchlist | `{watched:boolean}` | `{watched:boolean}`; idempotent |
+| POST /alerts/{id}/triage | `{status,version}` | Updated Triage |
+
+`Note = {id,entityId,text,author,createdAt}`; text is 1-4,000 characters.
+`Triage = {alertId,status,version,author,updatedAt}`. Status is exactly New,
+Under Review, Verified, or Dismissed. Use version 0 for an untouched alert, then the
+last returned version. A stale update returns 409: refresh before retrying.
+Verified means reviewed, not proof of guilt. Unknown IDs are rejected.
+
+Workflow is separate from replaceable graph analysis. Stable-ID notes/watchlists/triage
+survive reanalysis. Notes retain original entity IDs while canonical reads expose them
+during a merge. Undo preserves original ownership. Reset clears workflow; obsolete
+alert state is omitted from active workflow results.
+
+## Simulation and output
+
+`POST /what-if/remove` accepts `{entityIds:string[]}` with 1-20 unique existing non-Case IDs:
+
+```json
+{
+  "before": {"components": 2, "largestComponent": 4, "isolatedNodes": 1},
+  "after": {"components": 3, "largestComponent": 2, "isolatedNodes": 2},
+  "removedEdges": 2,
+  "articulationPoints": ["example-id"],
+  "removedEntityIds": ["example-id"]
+}
+```
+
+These quantities describe undirected connectivity excluding Case nodes and
+CONNECTED_TO_CASE edges. The endpoint does not mutate sources, graph, or analysis.
+The example illustrates response shape, not a measured demo result.
+
+| Method/path | Content |
+| --- | --- |
+| POST /reports | Optional `{graphImage:"data:image/png;base64,..."}`; printable `text/html` |
+| GET /exports/nodes.csv | `text/csv`, attachment `nodes.csv` |
+| GET /exports/edges.csv | `text/csv`, attachment `edges.csv` |
+| GET /exports/graph.graphml | `application/graphml+xml`, attachment `graph.graphml` |
+
+Exports include stable graph/evidence identifiers and support fields. CSV is escaped
+and formula prefixes neutralized; GraphML uses declared keys, namespaces and XML escaping.
+Report PNG data URLs must be below 1.5 MB. Full graph data is exported irrespective of
+client filters/playback; an included report image reflects the displayed view.
+
+## Demo, quality and audit
+
+ADMIN routes: POST `/demo/load`, `/demo/reset`, `/demo/incoming`,
+`/demo/incoming/remove`, each with `{}`. Reset clears investigation and workflow.
+Repeated incoming loads may return a no-op status without new-node/link arrays;
+clients should restore current state from `/graph`.
+
+`GET /quality` returns synthetic precision/recall/counts/scope, optional
+`heldoutTest`/`heldoutDev` strict and lenient metrics, and `multilingualSynthetic`:
+`{samples,truePositives,falsePositives,falseNegatives,strictPrecision,strictRecall,
+strictF1,scope}`. Hindi/Hinglish fixtures are a separate evaluation, not general
+multilingual accuracy. Missing evaluations must not be presented as measured results.
+
+`GET /audit` returns recent entries with `id,action,createdAt,userId,entityId,
+payloadDigest,prevHash,entryHash`. `GET /audit/verify` returns
+`{valid:true,entriesVerified,headHash}` or `{valid:false,brokenAtIndex,reason,...}`.
+This checks stored chain consistency, not independent authenticity of source records.
+
+The internal Python service exposes extraction, analysis, quality and health routes.
+It is not the authenticated public API and must remain on the internal network.
+
+## Visual Identity Search
+
+Visual identity matching operates on normalized 512-dimensional AdaFace IR-101 embeddings.
+Matches are candidate proposals only; no Person node merging occurs automatically.
+
+| Route | Method | Description |
+|---|---|---|
+| `/api/persons/{id}/faces` | POST | Multipart upload (`file`). Enrolls reference face for Person node. Requires INVESTIGATOR/ADMIN. |
+| `/api/persons/{id}/faces` | GET | Returns enrolled reference faces for Person node. |
+| `/api/persons/{id}/faces/{faceId}` | DELETE | Removes enrolled face record. Logged to audit ledger. |
+| `/api/vision/search` | POST | Multipart upload (`file`, optional `threshold`, `faceIndex`). Returns candidate matches and rich Person context. |
+| `/api/vision/decisions` | POST | Accepts `{personNodeId, decision: "CONFIRMED"\|"REJECTED", similarity, modelName, imageHash, notes}`. Logged to audit trail. |
+| `/api/vision/decisions` | GET | Returns recent face decisions (optional `?personNodeId=`). |
+| `/api/vision/fixtures` | GET | Returns bundled offline sample fixtures for evaluation. |
+| `/api/vision/demo-enroll` | POST | Batch-enrolls reference photos for active demo personas. |
+| `/api/vision/status` | GET | Returns vision engine connection and model status. |
+
+See [Visual Identity Search Guide](VISUAL_IDENTITY_SEARCH.md) for architectural details and benchmark guidelines.
+

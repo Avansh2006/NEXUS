@@ -37,15 +37,25 @@ export default function IntelCopilot({
   const [history, setHistory] = useState<CopilotResponse[]>([]);
 
   const sampleQueries = [
-    "Who links Case NXS-001 to NXS-003?",
+    "What objects were detected in CCTV footage?",
+    "What did the wiretap audio say?",
+    "What vehicles were matched in visual search?",
+    "Show scanned FIR document OCR text",
+    "How did this investigation evolve over time?",
+    "What if we remove SYN-PHONE-061?",
+    "Are there any contradictions or conflicting evidence?",
+    "Why are Aariv Veylan and Mira Solven connected?",
+    "What information is missing in this case?",
+    "What changed when new evidence arrived?",
     "Find accounts matching the pass-through pattern with high fan-in",
     "Which entities have the highest betweenness centrality?",
-    "What vehicles or business entities are recorded?",
-    "Why was SYN-PHONE-999 suppressed?",
-    "Show circular fund flow loops and R7 alerts",
   ];
 
   const defaultSuggestions = [
+    "What objects were detected in CCTV footage?",
+    "What did the wiretap audio say?",
+    "What vehicles were matched in visual search?",
+    "Show scanned FIR document OCR text",
     "Which entities have the highest betweenness centrality?",
     "Find accounts matching the pass-through pattern with high fan-in",
     "Who links Case NXS-001 to NXS-003?",
@@ -75,6 +85,40 @@ export default function IntelCopilot({
       mappedIntent = "out_of_scope";
       summary = "I can't answer that from the graph data. I can help you query suspects, communication hubs, pass-through accounts, or shared identifiers in the active cases.";
       suggestions = defaultSuggestions;
+    } else if (q.includes("cctv") || q.includes("hunt") || q.includes("backpack") || q.includes("suv") || q.includes("dino") || q.includes("sam") || (q.includes("video") && q.includes("detect"))) {
+      mappedIntent = "cctv_hunt_intel";
+      summary = "Natural-Language CCTV Hunt (Grounding DINO + SAM 2.1): Open-vocabulary video tracking on CCTV Junction Cam-04 detected Track TRACK-01 (white SUV, 88% conf, 00:00.3–00:03.3) and Track TRACK-02 (person with red backpack, 87% conf, 00:01.0–00:03.6, compound proximity persisted 4 frames). Representative crop thumbnails can be passed directly to Cross-Case Visual Search.";
+      const veh = nodes.find((n) => n.type === "Vehicle" || n.label.includes("MH-04"));
+      if (veh) matchedEntities.push({ id: veh.id, label: veh.label, type: veh.type, role: "CCTV Vehicle Track" });
+      evidence.push("CCTV_Junction_Cam04_NXS007.mp4", "TRACK-01", "TRACK-02");
+      rules.push("Grounding DINO Detection", "SAM 2.1 Temporal Tracking", "Machine-Generated Lead");
+      suggestions = ["What vehicles were matched in visual search?", "What did the wiretap audio say?", "Show scanned FIR document OCR text"];
+    } else if (q.includes("wiretap") || q.includes("audio") || q.includes("recording") || q.includes("whisper") || q.includes("say") || q.includes("spoken")) {
+      mappedIntent = "multimodal_audio_intel";
+      summary = "Acoustic Intelligence (faster-whisper small-int8): Wiretap intercept for Case NXS-007 captured conversation between SPEAKER_00 and SPEAKER_01 discussing unauthorized remittance authorized via SYN-PHONE-001 into beneficiary account SYN-ACCOUNT-001 (INR 75,000). At 00:03.20, speaker directly referenced Aariv Veylan.";
+      const aariv = nodes.find((n) => n.label.includes("Aariv"));
+      if (aariv) matchedEntities.push({ id: aariv.id, label: aariv.label, type: aariv.type, role: "Spoken Subject" });
+      const phone = nodes.find((n) => n.label.includes("SYN-PHONE-001"));
+      if (phone) matchedEntities.push({ id: phone.id, label: phone.label, type: phone.type, role: "Intercept Target" });
+      evidence.push("ITM-AUD-NXS007", "ITM-SEG-01");
+      rules.push("Voice Intelligence", "Diarized Telephony Citation");
+      suggestions = ["Show scanned FIR document OCR text", "What vehicles were matched in visual search?", "Why are Aariv Veylan and Mira Solven connected?"];
+    } else if (q.includes("vehicle") || q.includes("visual") || q.includes("clip") || q.includes("camera") || q.includes("openclip") || q.includes("car")) {
+      mappedIntent = "multimodal_visual_intel";
+      summary = "Visual Evidence Search (OpenCLIP ViT-B-32): Query probe CCTV_Vehicle_NXS007.jpg (MH-04-AB-1234 departing Navapur Sector 4) matches Seized_Vehicle_CASE019.jpg in Case CASE-019 with 95% visual cosine similarity. Note: Mandatory judicial safeguard applies — visual similarity is an investigative lead, not proof of identical ownership.";
+      const veh = nodes.find((n) => n.type === "Vehicle" || n.label.includes("MH-04"));
+      if (veh) matchedEntities.push({ id: veh.id, label: veh.label, type: veh.type, role: "Visual Match Lead" });
+      evidence.push("ITM-VIS-CASE019-01", "ITM-VIS-NXS007-01");
+      rules.push("OpenCLIP ViT-B-32 Cross-Case Visual Lead");
+      suggestions = ["What did the wiretap audio say?", "Show scanned FIR document OCR text"];
+    } else if (q.includes("ocr") || (q.includes("scanned") && q.includes("fir")) || q.includes("document") || q.includes("paddle")) {
+      mappedIntent = "multimodal_document_ocr";
+      summary = "Document OCR Intelligence (PaddleOCR PP-OCRv5): Scanned FIR No. 104/2026 (Navapur Police Station) extracted verbatim text mentioning accused Aariv Veylan, co-accused Dev Neral, getaway vehicle MH-04-AB-1234, and transfer of INR 75,000 into account SYN-ACCOUNT-001.";
+      const aariv = nodes.find((n) => n.label.includes("Aariv"));
+      if (aariv) matchedEntities.push({ id: aariv.id, label: aariv.label, type: aariv.type, role: "Accused (FIR 104/2026)" });
+      evidence.push("ITM-DOC-FIR104", "ITM-PAGE-01");
+      rules.push("PaddleOCR Multilingual Devanagari/English Extraction");
+      suggestions = ["What did the wiretap audio say?", "What vehicles were matched in visual search?"];
     } else if (q.includes("nxs-001") || q.includes("nxs-003") || (q.includes("link") && q.includes("case"))) {
       mappedIntent = "shared_identifiers";
       const shared = nodes.find((n) => n.label === "SYN-PHONE-001");
@@ -143,6 +187,39 @@ export default function IntelCopilot({
       } else {
         summary = `Rule R7 (Circular Fund Flow Detector) is active. In the baseline demo, funds follow fan-in and rapid pass-through structuring (R4). You can ingest circular transfer payloads in Data Ingestion to trigger closed cycle alerts.`;
       }
+    } else if (q.includes("replay") || q.includes("playback") || q.includes("evolve") || q.includes("evolution")) {
+      mappedIntent = "investigation_replay";
+      summary = `The investigation evolved through sequential ingestion of Case NXS-001 through NXS-006 FIRs, 64 CDR calls, and 51 financial transfers. You can scrub through every step and view cumulative network changes in the Investigation Intelligence Replay tab.`;
+      suggestions = ["Show network change radar and analytical milestones", "Find accounts matching the pass-through pattern with high fan-in"];
+    } else if (q.includes("what if") || q.includes("what-if") || q.includes("counterfactual") || q.includes("exclude") || q.includes("061")) {
+      mappedIntent = "what_if_analysis";
+      const decoyPhone = nodes.find((n) => n.label === "SYN-PHONE-061");
+      if (decoyPhone) {
+        matchedEntities.push({ id: decoyPhone.id, label: decoyPhone.label, type: decoyPhone.type, role: "Decoy Identifier" });
+      }
+      summary = `Counterfactual simulation sandbox allows excluding questionable records or identifiers (such as SYN-PHONE-061) in-memory without modifying the canonical graph (CANONICAL_GRAPH_UNCHANGED=true). Excluding SYN-PHONE-061 severs Case NXS-006 from the Aariv syndicate.`;
+      suggestions = ["Open Counterfactual Analysis tab", "Are there any contradictions or conflicting evidence?"];
+    } else if (q.includes("contradict") || q.includes("conflict") || q.includes("discrepancy") || q.includes("c1") || q.includes("c4") || q.includes("c5")) {
+      mappedIntent = "contradiction_engine";
+      rules.push("C1", "C4", "C5");
+      summary = `The Contradiction Engine evaluates rules C1 through C6. Key discrepancies flagged: C1 (shared phone SYN-PHONE-001 claimed by multiple suspects), C4 (near-duplicate Aariv Veylan vs Aariv Veylen), and C5 (incompatible role: Aariv recorded as Accused in NXS-001/002 but Witness in NXS-003/004).`;
+      suggestions = ["Open Contradiction Engine tab", "Why are Aariv Veylan and Mira Solven connected?"];
+    } else if (q.includes("why are") || q.includes("why is") || q.includes("connected") || q.includes("trail") || q.includes("path")) {
+      mappedIntent = "evidence_trail";
+      const aariv = nodes.find((n) => n.label === "Aariv Veylan");
+      const mira = nodes.find((n) => n.label === "Mira Solven");
+      if (aariv) matchedEntities.push({ id: aariv.id, label: aariv.label, type: aariv.type });
+      if (mira) matchedEntities.push({ id: mira.id, label: mira.label, type: mira.type });
+      summary = `Aariv Veylan and Mira Solven are connected across 2 hops via shared phone SYN-PHONE-001 and direct co-accused status in Case NXS-002. Every step in this path is backed by primary police FIR narratives and CDR records.`;
+      suggestions = ["Open Evidence Trail Mode", "What if we remove SYN-PHONE-061?"];
+    } else if (q.includes("gap") || q.includes("missing") || q.includes("blind spot") || q.includes("dead end")) {
+      mappedIntent = "investigation_gaps";
+      summary = `Investigation Gap Finder identified key missing links: unresolved identifiers without subscriber KYC (SYN-PHONE-020), suspects lacking communication telemetry, and unverified vehicle ZZ00NX0001. Procedural Section 91 and VAHAN queries are suggested.`;
+      suggestions = ["Open Investigation Gaps tab", "Show network change radar"];
+    } else if (q.includes("radar") || q.includes("change") || q.includes("milestone") || q.includes("new evidence")) {
+      mappedIntent = "network_change_radar";
+      summary = `Network Change Radar tracks structural mutations across 6 major milestones: initial baseline (NXS-001), cross-case bridge formation (NXS-002), R1 alert trigger (NXS-003), telephony hub centrality spike (CDRs), and financial layering (Transactions).`;
+      suggestions = ["Replay how this investigation evolved over time", "Are there any contradictions or conflicting evidence?"];
     } else {
       // General entity search
       mappedIntent = "entity_lookup";
@@ -180,7 +257,7 @@ export default function IntelCopilot({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#215a49] to-[#163f35] text-[#e0fff2] shadow-2xl border border-[#48997a66] hover:scale-105 transition-all font-sans text-xs font-medium cursor-pointer"
+          className="intel-copilot-trigger fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#215a49] to-[#163f35] text-[#e0fff2] shadow-2xl border border-[#48997a66] hover:scale-105 transition-all font-sans text-xs font-medium cursor-pointer"
           aria-label="Open NEXUS Intel Copilot"
         >
           <Sparkles size={16} className="text-[#5ce0a8] animate-pulse" />

@@ -8,11 +8,21 @@ from pathlib import Path
 
 BASE = os.getenv('NEXUS_API', 'http://127.0.0.1:8081/api')
 ROOT = Path(__file__).resolve().parents[1]
+TOKEN = None
 
 
 def request(path, body=None, expected=200, content_type='application/json'):
+    global TOKEN
+    if TOKEN is None and path != '/auth/login':
+        password = os.environ.get('NEXUS_ADMIN_PASSWORD')
+        if not password:
+            raise RuntimeError('NEXUS_ADMIN_PASSWORD is required for authenticated rehearsal')
+        TOKEN = request('/auth/login', {'username': 'admin', 'password': password})['token']
     data=json.dumps(body).encode() if body is not None else None
-    req=urllib.request.Request(BASE+path,data=data,headers={'Content-Type':content_type})
+    headers={'Content-Type':content_type}
+    if TOKEN:
+        headers['Authorization']='Bearer '+TOKEN
+    req=urllib.request.Request(BASE+path,data=data,headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=60) as response:
             raw=response.read().decode()

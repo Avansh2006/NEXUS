@@ -1,0 +1,80 @@
+[
+  {
+    "text": "🔎 आरोपी रवि कुमार, खाता संख्या ९८७६५४३२१०; गवाह सीमा देवी ने बयान दिया।",
+    "entities": [
+      {
+        "type": "Person",
+        "start": 8,
+        "end": 17
+      },
+      {
+        "type": "Account",
+        "start": 31,
+        "end": 41
+      },
+      {
+        "type": "Person",
+        "start": 48,
+        "end": 57
+      }
+    ]
+  },
+  {
+    "text": "शिकायतकर्ता मीरा सेन। अभियुक्त अर्जुन देव, फोन ९८७६५४३२१०।",
+    "entities": [
+      {
+        "type": "Person",
+        "start": 12,
+        "end": 20
+      },
+      {
+        "type": "Person",
+        "start": 31,
+        "end": 41
+      },
+      {
+        "type": "Phone",
+        "start": 47,
+        "end": 57
+      }
+    ]
+  },
+  {
+    "text": "aaropi Rivan Kesh; khata sankhya ९८७६५४३२१०.",
+    "entities": [
+      {
+        "type": "Person",
+        "start": 7,
+        "end": 17
+      },
+      {
+        "type": "Account",
+        "start": 33,
+        "end": 43
+      }
+    ]
+  },
+  {
+    "text": "Instagram handle @Demo.User; UPI demo@bank.",
+    "entities": [
+      {
+        "type": "SocialHandle",
+        "start": 17,
+        "end": 27
+      },
+      {
+        "type": "Account",
+        "start": 33,
+        "end": 42
+      }
+    ]
+  },
+  {
+    "text": "आरोपी गांव में रहता है",
+    "entities": []
+  },
+  {
+    "text": "अनाम विवरण और @unknown",
+    "entities": []
+  }
+]

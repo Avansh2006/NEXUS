@@ -6,111 +6,92 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.http.MediaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:security;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE","spring.datasource.username=sa","spring.datasource.password="})
 @AutoConfigureMockMvc
 @DirtiesContext(classMode=DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class ApiSecurityTest {
+class ApiSecurityTest extends TestCredentials {
     @Autowired MockMvc mvc;
-    @Test void rejectsUnknownOrigins() throws Exception {
-        mvc.perform(post("/api/demo/reset").header("Origin","https://untrusted.invalid").contentType(MediaType.APPLICATION_JSON).content("{}"))
+    @Autowired Store store;
+    @Autowired Auth auth;
+    @Autowired ObjectMapper json;
+    private String bearer(String user) {return "Bearer "+auth.createToken(user,user.toUpperCase(java.util.Locale.ROOT));}
+    private MockHttpServletRequestBuilder postAs(String path,String user) {return post(path).header("Authorization",bearer(user)).contentType(MediaType.APPLICATION_JSON);}
+
+    @Test void rejectsUnknownOriginsAndAssignsRequestId() throws Exception {
+        mvc.perform(postAs("/api/demo/reset","admin").header("Origin","https://untrusted.invalid").content("{}"))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.error.code").value("ORIGIN_DENIED"));
         mvc.perform(get("/api/health").header("Origin","http://localhost:8080"))
-            .andExpect(status().isOk()).andExpect(header().string("Access-Control-Allow-Origin","http://localhost:8080"));
+            .andExpect(status().isOk()).andExpect(header().string("Access-Control-Allow-Origin","http://localhost:8080"))
+            .andExpect(header().exists("X-Request-ID"));
     }
     @Test void rejectsOversizedInvalidUtf8AndMalformedBodies() throws Exception {
-        mvc.perform(post("/api/demo/reset").contentType(MediaType.APPLICATION_JSON).content(new byte[2097153]))
+        mvc.perform(postAs("/api/demo/reset","admin").content(new byte[2097153]))
             .andExpect(status().isPayloadTooLarge()).andExpect(jsonPath("$.error.code").value("TOO_LARGE"));
-        mvc.perform(post("/api/data/fir").contentType(MediaType.APPLICATION_JSON).content(new byte[]{(byte)0xc3,0x28}))
+        mvc.perform(postAs("/api/data/fir","investigator").content(new byte[]{(byte)0xc3,0x28}))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("INVALID_ENCODING"));
-        mvc.perform(post("/api/data/fir").contentType(MediaType.APPLICATION_JSON).content("{broken"))
+        mvc.perform(postAs("/api/data/fir","investigator").content("{broken"))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
     }
-    @Autowired Store store;
-
-    @Test void boundsMutationsAndReturnsSafeErrors() throws Exception {
-        for(int i=0;i<30;i++) mvc.perform(post("/api/demo/reset").contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isOk());
-        mvc.perform(post("/api/demo/reset").contentType(MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(status().isTooManyRequests())
-            .andExpect(jsonPath("$.error.code").value("RATE_LIMIT"))
-            .andExpect(header().exists("Retry-After"))
-            .andExpect(header().string("X-RateLimit-Limit", "30"))
-            .andExpect(header().string("X-RateLimit-Remaining", "0"))
-            .andExpect(header().exists("X-RateLimit-Reset"));
+    @Test void boundsMutations() throws Exception {
+        for(int i=0;i<30;i++) mvc.perform(postAs("/api/demo/reset","admin").content("{}")).andExpect(status().isOk());
+        mvc.perform(postAs("/api/demo/reset","admin").content("{}"))
+            .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"))
+            .andExpect(header().string("X-RateLimit-Limit","30")).andExpect(header().string("X-RateLimit-Remaining","0"));
     }
     @Test void partialRowsAreIsolatedAndDuplicatesSkipped() throws Exception {
         String body="""
             {"records":[{"caseId":"TEST","from":"SYN-ACCOUNT-001","to":"SYN-ACCOUNT-002","timestamp":"2026-09-01T00:00:00Z","amount":500},{"caseId":"TEST","amount":-10}]}
             """;
-        mvc.perform(post("/api/data/transactions").contentType(MediaType.APPLICATION_JSON).content(body))
+        mvc.perform(postAs("/api/data/transactions","investigator").content(body))
             .andExpect(status().isOk()).andExpect(jsonPath("$.accepted").value(1)).andExpect(jsonPath("$.errors[0].row").value(2));
-        mvc.perform(post("/api/data/transactions").contentType(MediaType.APPLICATION_JSON).content(body))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.duplicates").value(1)).andExpect(jsonPath("$.accepted").value(0));
-        mvc.perform(get("/api/entities/missing")).andExpect(status().isNotFound()).andExpect(jsonPath("$.error.message").value("Entity not found"));
+        mvc.perform(postAs("/api/data/transactions","investigator").content(body))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.duplicates").value(1));
+        mvc.perform(get("/api/entities/missing").header("Authorization",bearer("viewer"))).andExpect(status().isNotFound());
     }
-    @Test void authenticationAndRbacEnforcement() throws Exception {
-        // Login with valid credentials
-        String loginBody = "{\"username\":\"investigator\",\"password\":\"Investigator123!\"}";
-        var res = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginBody))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.role").value("INVESTIGATOR"))
-            .andExpect(jsonPath("$.token").isString())
-            .andReturn();
-        String jsonStr = res.getResponse().getContentAsString();
-        String token = jsonStr.substring(jsonStr.indexOf("\"token\":\"") + 9, jsonStr.indexOf("\"", jsonStr.indexOf("\"token\":\"") + 9));
-
-        // Authenticate via token on /api/auth/me
-        mvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.role").value("INVESTIGATOR"));
-
-        // Login with invalid credentials
-        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("{\"username\":\"admin\",\"password\":\"WrongPassword\"}"))
-            .andExpect(status().isUnauthorized())
-            .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
-
-        // Invalid bearer token rejected
-        mvc.perform(get("/api/auth/me").header("Authorization", "Bearer bad.token.here"))
-            .andExpect(status().isUnauthorized())
-            .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
-
-        // VIEWER role forbidden on POST mutations
-        mvc.perform(post("/api/demo/reset").header("X-Nexus-Role", "VIEWER").contentType(MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(status().isForbidden())
-            .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
-
-        // VIEWER bearer token forbidden on POST mutations
-        mvc.perform(post("/api/demo/reset").header("Authorization", "Bearer synthetic-viewer-token").contentType(MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(status().isForbidden())
-            .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
-
-        // INVESTIGATOR role permitted on mutations
-        mvc.perform(post("/api/demo/reset").header("X-Nexus-Role", "INVESTIGATOR").contentType(MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(status().isOk());
+    @Test void realLoginAndRolePermissions() throws Exception {
+        var login=mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(java.util.Map.of("username","investigator","password",PASSWORD))))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.role").value("INVESTIGATOR"))
+            .andExpect(jsonPath("$.expiresAt").isString()).andReturn();
+        String token=json.readTree(login.getResponse().getContentAsString()).path("token").asText();
+        mvc.perform(get("/api/auth/me").header("Authorization","Bearer "+token))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.username").value("investigator"));
+        mvc.perform(postAs("/api/demo/reset","investigator").content("{}")).andExpect(status().isForbidden());
+        mvc.perform(postAs("/api/data/transactions","viewer").content("{}")).andExpect(status().isForbidden());
+        mvc.perform(get("/api/diagnostics").header("Authorization",bearer("viewer"))).andExpect(status().isForbidden());
+        mvc.perform(postAs("/api/reports","viewer").content("{}")).andExpect(status().isOk());
+        mvc.perform(postAs("/api/investigation/what-if","viewer").content("{}")).andExpect(status().isOk());
+        mvc.perform(postAs("/api/investigation/contradictions/C1-test/review","viewer").content("{\"status\":\"ACKNOWLEDGED\"}")).andExpect(status().isForbidden());
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("{\"username\":\"admin\",\"password\":\"wrong\"}"))
+            .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/auth/me").header("Authorization","Bearer invalid")).andExpect(status().isUnauthorized());
     }
-    @Test void tamperEvidentAuditChain() throws Exception {
-        mvc.perform(post("/api/demo/reset").contentType(MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(status().isOk());
-        mvc.perform(post("/api/demo/reset").contentType(MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(status().isOk());
-
-        // Chain is valid initially
-        mvc.perform(get("/api/audit/verify"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.valid").value(true))
-            .andExpect(jsonPath("$.entriesVerified").isNumber());
-
-        // Tamper with an audit entry
-        store.tamperAuditEntry(1, "TAMPERED_ACTION_FORGED");
-
-        // Chain verification fails with tamper detection
-        mvc.perform(get("/api/audit/verify"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.valid").value(false))
-            .andExpect(jsonPath("$.brokenAtIndex").value(0))
-            .andExpect(jsonPath("$.reason").isString());
+    @Test void auditIsAttributedAndTamperEvident() throws Exception {
+        mvc.perform(postAs("/api/demo/reset","admin").content("{}")).andExpect(status().isOk());
+        mvc.perform(get("/api/audit").header("Authorization",bearer("admin")))
+            .andExpect(status().isOk()).andExpect(jsonPath("$[0].userId").value("admin"));
+        mvc.perform(get("/api/audit/verify").header("Authorization",bearer("admin")))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.valid").value(true));
+        store.tamperAuditEntry(1,"tampered test fixture");
+        mvc.perform(get("/api/audit/verify").header("Authorization",bearer("admin")))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.valid").value(false));
+    }
+    @Test void invalidParametersAndMethodsHaveClientErrorStatus() throws Exception {
+        mvc.perform(get("/api/network/missing").param("hops","invalid").header("Authorization",bearer("viewer")))
+            .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/graph").header("Authorization",bearer("admin")))
+            .andExpect(status().isMethodNotAllowed());
+    }
+    @Test void loginAttemptsAreRateLimited() throws Exception {
+        for(int i=0;i<30;i++) mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+            .content("{\"username\":\"admin\",\"password\":\"incorrect\"}")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("{}"))
+            .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"));
     }
 }

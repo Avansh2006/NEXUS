@@ -1,6 +1,15 @@
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 
+test.beforeEach(async ({page, request}) => {
+  const password=process.env.NEXUS_ADMIN_PASSWORD;
+  if(!password) throw new Error('Set NEXUS_ADMIN_PASSWORD for browser integration tests');
+  const response=await request.post('/api/auth/login',{data:{username:'admin',password}});
+  expect(response.ok()).toBeTruthy();
+  const session=await response.json();
+  await page.addInitScript(value=>sessionStorage.setItem('nexus.session',JSON.stringify(value)),session);
+});
+
 test('clean investigation: evidence → network → review → report',async({page},testInfo)=>{
   const errors:string[]=[];
   page.on('pageerror',e=>errors.push(e.message));
@@ -16,7 +25,7 @@ test('clean investigation: evidence → network → review → report',async({pa
   await expect(page.locator('.cytoscape canvas').first()).toBeVisible();
   await page.screenshot({path:testInfo.outputPath('case-islands.png'),fullPage:true});
   await page.getByRole('button',{name:'Analyze Network',exact:true}).click();
-  await expect(page.getByRole('status')).toContainText('3 cases linked');
+  await expect(page.getByRole('status',{name:'Investigation status'})).toContainText('3 cases linked');
   await expect(page.locator('.graph-state')).toHaveText('RESOLVED');
   await expect(page.locator('.inspector h2')).toHaveText('SYN-PHONE-001');
   await expect(page.locator('.inspector .tags')).toContainText('NXS-003');
@@ -66,7 +75,7 @@ test('clean investigation: evidence → network → review → report',async({pa
   expect(report).toContain('Electronic Record Provenance Statement');
   expect(report).toContain('Bharatiya Sakshya Adhiniyam, 2023, Section 63');
   expect(report).toContain('BSA 2023');
-  await page.getByRole('button',{name:'Refresh',exact:true}).click();
+  await page.getByRole('button',{name:'Refresh audit trail',exact:true}).click();
   await expect(page.locator('.audit-row').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -84,11 +93,11 @@ test('file upload isolates bad rows, deduplicates, and escapes source text',asyn
   await expect(page.locator('.ingest-result')).toContainText('0 accepted · 1 duplicates · 1 errors');
   // Restore the demo, leaving browser tests safe to repeat.
   await page.getByRole('button',{name:'Reset demo data',exact:true}).click();
-  await expect(page.getByRole('status')).toContainText('Investigation reset');
+  await expect(page.getByRole('status',{name:'Investigation status'})).toContainText('Investigation reset');
   await page.getByRole('button',{name:'Load demo',exact:true}).click();
-  await expect(page.getByRole('status')).toContainText('121 records loaded');
+  await expect(page.getByRole('status',{name:'Investigation status'})).toContainText('121 records loaded');
   await page.getByRole('button',{name:'Analyze Network',exact:true}).click();
-  await expect(page.getByRole('status')).toContainText('3 cases linked');
+  await expect(page.getByRole('status',{name:'Investigation status'})).toContainText('3 cases linked');
 });
 
 test('mobile and reduced-motion layout remains usable',async({page},testInfo)=>{
@@ -108,7 +117,7 @@ test('tactical extensions: 3D canvas toggle, Intel Copilot queries, and BSA 2023
   await page.getByRole('button', { name: 'Reset demo data', exact: true }).click();
   await page.getByRole('button', { name: 'Load demo', exact: true }).click();
   await page.getByRole('button', { name: 'Analyze Network', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('3 cases linked');
+  await expect(page.getByRole('status',{name:'Investigation status'})).toContainText('3 cases linked');
 
   // Verify Tactical HUD and 3D WebGL Sphere
   await expect(page.getByText('DETERMINISTIC, GRAPH-GROUNDED ENGINE')).toBeVisible();
@@ -138,7 +147,7 @@ test('live incoming FIR: streaming ingestion, cross-case linkage, latency teleme
   await page.getByRole('button', { name: 'Reset demo data', exact: true }).click();
   await page.getByRole('button', { name: 'Load demo', exact: true }).click();
   await page.getByRole('button', { name: 'Analyze Network', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('3 cases linked');
+  await expect(page.getByRole('status',{name:'Investigation status'})).toContainText('3 cases linked');
 
   // Stream incoming FIR NXS-007
   await page.getByRole('button', { name: 'Stream FIR NXS-007', exact: true }).click();
@@ -158,5 +167,4 @@ test('live incoming FIR: streaming ingestion, cross-case linkage, latency teleme
   await expect(page.locator('.incoming-badge')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Stream FIR NXS-007', exact: true })).toBeVisible();
 });
-
 

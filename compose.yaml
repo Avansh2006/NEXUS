@@ -31,6 +31,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       INTELLIGENCE_URL: http://intelligence:8000
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8080}
+      NEXUS_JWT_SECRET: ${NEXUS_JWT_SECRET:?Run scripts/setup_credentials.py first}
+      NEXUS_ADMIN_PASSWORD_HASH: ${NEXUS_ADMIN_PASSWORD_HASH:?Configure admin password hash}
+      NEXUS_INVESTIGATOR_PASSWORD_HASH: ${NEXUS_INVESTIGATOR_PASSWORD_HASH:?Configure investigator password hash}
+      NEXUS_VIEWER_PASSWORD_HASH: ${NEXUS_VIEWER_PASSWORD_HASH:?Configure viewer password hash}
     depends_on:
       db:
         condition: service_healthy

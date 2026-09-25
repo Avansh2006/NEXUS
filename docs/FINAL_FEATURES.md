@@ -1,63 +1,76 @@
-# Final feature inventory
+# Feature inventory
 
-## Implemented
-- NEXUS identity and persistent PROTOTYPE — SYNTHETIC DATA banner.
-- React/TypeScript/Vite/Tailwind + Cytoscape/fcose investigator workbench.
-- Refined mineral surfaces, local Inter/Space Grotesk typography, Motion transitions,
-  animated measured counters, a state-aware workflow bar, and reduced-motion support.
-- Tactical HUD overlay with live deterministic AI telemetry, entity distribution chips,
-  and an interactive 3D WebGL tactical intelligence sphere (Three.js) toggle.
-- NEXUS Intel Copilot: deterministic, graph-grounded query assistant with natural-language
-  investigative prompts, graph topology analysis, grounded template answers, and click-to-inspect entity chips.
-- Syndicate Hierarchy & Pattern Classifier: classifies entities into pattern hypotheses
-  (Central Hub, Cross-Cluster Broker, Pass-Through Account, Outbound Hub, High-Activity Node, Business Entity, Transport Asset, Location Nexus) with criteria values and review disclaimers in inspector.
-- Rule R7 (Circular Transaction Laundering Loops): detects directed cycles (hawala / round-tripping)
-  in account transaction graphs.
-- Electronic Record Provenance Statement (with SHA-256 digests and deterministic derivation notice)
-  plus a human-officer template certificate under Section 63 of the Bharatiya Sakshya Adhiniyam, 2023 (BSA 2023).
-- Cursor-following SpotlightCard components with glowing borders and ambient spotlights.
-- Spring Boot REST backend; PostgreSQL relational graph/evidence JSONB storage;
-  stateless FastAPI/spaCy/NetworkX sidecar. Four-service Docker Compose build.
-- FIR text/paste/JSON and CSV/JSON structured data; multi-file UI batches; bounded
-  validation, per-row errors, hash duplicate counting, actual processing counts.
-- Validated Indian mobile/vehicle/account/UPI/IFSC/amount patterns; synthetic tokens;
-  spaCy EntityRuler gazetteers and role-cue people. Source spans/confidence retained.
-- Hard-identifier merging, name-plus-phone/case corroboration, possible-match review,
-  alias provenance and reversible merges rebuilt from source records.
-- 121 reproducible synthetic records across six cases; 18 labeled gold FIRs.
-- Evidence links on every graph node/edge; first/last seen and per-event timestamps.
-- Degree, betweenness, seeded Louvain communities; weighted influence breakdown.
-- R1–R7 explanations with entity/evidence IDs; visible public/service suppression.
-- Dashboard, ingestion, graph workspace, entity/case inspector, alerts, clusters,
-  timeline, reports, audit viewer; search, filters, focus and bounded expansion.
-- Case-specific ghost projection before Analyze; canonical network after Analyze,
-  short graph fade/camera focus; graph coloring, community borders, influence sizes.
-- Case-link suggestions, shortest paths with hop evidence, highlighted FIRs,
-  synthetic extraction-quality panel (27 TP, 0 FP, 0 FN on 18 samples).
-- Printable escaped HTML report with optional graph PNG, Electronic Record Provenance Statement, BSA 2023 s.63 template certificate, and browser Save as PDF.
-- Reset/load demo, offline runtime, test suites, GitHub CI with PostgreSQL rehearsal.
-- Request/body validation, rate limiting, fixed CORS origin, parameterized SQL,
-  no secrets in Git, local-only published port and safe JSON error envelope.
+This inventory describes implemented source behavior. It does not replace the final
+integrated test report. Use current logs and source revision to determine which checks
+passed on a particular environment.
 
-## Partially implemented / deliberate scope limits
-- Extraction is regex + blank spaCy EntityRuler + small gazetteer, not a trained
-  general-purpose multilingual NER model. Benchmark is synthetic templates only.
-- Person resolution uses phone or case corroboration, not a learned identity model.
-  Name review shows candidate source evidence; there is no full merge-history screen.
-- Timeline is an ordered event list and filters use one event date, not a range slider.
-- Graph transitions use fade/camera fallback, not a bespoke animated node morph.
-- PDF export uses browser print; no server-side PDF renderer.
-- Demo analysis recomputes quickly; persisted results survive normal reloads but no
-  independent precomputed analysis cache is used when the engine is down.
-- Audit logging/viewer is operational, not tamper-evident or identity-attributed.
-- Four automated browser scenarios cover the desktop journey, upload validation,
-  report download with Electronic Record Provenance Statement and BSA 2023 template certificate, 3D Holo Sphere toggle,
-  Intel Copilot natural language queries, mobile layout and reduced motion, with screenshots and video.
+## Investigation and evidence
 
-## Roadmap
-JWT/Investigator/Admin roles, SSO, tenant isolation, device/IMEI entities, richer
-timeline ranges, multilingual evaluation, robust location corroboration, larger
-gold corpus, production retention/backup/encryption, formal security audit.
-Neo4j is an optional scale-out path. Government/bank/telecom integration would
-require formal agreements and is not part of this prototype.
-No crime prediction, guilt labeling, facial recognition or autonomous enforcement.
+- Synthetic-data banner and React/TypeScript workbench with dashboard, ingestion,
+  graph, inspector, alerts, communities, timeline and reports.
+- FIR, criminal-history, intelligence-report and surveillance-report narratives;
+  CSV/JSON call-detail and financial records; multi-file uploads; per-row errors and
+  normalized duplicate detection within bounded requests.
+- Conservative rule-based extraction with synthetic identifiers, Hindi/Hinglish cues,
+  Devanagari digit normalization, explicit platform social handles, original text and
+  extraction confidence. Python code-point offsets are converted to Java/JavaScript
+  UTF-16 offsets at the service boundary.
+- Exact-identifier resolution, corroborated person matching, human-reviewed possible
+  matches, provenance-retaining aliases and reversible merge/undo.
+- Evidence-support badges and explanations on entities/relationships. Support uses
+  independent record count, source-kind diversity, minimum extraction confidence,
+  and supplied credibility. Unassessed grades remain explicit; Low edges are dashed.
+- Degree, betweenness, seeded Louvain communities, descriptive influence, R1-R7
+  pattern explanations and visible public/service suppression. Patterns are leads for
+  review, not guilt labels or predictions.
+- Search, type/case/location/crime/date filters, focus, path evidence, case links,
+  2D graph, optional 3D view, graph-grounded deterministic copilot, and reduced-motion
+  presentation. The copilot does not call an external LLM.
+
+## Workflow and playback
+
+- Persisted entity notes with author/timestamp and plain-text rendering.
+- Per-user watchlists and alert triage: New, Under Review, Verified, Dismissed.
+  Verified means reviewed, not established wrongdoing. Concurrent stale triage updates
+  return 409; initial version is zero.
+- Workflow survives reanalysis for stable identifiers. Merge reads expose original
+  entity notes through the canonical entity; undo retains their original ownership.
+  Reset clears investigation workflow. Obsolete alert triage is hidden from active lists.
+- Manual-first playback with play/pause, scrubbing and 0.5x/1x/2x speeds. Only revealed
+  dated events and their edges appear; the view respects filters. Timers stop on page
+  exit/data changes/completion. Playback does not change stored evidence or analysis.
+- Selected-entity structural removal panel with before/after component size/count,
+  isolates, removed edges and articulation status. The API accepts one to twenty unique
+  existing non-Case IDs. Simulation excludes Case membership and never mutates the graph.
+
+## Output, access and operations
+
+- Authenticated HTML reports with evidence, optional displayed graph image, provenance
+  text and browser Print to PDF. Any embedded certificate form remains a template;
+  NEXUS does not certify its legal sufficiency.
+- Authenticated nodes/edges CSV and GraphML exports with evidence/support fields,
+  deterministic ordering, spreadsheet formula neutralization and XML escaping.
+  Report data and graph exports cover the full graph irrespective of playback/filters;
+  report images show the displayed view.
+- Configured BCrypt prototype accounts, signed expiring JWTs, login/logout/expiry UI,
+  role-aware controls and backend permissions. Administrator-only demo/diagnostics.
+- Attributed hash-chained audit, audit actor display and verification UI with explicit
+  failed checks. Hash-chain consistency is not independent source certification.
+- Separate frozen held-out and synthetic Hindi/Hinglish quality results. Missing metrics
+  show Unavailable; there is no hard-coded success or F1 fallback.
+- Administrator service diagnostics, request IDs, VS Code debugging configurations,
+  repository-relative local startup and dedicated new Azure VM verification tooling.
+
+## Deliberate limitations
+
+Extraction remains regex plus a blank spaCy EntityRuler and small gazetteers. Neither
+synthetic nor held-out measurements establish general multilingual accuracy. Identity
+resolution is not a learned identity model; there is no full merge-history screen.
+Timeline date filtering is a single-date filter plus event playback, not an arbitrary
+date-range editor. The UI simulates one selected entity at a time. PDF creation uses
+browser print. There is no separate precomputed-analysis cache for engine outages.
+
+No production SSO/tenant isolation, live government/bank/telecom integration, crime
+prediction, facial recognition, autonomous enforcement or formal security certification
+is included. See [security](SECURITY.md), [API](API.md), [testing](TESTING_GUIDE.md), and
+[debugging](DEBUGGING.md) for operational boundaries and verification commands.

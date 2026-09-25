@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "NEXUS: React browser",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:8080",
+      "webRoot": "${workspaceFolder}/frontend",
+      "sourceMaps": true,
+      "preLaunchTask": "NEXUS: frontend dev server"
+    },
+    {
+      "name": "NEXUS: Python intelligence",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app:app", "--host", "127.0.0.1", "--port", "8000"],
+      "cwd": "${workspaceFolder}/intelligence",
+      "env": { "DEMO_DIR": "${workspaceFolder}/data/demo" },
+      "justMyCode": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "NEXUS: attach Java API",
+      "type": "java",
+      "request": "attach",
+      "hostName": "127.0.0.1",
+      "port": 5005,
+      "sourcePaths": ["${workspaceFolder}/backend/src/main/java"]
+    }
+  ]
+}

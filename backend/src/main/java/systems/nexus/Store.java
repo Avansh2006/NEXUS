@@ -31,7 +31,54 @@ public class Store {
         if(!n.has("nodes")) return new Model.Graph(List.of(),List.of(),List.of(),List.of(),json.createObjectNode(),false,List.of());
         try { return json.treeToValue(n,Model.Graph.class); } catch(JsonProcessingException e) { throw new IllegalStateException(e); }
     }
-    public void reset() { db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
+    public void reset() { db.update("DELETE FROM cctv_track"); db.update("DELETE FROM cctv_analysis"); db.update("DELETE FROM evidence_review"); db.update("DELETE FROM evidence_item"); db.update("DELETE FROM evidence_asset"); db.update("DELETE FROM contradiction_review"); db.update("DELETE FROM face_decision"); db.update("DELETE FROM person_face"); db.update("DELETE FROM entity_note"); db.update("DELETE FROM watchlist_entry"); db.update("DELETE FROM workflow_user"); db.update("DELETE FROM alert_triage"); db.update("DELETE FROM evidence"); db.update("DELETE FROM edge"); db.update("DELETE FROM node"); db.update("DELETE FROM source_record"); db.update("DELETE FROM app_state"); }
+    public void saveContradictionReview(Model.ContradictionReview r) {
+        db.update("DELETE FROM contradiction_review WHERE id=?", r.id());
+        db.update("INSERT INTO contradiction_review(id, rule_id, status, notes, author, updated_at) VALUES(?,?,?,?,?,?)",
+            r.id(), r.ruleId(), r.status(), r.notes(), r.author(), r.updatedAt());
+    }
+    public List<Model.ContradictionReview> contradictionReviews() {
+        return db.query("SELECT id, rule_id, status, notes, author, updated_at FROM contradiction_review",
+            (rs,n) -> new Model.ContradictionReview(rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5),rs.getString(6)));
+    }
+    public Optional<Model.ContradictionReview> contradictionReview(String id) {
+        var rows = db.query("SELECT id, rule_id, status, notes, author, updated_at FROM contradiction_review WHERE id=?",
+            (rs,n) -> new Model.ContradictionReview(rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5),rs.getString(6)), id);
+        return rows.stream().findFirst();
+    }
+    public void addFace(Model.PersonFace f) {
+        db.update("INSERT INTO person_face VALUES(?,?,?,CAST(? AS JSONB),?,?,?,?,?,CAST(? AS JSONB))",
+            f.id(), f.personNodeId(), f.imageHash(), encode(f.embedding()), f.modelName(), f.modelVersion(),
+            f.createdAt(), f.sourceRecordId(), f.qualityScore(), encode(f.metadata()));
+    }
+    public List<Model.PersonFace> faces() {
+        return db.query("SELECT id,person_node_id,image_hash,embedding,model_name,model_version,created_at,source_record_id,quality_score,metadata FROM person_face ORDER BY created_at DESC",
+            (rs,n) -> new Model.PersonFace(rs.getString(1),rs.getString(2),rs.getString(3),decode(rs.getString(4)),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getDouble(9),decode(rs.getString(10))));
+    }
+    public List<Model.PersonFace> facesForPerson(String personNodeId) {
+        return db.query("SELECT id,person_node_id,image_hash,embedding,model_name,model_version,created_at,source_record_id,quality_score,metadata FROM person_face WHERE person_node_id=? ORDER BY created_at DESC",
+            (rs,n) -> new Model.PersonFace(rs.getString(1),rs.getString(2),rs.getString(3),decode(rs.getString(4)),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getDouble(9),decode(rs.getString(10))), personNodeId);
+    }
+    public Optional<Model.PersonFace> face(String id) {
+        var rows = db.query("SELECT id,person_node_id,image_hash,embedding,model_name,model_version,created_at,source_record_id,quality_score,metadata FROM person_face WHERE id=?",
+            (rs,n) -> new Model.PersonFace(rs.getString(1),rs.getString(2),rs.getString(3),decode(rs.getString(4)),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getDouble(9),decode(rs.getString(10))), id);
+        return rows.stream().findFirst();
+    }
+    public boolean deleteFace(String id) {
+        return db.update("DELETE FROM person_face WHERE id=?", id) > 0;
+    }
+    public void addFaceDecision(Model.FaceDecision d) {
+        db.update("INSERT INTO face_decision VALUES(?,?,?,?,?,?,?,?,?)",
+            d.id(), d.personNodeId(), d.decision(), d.similarity(), d.modelName(), d.imageHash(), d.notes(), d.author(), d.createdAt());
+    }
+    public List<Model.FaceDecision> faceDecisions() {
+        return db.query("SELECT id,person_node_id,decision,similarity,model_name,image_hash,notes,author,created_at FROM face_decision ORDER BY created_at DESC",
+            (rs,n) -> new Model.FaceDecision(rs.getString(1),rs.getString(2),rs.getString(3),rs.getDouble(4),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getString(9)));
+    }
+    public List<Model.FaceDecision> faceDecisionsForPerson(String personNodeId) {
+        return db.query("SELECT id,person_node_id,decision,similarity,model_name,image_hash,notes,author,created_at FROM face_decision WHERE person_node_id=? ORDER BY created_at DESC",
+            (rs,n) -> new Model.FaceDecision(rs.getString(1),rs.getString(2),rs.getString(3),rs.getDouble(4),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getString(9)), personNodeId);
+    }
     public void deleteSourcesByCaseId(String caseId) {
         var list = sources();
         for (var s : list) {
@@ -54,7 +101,9 @@ public class Store {
         }
     }
 
-    public synchronized void audit(String action, String userId, String entityId, String payloadDigest) {
+    @org.springframework.transaction.annotation.Transactional
+    public void audit(String action, String userId, String entityId, String payloadDigest) {
+        db.queryForList("SELECT id FROM audit_chain_lock WHERE id=1 FOR UPDATE");
         String prevHash = db.query(
             "SELECT entry_hash FROM audit_log ORDER BY id DESC LIMIT 1",
             (rs, n) -> rs.getString(1)
@@ -70,8 +119,11 @@ public class Store {
         );
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void audit(String action) {
-        audit(action, "system", "", "");
+        var attributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        Object user = attributes instanceof org.springframework.web.context.request.ServletRequestAttributes request ? request.getRequest().getAttribute("nexus.user") : null;
+        audit(action, user instanceof String name ? name : "system", "", "");
     }
 
     public List<Map<String,Object>> audit() {
@@ -100,37 +152,174 @@ public class Store {
             (rs, n) -> new AuditRow(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8))
         );
         String expectedPrev = "0".repeat(64);
+        String genesisHash = rows.isEmpty() ? expectedPrev : rows.get(0).entryHash();
+        String verifiedAt = Instant.now().toString();
+
         for (int i = 0; i < rows.size(); i++) {
             AuditRow r = rows.get(i);
             if (!r.prevHash().equals(expectedPrev)) {
-                return Map.of(
-                    "valid", false,
-                    "brokenAtIndex", i,
-                    "expectedPrevHash", expectedPrev,
-                    "actualPrevHash", r.prevHash(),
-                    "reason", "Broken hash linkage at index " + i
-                );
+                Map<String, Object> res = new LinkedHashMap<>();
+                res.put("valid", false);
+                res.put("entriesChecked", i);
+                res.put("entriesVerified", i);
+                res.put("brokenAtIndex", i);
+                res.put("firstBrokenEntry", r.id());
+                res.put("expectedPrevHash", expectedPrev);
+                res.put("actualPrevHash", r.prevHash());
+                res.put("reason", "PREVIOUS_HASH_MISMATCH");
+                res.put("verifiedAt", verifiedAt);
+                return res;
             }
             String computed = sha256(r.prevHash() + r.createdAt() + r.userId() + r.action() + r.entityId() + r.payloadDigest());
             if (!computed.equals(r.entryHash())) {
-                return Map.of(
-                    "valid", false,
-                    "brokenAtIndex", i,
-                    "computedHash", computed,
-                    "storedEntryHash", r.entryHash(),
-                    "reason", "Hash tampering detected at index " + i
-                );
+                Map<String, Object> res = new LinkedHashMap<>();
+                res.put("valid", false);
+                res.put("entriesChecked", i);
+                res.put("entriesVerified", i);
+                res.put("brokenAtIndex", i);
+                res.put("firstBrokenEntry", r.id());
+                res.put("computedHash", computed);
+                res.put("storedEntryHash", r.entryHash());
+                res.put("reason", "HASH_TAMPERING_DETECTED");
+                res.put("verifiedAt", verifiedAt);
+                return res;
             }
             expectedPrev = r.entryHash();
         }
-        return Map.of(
-            "valid", true,
-            "entriesVerified", rows.size(),
-            "headHash", expectedPrev
-        );
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("valid", true);
+        res.put("entriesChecked", rows.size());
+        res.put("entriesVerified", rows.size());
+        res.put("genesisHash", genesisHash);
+        res.put("headHash", expectedPrev);
+        res.put("verifiedAt", verifiedAt);
+        res.put("firstBrokenEntry", null);
+        return res;
     }
 
     public void tamperAuditEntry(long id, String tamperedAction) {
         db.update("UPDATE audit_log SET action=? WHERE id=?", tamperedAction, id);
+    }
+
+    // MULTIMODAL EVIDENCE PERSISTENCE
+    public void saveEvidenceAsset(Model.EvidenceAsset a) {
+        db.update("DELETE FROM evidence_asset WHERE id=?", a.id());
+        db.update("INSERT INTO evidence_asset(id, case_id, file_name, media_type, mime_type, file_size, file_hash, storage_path, status, created_at, created_by, metadata) VALUES(?,?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB))",
+            a.id(), a.caseId(), a.fileName(), a.mediaType(), a.mimeType(), a.fileSize(), a.fileHash(),
+            a.storagePath(), a.status(), a.createdAt(), a.createdBy(), encode(a.metadata()));
+    }
+
+    public List<Model.EvidenceAsset> evidenceAssets() {
+        return db.query("SELECT id, case_id, file_name, media_type, mime_type, file_size, file_hash, storage_path, status, created_at, created_by, metadata FROM evidence_asset ORDER BY created_at DESC",
+            (rs, n) -> new Model.EvidenceAsset(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), rs.getLong(6), rs.getString(7), rs.getString(8), rs.getString(9), rs.getString(10),
+                rs.getString(11), decode(rs.getString(12))));
+    }
+
+    public List<Model.EvidenceAsset> evidenceAssetsByCase(String caseId) {
+        return db.query("SELECT id, case_id, file_name, media_type, mime_type, file_size, file_hash, storage_path, status, created_at, created_by, metadata FROM evidence_asset WHERE case_id=? ORDER BY created_at DESC",
+            (rs, n) -> new Model.EvidenceAsset(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), rs.getLong(6), rs.getString(7), rs.getString(8), rs.getString(9), rs.getString(10),
+                rs.getString(11), decode(rs.getString(12))), caseId);
+    }
+
+    public Optional<Model.EvidenceAsset> evidenceAsset(String id) {
+        var rows = db.query("SELECT id, case_id, file_name, media_type, mime_type, file_size, file_hash, storage_path, status, created_at, created_by, metadata FROM evidence_asset WHERE id=?",
+            (rs, n) -> new Model.EvidenceAsset(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), rs.getLong(6), rs.getString(7), rs.getString(8), rs.getString(9), rs.getString(10),
+                rs.getString(11), decode(rs.getString(12))), id);
+        return rows.stream().findFirst();
+    }
+
+    public void saveEvidenceItem(Model.EvidenceItem item) {
+        db.update("DELETE FROM evidence_item WHERE id=?", item.id());
+        db.update("INSERT INTO evidence_item(id, asset_id, item_type, page_or_frame, timestamp_start, timestamp_end, speaker, raw_content, confidence, embedding, model_name, provenance, created_at) VALUES(?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),?,CAST(? AS JSONB),?)",
+            item.id(), item.assetId(), item.itemType(), item.pageOrFrame(), item.timestampStart(), item.timestampEnd(),
+            item.speaker(), item.rawContent(), item.confidence(), encode(item.embedding()), item.modelName(), encode(item.provenance()), item.createdAt());
+    }
+
+    public List<Model.EvidenceItem> evidenceItemsByAsset(String assetId) {
+        return db.query("SELECT id, asset_id, item_type, page_or_frame, timestamp_start, timestamp_end, speaker, raw_content, confidence, embedding, model_name, provenance, created_at FROM evidence_item WHERE asset_id=? ORDER BY page_or_frame ASC, timestamp_start ASC",
+            (rs, n) -> new Model.EvidenceItem(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4),
+                rs.getDouble(5), rs.getDouble(6), rs.getString(7), rs.getString(8), rs.getDouble(9),
+                decode(rs.getString(10)), rs.getString(11), decode(rs.getString(12)), rs.getString(13)), assetId);
+    }
+
+    public List<Model.EvidenceItem> allVisualEvidenceItems() {
+        return db.query("SELECT id, asset_id, item_type, page_or_frame, timestamp_start, timestamp_end, speaker, raw_content, confidence, embedding, model_name, provenance, created_at FROM evidence_item WHERE item_type IN ('IMAGE_FRAME', 'VIDEO_FRAME', 'VISUAL_EMBEDDING') ORDER BY created_at DESC",
+            (rs, n) -> new Model.EvidenceItem(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4),
+                rs.getDouble(5), rs.getDouble(6), rs.getString(7), rs.getString(8), rs.getDouble(9),
+                decode(rs.getString(10)), rs.getString(11), decode(rs.getString(12)), rs.getString(13)));
+    }
+
+    public Optional<Model.EvidenceItem> evidenceItem(String id) {
+        var rows = db.query("SELECT id, asset_id, item_type, page_or_frame, timestamp_start, timestamp_end, speaker, raw_content, confidence, embedding, model_name, provenance, created_at FROM evidence_item WHERE id=?",
+            (rs, n) -> new Model.EvidenceItem(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4),
+                rs.getDouble(5), rs.getDouble(6), rs.getString(7), rs.getString(8), rs.getDouble(9),
+                decode(rs.getString(10)), rs.getString(11), decode(rs.getString(12)), rs.getString(13)), id);
+        return rows.stream().findFirst();
+    }
+
+    public void saveEvidenceReview(Model.EvidenceReviewDecision d) {
+        db.update("DELETE FROM evidence_review WHERE id=?", d.id());
+        db.update("INSERT INTO evidence_review(id, item_id, case_id, decision, notes, author, created_at) VALUES(?,?,?,?,?,?,?)",
+            d.id(), d.itemId(), d.caseId(), d.decision(), d.notes(), d.author(), d.createdAt());
+    }
+
+    public List<Model.EvidenceReviewDecision> evidenceReviews() {
+        return db.query("SELECT id, item_id, case_id, decision, notes, author, created_at FROM evidence_review ORDER BY created_at DESC",
+            (rs, n) -> new Model.EvidenceReviewDecision(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), rs.getString(6), rs.getString(7)));
+    }
+
+    public List<Model.EvidenceReviewDecision> evidenceReviewsByCase(String caseId) {
+        return db.query("SELECT id, item_id, case_id, decision, notes, author, created_at FROM evidence_review WHERE case_id=? ORDER BY created_at DESC",
+            (rs, n) -> new Model.EvidenceReviewDecision(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), rs.getString(6), rs.getString(7)), caseId);
+    }
+
+    // NATURAL-LANGUAGE CCTV HUNT PERSISTENCE
+    public void saveCctvAnalysis(Model.CctvAnalysis a) {
+        db.update("DELETE FROM cctv_analysis WHERE id=?", a.id());
+        db.update("INSERT INTO cctv_analysis(id, evidence_asset_id, case_id, query, status, model_metadata_json, created_at, created_by) VALUES(?,?,?,?,?,CAST(? AS JSONB),?,?)",
+            a.id(), a.evidenceAssetId(), a.caseId(), a.query(), a.status(), encode(a.modelMetadata()), a.createdAt(), a.createdBy());
+    }
+
+    public List<Model.CctvAnalysis> cctvAnalyses() {
+        return db.query("SELECT id, evidence_asset_id, case_id, query, status, model_metadata_json, created_at, created_by FROM cctv_analysis ORDER BY created_at DESC",
+            (rs, n) -> new Model.CctvAnalysis(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), decode(rs.getString(6)), rs.getString(7), rs.getString(8)));
+    }
+
+    public List<Model.CctvAnalysis> cctvAnalysesByAsset(String assetId) {
+        return db.query("SELECT id, evidence_asset_id, case_id, query, status, model_metadata_json, created_at, created_by FROM cctv_analysis WHERE evidence_asset_id=? ORDER BY created_at DESC",
+            (rs, n) -> new Model.CctvAnalysis(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), decode(rs.getString(6)), rs.getString(7), rs.getString(8)), assetId);
+    }
+
+    public Optional<Model.CctvAnalysis> cctvAnalysis(String id) {
+        var rows = db.query("SELECT id, evidence_asset_id, case_id, query, status, model_metadata_json, created_at, created_by FROM cctv_analysis WHERE id=?",
+            (rs, n) -> new Model.CctvAnalysis(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), decode(rs.getString(6)), rs.getString(7), rs.getString(8)), id);
+        return rows.stream().findFirst();
+    }
+
+    public void saveCctvTrack(Model.CctvTrack t) {
+        db.update("DELETE FROM cctv_track WHERE id=?", t.id());
+        db.update("INSERT INTO cctv_track(id, analysis_id, track_id, label, first_seen_ms, last_seen_ms, best_confidence, representative_frame_json, metadata_json) VALUES(?,?,?,?,?,?,?,CAST(? AS JSONB),CAST(? AS JSONB))",
+            t.id(), t.analysisId(), t.trackId(), t.label(), t.firstSeenMs(), t.lastSeenMs(), t.bestConfidence(), encode(t.representativeFrame()), encode(t.metadata()));
+    }
+
+    public List<Model.CctvTrack> cctvTracksByAnalysis(String analysisId) {
+        return db.query("SELECT id, analysis_id, track_id, label, first_seen_ms, last_seen_ms, best_confidence, representative_frame_json, metadata_json FROM cctv_track WHERE analysis_id=? ORDER BY best_confidence DESC",
+            (rs, n) -> new Model.CctvTrack(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getLong(5), rs.getLong(6), rs.getDouble(7), decode(rs.getString(8)), decode(rs.getString(9))), analysisId);
+    }
+
+    public Optional<Model.CctvTrack> cctvTrack(String id) {
+        var rows = db.query("SELECT id, analysis_id, track_id, label, first_seen_ms, last_seen_ms, best_confidence, representative_frame_json, metadata_json FROM cctv_track WHERE id=?",
+            (rs, n) -> new Model.CctvTrack(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getLong(5), rs.getLong(6), rs.getDouble(7), decode(rs.getString(8)), decode(rs.getString(9))), id);
+        return rows.stream().findFirst();
     }
 }

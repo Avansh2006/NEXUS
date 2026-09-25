@@ -1,89 +1,74 @@
 package systems.nexus;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.Base64;
-import java.util.Map;
+import java.time.Instant;
+import java.util.*;
 
+/** Explicit prototype accounts with externally configured password hashes. */
+@Component
 public class Auth {
-    private static final String SECRET = "nexus-secret-key-32-bytes-long-12345";
-    private static final Base64.Encoder B64ENC = Base64.getUrlEncoder().withoutPadding();
-    private static final Base64.Decoder B64DEC = Base64.getUrlDecoder();
-
+    static final String ISSUER = "nexus-prototype";
+    private final Algorithm algorithm;
+    private final JWTVerifier verifier;
+    private final Map<String,String> hashes;
+    private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder();
+    private final int ttl;
+    private static final Map<String,String> ROLES = Map.of("admin","ADMIN", "investigator","INVESTIGATOR", "viewer","VIEWER");
     public record UserPrincipal(String username, String role) {}
 
-    public static final Map<String, UserPrincipal> SYNTHETIC_USERS = Map.of(
-        "admin", new UserPrincipal("admin@nexus.internal", "ADMIN"),
-        "investigator", new UserPrincipal("officer@nexus.internal", "INVESTIGATOR"),
-        "viewer", new UserPrincipal("viewer@nexus.internal", "VIEWER")
-    );
-
-    public static final Map<String, String> PASSWORDS = Map.of(
-        "admin", "AdminPass123!",
-        "investigator", "Investigator123!",
-        "viewer", "Viewer123!"
-    );
-
-    public static String createToken(String username, String role) {
-        String header = B64ENC.encodeToString("{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes(StandardCharsets.UTF_8));
-        String payload = B64ENC.encodeToString(
-            ("{\"sub\":\"" + username + "\",\"role\":\"" + role + "\",\"iat\":" + System.currentTimeMillis() + "}")
-                .getBytes(StandardCharsets.UTF_8)
-        );
-        String data = header + "." + payload;
-        String sig = sign(data);
-        return data + "." + sig;
+    public Auth(@Value("${nexus.auth.secret:}") String secret,
+                @Value("${nexus.auth.admin-hash:}") String admin,
+                @Value("${nexus.auth.investigator-hash:}") String investigator,
+                @Value("${nexus.auth.viewer-hash:}") String viewer,
+                @Value("${nexus.auth.ttl-seconds:3600}") int ttl) {
+        if(secret.getBytes(StandardCharsets.UTF_8).length < 32)
+            throw new IllegalStateException("Configure NEXUS_JWT_SECRET with at least 32 random bytes");
+        hashes = Map.of("admin", admin, "investigator", investigator, "viewer", viewer);
+        for(String hash:hashes.values()) if(!hash.matches("\\$2[aby]\\$(?:1[0-6])\\$[./A-Za-z0-9]{53}"))
+            throw new IllegalStateException("Configure all NEXUS_*_PASSWORD_HASH values with BCrypt cost 10–16");
+        if(ttl < 60 || ttl > 86400) throw new IllegalStateException("Token lifetime must be 60–86400 seconds");
+        this.ttl=ttl;
+        algorithm=Algorithm.HMAC256(secret);
+        verifier=JWT.require(algorithm).withIssuer(ISSUER)
+            .withClaimPresence("exp").withClaimPresence("iat").withClaimPresence("sub").withClaimPresence("role").build();
     }
 
-    public static UserPrincipal authenticateToken(String token) {
-        if (token == null || token.isBlank()) return null;
-        if (token.startsWith("Bearer ")) token = token.substring(7).trim();
+    public Map<String,Object> login(String username, String password) {
+        String user=username==null?"":username.trim().toLowerCase(Locale.ROOT);
+        String value=password==null?"":password;
+        if(user.length()>80 || value.getBytes(StandardCharsets.UTF_8).length>72 || value.isBlank())
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid credentials");
+        boolean matches=passwords.matches(value,hashes.getOrDefault(user,hashes.get("admin")));
+        if(!ROLES.containsKey(user)||!matches) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid credentials");
+        String token=createToken(user,ROLES.get(user));
+        return Map.of("token",token,"username",user,"role",ROLES.get(user),
+            "expiresAt",JWT.decode(token).getExpiresAtAsInstant().toString());
+    }
 
-        // Synthetic tokens for quick testing
-        if ("synthetic-admin-token".equals(token)) return SYNTHETIC_USERS.get("admin");
-        if ("synthetic-investigator-token".equals(token)) return SYNTHETIC_USERS.get("investigator");
-        if ("synthetic-viewer-token".equals(token)) return SYNTHETIC_USERS.get("viewer");
+    public String createToken(String username,String role) {
+        if(!Objects.equals(ROLES.get(username),role)) throw new IllegalArgumentException("Unknown account or role");
+        Instant now=Instant.now();
+        return JWT.create().withIssuer(ISSUER).withSubject(username).withClaim("role",role)
+            .withIssuedAt(now).withExpiresAt(now.plusSeconds(ttl)).withJWTId(UUID.randomUUID().toString()).sign(algorithm);
+    }
 
-        String[] parts = token.split("\\.");
-        if (parts.length != 3) return null;
-
-        String expectedSig = sign(parts[0] + "." + parts[1]);
-        if (!MessageDigest.isEqual(expectedSig.getBytes(StandardCharsets.UTF_8), parts[2].getBytes(StandardCharsets.UTF_8))) {
-            return null;
-        }
-
+    public UserPrincipal authenticateToken(String header) {
+        if(header==null||!header.startsWith("Bearer ")||header.length()>8192) return null;
         try {
-            String payloadJson = new String(B64DEC.decode(parts[1]), StandardCharsets.UTF_8);
-            String sub = extractJsonField(payloadJson, "sub");
-            String role = extractJsonField(payloadJson, "role");
-            if (sub != null && role != null) {
-                return new UserPrincipal(sub, role);
-            }
-        } catch (Exception ignored) {}
-        return null;
-    }
-
-    private static String sign(String data) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            return B64ENC.encodeToString(mac.doFinal(data.getBytes(StandardCharsets.UTF_8)));
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private static String extractJsonField(String json, String key) {
-        int idx = json.indexOf("\"" + key + "\"");
-        if (idx == -1) return null;
-        int colon = json.indexOf(":", idx);
-        if (colon == -1) return null;
-        int quoteStart = json.indexOf("\"", colon);
-        if (quoteStart == -1) return null;
-        int quoteEnd = json.indexOf("\"", quoteStart + 1);
-        if (quoteEnd == -1) return null;
-        return json.substring(quoteStart + 1, quoteEnd);
+            var token=verifier.verify(header.substring(7).trim());
+            String user=token.getSubject(),role=token.getClaim("role").asString();
+            if(user==null||role==null||!Objects.equals(ROLES.get(user),role)) return null;
+            if(token.getIssuedAtAsInstant().isAfter(Instant.now().plusSeconds(5))) return null;
+            return new UserPrincipal(user,role);
+        } catch(JWTVerificationException|IllegalArgumentException e) {return null;}
     }
 }

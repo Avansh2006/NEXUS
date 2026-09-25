@@ -5,19 +5,117 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class EngineClient {
     private final RestClient client;
+    private final RestClient healthClient;
+    private final RestClient cctvClient;
     public EngineClient(@Value("${nexus.intelligence-url}") String url) {
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(3000); factory.setReadTimeout(15000);
         client = RestClient.builder().baseUrl(url).requestFactory(factory).build();
+        var healthFactory = new SimpleClientHttpRequestFactory();
+        healthFactory.setConnectTimeout(2000); healthFactory.setReadTimeout(2000);
+        healthClient = RestClient.builder().baseUrl(url).requestFactory(healthFactory).build();
+        var cctvFactory = new SimpleClientHttpRequestFactory();
+        cctvFactory.setConnectTimeout(5000); cctvFactory.setReadTimeout(120000);
+        cctvClient = RestClient.builder().baseUrl(url).requestFactory(cctvFactory).build();
     }
     public Model.Extraction extract(String text, String id) {
-        return client.post().uri("/extract").body(Map.of("text",text,"recordId",id)).retrieve().body(Model.Extraction.class);
+        return utf16(text,client.post().uri("/extract").body(Map.of("text",text,"recordId",id)).retrieve().body(Model.Extraction.class));
+    }
+    static Model.Extraction utf16(String text, Model.Extraction result) {
+        if(result==null || result.entities()==null) throw new IllegalStateException("Missing extraction response");
+        int length=text.codePointCount(0,text.length());
+        return new Model.Extraction(result.entities().stream().map(e->{
+            if(e.start()<0 || e.end()<e.start() || e.end()>length) throw new IllegalStateException("Invalid extraction span");
+            int start=text.offsetByCodePoints(0,e.start()),end=text.offsetByCodePoints(0,e.end());
+            if(!text.substring(start,end).equals(e.raw())) throw new IllegalStateException("Extraction span does not match source");
+            return new Model.Extracted(e.type(),e.raw(),start,end,e.confidence(),e.normalized(),e.role(),e.sourceRecordId());
+        }).toList());
     }
     public JsonNode analyze(Model.Graph graph) { return client.post().uri("/analyze").body(graph).retrieve().body(JsonNode.class); }
     public JsonNode quality() { return client.get().uri("/quality").retrieve().body(JsonNode.class); }
+    public JsonNode health() { return healthClient.get().uri("/health").retrieve().body(JsonNode.class); }
+    public JsonNode visionStatus() { return client.get().uri("/vision/status").retrieve().body(JsonNode.class); }
+    public JsonNode visionEnroll(byte[] imageBytes) {
+        String b64 = Base64.getEncoder().encodeToString(imageBytes);
+        return client.post().uri("/vision/enroll").body(Map.of("image_base64", b64)).retrieve().body(JsonNode.class);
+    }
+    public JsonNode visionSearch(byte[] imageBytes, Integer selectedFaceIndex, Double confThreshold) {
+        String b64 = Base64.getEncoder().encodeToString(imageBytes);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("image_base64", b64);
+        if (selectedFaceIndex != null) body.put("selected_face_index", selectedFaceIndex);
+        if (confThreshold != null) body.put("conf_threshold", confThreshold);
+        return client.post().uri("/vision/search").body(body).retrieve().body(JsonNode.class);
+    }
+    public JsonNode visionCompare(List<Double> queryEmbedding, List<Map<String, Object>> gallery, double threshold) {
+        return client.post().uri("/vision/compare").body(Map.of("query_embedding", queryEmbedding, "gallery", gallery, "threshold", threshold)).retrieve().body(JsonNode.class);
+    }
+
+    // MULTIMODAL EVIDENCE CLIENT METHODS
+    public JsonNode evidenceStatus() { return client.get().uri("/evidence/status").retrieve().body(JsonNode.class); }
+
+    public JsonNode evidenceDocumentOcr(byte[] fileBytes, String filename, String assetId) {
+        String b64 = Base64.getEncoder().encodeToString(fileBytes);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("file_base64", b64);
+        body.put("filename", filename);
+        body.put("asset_id", assetId);
+        return client.post().uri("/evidence/document/ocr").body(body).retrieve().body(JsonNode.class);
+    }
+
+    public JsonNode evidenceAudioTranscribe(byte[] audioBytes, String filename, String assetId) {
+        String b64 = Base64.getEncoder().encodeToString(audioBytes);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("audio_base64", b64);
+        body.put("filename", filename);
+        body.put("asset_id", assetId);
+        return client.post().uri("/evidence/audio/transcribe").body(body).retrieve().body(JsonNode.class);
+    }
+
+    public JsonNode evidenceVisualEmbed(byte[] fileBytes, String filename, String mediaType, String assetId, String caseId) {
+        String b64 = Base64.getEncoder().encodeToString(fileBytes);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("file_base64", b64);
+        body.put("filename", filename);
+        body.put("media_type", mediaType);
+        body.put("asset_id", assetId);
+        body.put("case_id", caseId);
+        return client.post().uri("/evidence/visual/embed").body(body).retrieve().body(JsonNode.class);
+    }
+
+    public JsonNode evidenceVisualSearch(List<Double> queryEmbedding, List<Map<String, Object>> gallery, double threshold, int topK) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("query_embedding", queryEmbedding);
+        body.put("gallery", gallery);
+        body.put("threshold", threshold);
+        body.put("top_k", topK);
+        return client.post().uri("/evidence/visual/search").body(body).retrieve().body(JsonNode.class);
+    }
+
+    // NATURAL-LANGUAGE CCTV HUNT CLIENT METHODS
+    public JsonNode cctvStatus() {
+        return cctvClient.get().uri("/vision/cctv/status").retrieve().body(JsonNode.class);
+    }
+
+    public JsonNode cctvSearch(byte[] videoBytes, String filename, String query, String assetId, String caseId, Double boxThreshold, Double textThreshold) {
+        String b64 = Base64.getEncoder().encodeToString(videoBytes);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("video_base64", b64);
+        body.put("filename", filename);
+        body.put("query", query);
+        body.put("asset_id", assetId);
+        body.put("case_id", caseId);
+        if (boxThreshold != null) body.put("box_threshold", boxThreshold);
+        if (textThreshold != null) body.put("text_threshold", textThreshold);
+        return cctvClient.post().uri("/vision/cctv/search").body(body).retrieve().body(JsonNode.class);
+    }
+
+    public JsonNode cctvAnalysis(String analysisId) {
+        return cctvClient.get().uri("/vision/cctv/search/" + analysisId).retrieve().body(JsonNode.class);
+    }
 }

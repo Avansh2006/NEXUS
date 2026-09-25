@@ -12,9 +12,11 @@ import static systems.nexus.Model.*;
 @RequestMapping("/api")
 public class ApiController {
     private final InvestigationService service;private final Store store;private final EngineClient engine;private final ObjectMapper json;
-    public ApiController(InvestigationService service,Store store,EngineClient engine,ObjectMapper json) {this.service=service;this.store=store;this.engine=engine;this.json=json;}
+    private final Auth auth;
+    private final IntelligenceSuiteService suiteService;
+    public ApiController(InvestigationService service,Store store,EngineClient engine,ObjectMapper json,Auth auth,IntelligenceSuiteService suiteService) {this.service=service;this.store=store;this.engine=engine;this.json=json;this.auth=auth;this.suiteService=suiteService;}
     @GetMapping("/health") public Map<String,String> health() {return Map.of("status","ok");}
-    @PostMapping("/data/{kind:fir|cdr|transactions}") public IngestResult ingest(@PathVariable String kind,@RequestBody IngestRequest body) {return service.ingest(kind,body);}
+    @PostMapping("/data/{kind:fir|cdr|transactions|criminal-history|intel-report|surveillance-report}") public IngestResult ingest(@PathVariable String kind,@RequestBody IngestRequest body) {return service.ingest(kind,body);}
     @PostMapping("/demo/load") public Map<String,IngestResult> load() throws IOException {return service.load();}
     @PostMapping("/demo/reset") public Map<String,Boolean> reset() {service.reset();return Map.of("reset",true);}
     @PostMapping("/demo/incoming") public Map<String,Object> incoming() throws IOException {return service.ingestIncomingFir();}
@@ -37,23 +39,21 @@ public class ApiController {
     @GetMapping("/audit") public List<Map<String,Object>> audit() {return store.audit();}
     @GetMapping("/audit/verify") public Map<String,Object> verifyAudit() {return store.verifyAuditChain();}
     @PostMapping("/auth/login") public Map<String,Object> login(@RequestBody Map<String,String> creds) {
-        String u = creds.getOrDefault("username","").trim().toLowerCase(Locale.ROOT);
-        String p = creds.getOrDefault("password","");
-        String expected = Auth.PASSWORDS.get(u);
-        if(expected == null || !expected.equals(p)) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid credentials");
-        var principal = Auth.SYNTHETIC_USERS.get(u);
-        String token = Auth.createToken(principal.username(), principal.role());
-        store.audit("auth:login", principal.username(), "", "");
-        return Map.of("token", token, "username", principal.username(), "role", principal.role());
+        var result=auth.login(creds.get("username"),creds.get("password"));
+        store.audit("auth:login",result.get("username").toString(),"","");
+        return result;
     }
     @GetMapping("/auth/me") public Map<String,Object> me(jakarta.servlet.http.HttpServletRequest req) {
         String u = (String) req.getAttribute("nexus.user");
         String r = (String) req.getAttribute("nexus.role");
-        return Map.of("username", u != null ? u : "admin@nexus.internal", "role", r != null ? r : "ADMIN");
+        return Map.of("username", u, "role", r);
     }
-    @PostMapping(value="/reports",produces=MediaType.TEXT_HTML_VALUE) public String report(@RequestBody(required=false) ReportRequest request) {
+    @PostMapping(value="/reports",produces=MediaType.TEXT_HTML_VALUE) public String report(@RequestBody(required=false) ReportRequest request, jakarta.servlet.http.HttpServletRequest req) {
         String image=request==null?null:request.graphImage();
-        if(image!=null&&(!image.matches("data:image/png;base64,[A-Za-z0-9+/=]+")||image.length()>1500000)) throw new IllegalArgumentException("Report image must be a PNG data URL below 1.5 MB");
-        store.audit("report:export");return Report.render(service.graph(),image);
+        if(image!=null&&(!image.matches("data:image/png;base64,[A-Za-z0-9+/=]+")||image.length()>3000000)) throw new IllegalArgumentException("Report image must be a PNG data URL below 3 MB");
+        String user = (String) req.getAttribute("nexus.user");
+        if (user == null || user.isBlank()) user = "investigator";
+        store.audit("report:export", user, "", "dossier");
+        return Report.renderDossier(service.graph(), request, store, suiteService, user);
     }
 }

@@ -39,6 +39,12 @@ class IntentModel(BaseModel):
         "logistics_entities",
         "suppression_reason",
         "circular_flows",
+        "investigation_replay",
+        "what_if_analysis",
+        "contradiction_engine",
+        "evidence_trail",
+        "investigation_gaps",
+        "network_change_radar",
         "entity_lookup",
         "out_of_scope",
     ]
@@ -129,6 +135,60 @@ def keyword_intent_mapper(query: str) -> IntentModel:
             intent="circular_flows",
             parameters={"rule_id": "R7"},
             confidence=0.93,
+            source="keyword",
+        )
+
+    # 1. Investigation Replay
+    if any(k in q for k in ["replay", "playback", "timeline progression", "evolve", "evolution", "history of investigation"]):
+        return IntentModel(
+            intent="investigation_replay",
+            parameters={},
+            confidence=0.96,
+            source="keyword",
+        )
+
+    # 2. Counterfactual / What-If Analysis
+    if any(k in q for k in ["what if", "what-if", "simulate removing", "remove evidence", "counterfactual", "exclude"]):
+        return IntentModel(
+            intent="what_if_analysis",
+            parameters={"query": query.strip()},
+            confidence=0.95,
+            source="keyword",
+        )
+
+    # 3. Contradiction Engine (Rules C1–C6)
+    if any(k in q for k in ["contradict", "conflict", "inconsistent", "c1", "c2", "c3", "c4", "c5", "c6"]):
+        return IntentModel(
+            intent="contradiction_engine",
+            parameters={},
+            confidence=0.95,
+            source="keyword",
+        )
+
+    # 4. Evidence Trail Mode
+    if any(k in q for k in ["why are", "why is", "evidence trail", "how is", "how are", "evidence path", "chain of custody", "connect"]):
+        return IntentModel(
+            intent="evidence_trail",
+            parameters={"query": query.strip()},
+            confidence=0.94,
+            source="keyword",
+        )
+
+    # 5. Investigation Gap Finder
+    if any(k in q for k in ["gap", "missing", "unresolved", "blind spot", "dead end", "next steps"]):
+        return IntentModel(
+            intent="investigation_gaps",
+            parameters={},
+            confidence=0.95,
+            source="keyword",
+        )
+
+    # 6. Network Change Radar
+    if any(k in q for k in ["radar", "change", "what changed", "new evidence arrived", "milestone"]):
+        return IntentModel(
+            intent="network_change_radar",
+            parameters={},
+            confidence=0.94,
             source="keyword",
         )
 
