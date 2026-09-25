@@ -678,6 +678,9 @@ public class EvidenceService {
         byte[] cctvBytes;
         try {
             java.nio.file.Path cctvFixturePath = java.nio.file.Paths.get("data/fixtures/cctv/synthetic_cctv_junction.mp4");
+            if (!java.nio.file.Files.exists(cctvFixturePath)) {
+                cctvFixturePath = java.nio.file.Paths.get("../data/fixtures/cctv/synthetic_cctv_junction.mp4");
+            }
             if (java.nio.file.Files.exists(cctvFixturePath)) {
                 cctvBytes = java.nio.file.Files.readAllBytes(cctvFixturePath);
             } else {

@@ -20,3 +20,5 @@ playwright-report/
 intelligence/models/*.onnx
 intelligence/models/*
 !intelligence/models/.gitkeep
+backend/data/
+
