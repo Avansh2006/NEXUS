@@ -33,6 +33,8 @@ RUN pip install --no-cache-dir torch torchvision --index-url https://download.py
 COPY intelligence/requirements.txt /app/intelligence/requirements.txt
 RUN pip install --no-cache-dir -r /app/intelligence/requirements.txt
 
+ENV NEXUS_LOW_MEMORY=true
+
 # Copy backend JAR and intelligence engine
 COPY intelligence /app/intelligence
 RUN python /app/intelligence/download_models.py
@@ -46,6 +48,7 @@ RUN chmod +x /docker-entrypoint.sh
 ENV DEMO_DIR=/data/demo \
     PORT=8081 \
     INTELLIGENCE_URL=http://127.0.0.1:8000 \
+    NEXUS_LOW_MEMORY=true \
     FRONTEND_ORIGIN="*"
 
 EXPOSE 8081 10000

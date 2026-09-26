@@ -47,6 +47,9 @@ export ORT_NUM_THREADS=${ORT_NUM_THREADS:-1}
 
 # 0. Ensure pretrained vision models are available
 echo "[NEXUS] Verifying pretrained vision models..."
+if [ "${NEXUS_LOW_MEMORY}" = "true" ]; then
+    rm -f /app/intelligence/models/adaface_ir_101.onnx /app/models/adaface_ir_101.onnx 2>/dev/null || true
+fi
 python /app/intelligence/download_models.py || true
 
 # 1. Start Python Intelligence Engine in background

@@ -23,7 +23,7 @@ class AdaFaceRecognizer:
         if not self._initialized:
             self._initialized = True
             import os
-            if os.getenv("NEXUS_LOW_MEMORY", "false").lower() in ("true", "1", "yes"):
+            if os.getenv("NEXUS_LOW_MEMORY", "true").lower() in ("true", "1", "yes"):
                 logger.info("NEXUS_LOW_MEMORY active: Using lightweight deterministic 512-D face embedding.")
                 self.session = None
                 return
