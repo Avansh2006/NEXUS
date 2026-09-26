@@ -198,9 +198,10 @@ export default function MultimodalEvidence({
   const fetchAssets = useCallback(async () => {
     try {
       const list = await api<EvidenceAsset[]>("/evidence/assets");
-      setAssets(list);
-      if (!selectedAsset && list.length > 0) {
-        setSelectedAsset(list[0]);
+      const safeList = Array.isArray(list) ? list : [];
+      setAssets(safeList);
+      if (!selectedAsset && safeList.length > 0) {
+        setSelectedAsset(safeList[0]);
       }
     } catch (e: any) {
       // Graceful fallback if backend table is empty
@@ -211,7 +212,7 @@ export default function MultimodalEvidence({
   const fetchReviews = useCallback(async () => {
     try {
       const list = await api<EvidenceReviewDecision[]>("/evidence/reviews");
-      setReviews(list);
+      setReviews(Array.isArray(list) ? list : []);
     } catch {
       setReviews([]);
     }

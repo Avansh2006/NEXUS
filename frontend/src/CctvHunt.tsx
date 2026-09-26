@@ -173,7 +173,8 @@ export default function CctvHunt({
   const fetchAssets = useCallback(async () => {
     try {
       const all = await api<EvidenceAsset[]>("/evidence/assets");
-      const videoAssets = all.filter((a) => a.mediaType === "VIDEO" || a.fileName.toLowerCase().endsWith(".mp4") || a.fileName.toLowerCase().endsWith(".mov") || a.fileName.toLowerCase().endsWith(".avi"));
+      const safeAll = Array.isArray(all) ? all : [];
+      const videoAssets = safeAll.filter((a) => a.mediaType === "VIDEO" || a.fileName.toLowerCase().endsWith(".mp4") || a.fileName.toLowerCase().endsWith(".mov") || a.fileName.toLowerCase().endsWith(".avi"));
       setAssets(videoAssets);
 
       if (videoAssets.length > 0) {
@@ -193,7 +194,7 @@ export default function CctvHunt({
   const fetchPastAnalyses = useCallback(async (assetId: string) => {
     try {
       const list = await api<CctvAnalysis[]>(`/cctv/analyses?assetId=${assetId}`);
-      setPastAnalyses(list);
+      setPastAnalyses(Array.isArray(list) ? list : []);
     } catch {
       setPastAnalyses([]);
     }

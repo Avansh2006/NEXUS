@@ -93,7 +93,11 @@ def download_file(url: str, dest: Path, expected_sha256: str) -> bool:
 def ensure_models() -> bool:
     all_ready = True
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    low_mem = os.getenv("NEXUS_LOW_MEMORY", "false").lower() in ("true", "1", "yes")
     for filename, info in MODELS.items():
+        if low_mem and filename == "adaface_ir_101.onnx":
+            print(f"[NEXUS] NEXUS_LOW_MEMORY active: Skipping 250MB {filename} to stay within 512MB RAM bounds.")
+            continue
         dest = MODELS_DIR / filename
         if dest.exists() and dest.stat().st_size >= info["min_size"]:
             if verify_checksum(dest, info["sha256"]):

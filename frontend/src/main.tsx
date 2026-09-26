@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import AuthGate from "./AuthGate";
+import ErrorBoundary from "./ErrorBoundary";
 import { MotionConfig } from "motion/react";
 import "@fontsource/inter/latin-400.css";
 import "@fontsource/inter/latin-500.css";
@@ -12,6 +13,8 @@ import "./premium.css";
 import "./refinement.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <MotionConfig reducedMotion="user"><AuthGate /></MotionConfig>
+    <ErrorBoundary>
+      <MotionConfig reducedMotion="user"><AuthGate /></MotionConfig>
+    </ErrorBoundary>
   </React.StrictMode>,
 );

@@ -17,6 +17,8 @@ def get_detector_path() -> Optional[Path]:
 
 
 def get_recognizer_path() -> Optional[Path]:
+    if os.getenv("NEXUS_LOW_MEMORY", "false").lower() in ("true", "1", "yes"):
+        return None
     p = MODELS_DIR / ADAFACE_MODEL_NAME
     if p.exists() and p.stat().st_size > 50000000:
         return p

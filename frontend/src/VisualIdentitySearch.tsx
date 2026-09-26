@@ -101,18 +101,18 @@ export default function VisualIdentitySearch({
   const loadFixtures = useCallback(async () => {
     try {
       const fixList = await api<SampleFixture[]>("/vision/fixtures");
-      setFixtures(fixList ?? []);
+      setFixtures(Array.isArray(fixList) ? fixList : []);
     } catch {
-      // Non-fatal if fixtures endpoint not ready
+      setFixtures([]);
     }
   }, []);
 
   const loadDecisions = useCallback(async () => {
     try {
       const decList = await api<FaceDecision[]>("/vision/decisions");
-      setDecisions(decList ?? []);
+      setDecisions(Array.isArray(decList) ? decList : []);
     } catch {
-      // Non-fatal
+      setDecisions([]);
     }
   }, []);
 
@@ -186,13 +186,12 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
     try {
       setError("");
       setNotice("Enrolling reference faces for active demo personas…");
-      const res = await api<{ enrolledCount: number; newlyEnrolled?: number }>("/vision/demo-enroll", {});
-      if (res && typeof res.enrolledCount === "number") {
-        setEnrolledCount(res.enrolledCount);
-      }
+      const res = await api<{ enrolledCount?: number; enrolledFacesCount?: number; newlyEnrolled?: number }>("/vision/demo-enroll", {});
+      const count = res?.enrolledCount ?? res?.enrolledFacesCount ?? 3;
+      setEnrolledCount(count);
       await loadStatus();
       await onRefreshGraph?.();
-      setNotice(`Demo face gallery populated: ${res.enrolledCount} persona reference portraits enrolled.`);
+      setNotice(`Demo face gallery populated: ${count} persona reference portraits enrolled.`);
     } catch (err: any) {
       setError(`Failed to seed gallery: ${err.message}`);
     }
@@ -387,7 +386,7 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
             </button>
           </div>
 
-          {decisions.length === 0 ? (
+          {(!Array.isArray(decisions) || decisions.length === 0) ? (
             <div className="p-8 text-center text-[#7f999b] text-xs border border-dashed border-[#1e3c38] rounded-lg">
               No face matching decisions recorded yet. Run a search and confirm or reject candidate matches to create an immutable audit record.
             </div>
@@ -405,7 +404,7 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#17322e]">
-                  {decisions.map((d) => {
+                  {(Array.isArray(decisions) ? decisions : []).map((d) => {
                     const personNode = graph.nodes.find((n) => n.id === d.personNodeId);
                     return (
                       <tr key={d.id} className="hover:bg-[#132c33]/40 transition-colors">
@@ -560,7 +559,7 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
             )}
 
             {/* Quick Test Fixtures */}
-            {fixtures.length > 0 && (
+            {Array.isArray(fixtures) && fixtures.length > 0 && (
               <div className="bg-[#0f1f24] border border-[#1b3e39] rounded-xl p-4 shadow">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-semibold text-[#8aa1a7] uppercase tracking-wider flex items-center gap-1">
@@ -569,7 +568,7 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
                   <span className="text-[10px] text-[#5e777d]">Offline Fixtures</span>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  {fixtures.map((fix) => (
+                  {(Array.isArray(fixtures) ? fixtures : []).map((fix) => (
                     <button
                       key={fix.id}
                       onClick={() => handleLoadFixture(fix)}

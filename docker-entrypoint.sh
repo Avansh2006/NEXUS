@@ -42,6 +42,9 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
+export NEXUS_LOW_MEMORY=${NEXUS_LOW_MEMORY:-true}
+export ORT_NUM_THREADS=${ORT_NUM_THREADS:-1}
+
 # 0. Ensure pretrained vision models are available
 echo "[NEXUS] Verifying pretrained vision models..."
 python /app/intelligence/download_models.py || true
@@ -63,7 +66,7 @@ done
 
 # 3. Launch Spring Boot in foreground with strict 512MB container memory bounds
 echo "[NEXUS] Starting Spring Boot API on port ${PORT}..."
-exec java -Xmx160m -Xms48m -XX:+UseSerialGC \
+exec java -Xmx128m -Xms32m -XX:+UseSerialGC -XX:MaxMetaspaceSize=80m \
           -Dserver.port=${PORT} \
           -Dnexus.intelligence-url=${INTELLIGENCE_URL} \
           -Dnexus.demo-dir=${DEMO_DIR} \

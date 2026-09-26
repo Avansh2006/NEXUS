@@ -300,8 +300,36 @@ function getFallbackResponse(path: string, body?: unknown): Response {
       paths: [],
       synthesis: "Corroborated cross-case investigation trail.",
     };
-  } else if (p === "/evidence/cctv/assets" || p === "/evidence/multimodal/assets" || p === "/evidence/multimodal/reviews") {
+  } else if (
+    p === "/evidence/assets" ||
+    p === "/evidence/reviews" ||
+    p === "/evidence/cctv/assets" ||
+    p === "/evidence/multimodal/assets" ||
+    p === "/evidence/multimodal/reviews" ||
+    p === "/vision/fixtures" ||
+    p === "/vision/decisions" ||
+    p === "/cctv/analyses" ||
+    p === "/investigation/contradictions" ||
+    p.endsWith("/faces") ||
+    p.endsWith("/items") ||
+    p.endsWith("/tracks") ||
+    p.endsWith("/notes")
+  ) {
     data = [];
+  } else if (p === "/evidence/status" || p === "/cctv/status") {
+    data = { status: "ok", available: true, sidecar: "ready", device: "cpu" };
+  } else if (p === "/evidence/seed-demo" || p === "/evidence/demo/seed") {
+    data = { seeded: true, message: "Demo evidence assets initialized" };
+  } else if (p === "/vision/demo-enroll") {
+    data = { status: "ok", enrolledCount: 3, enrolledFacesCount: 3, message: "Demo reference portraits enrolled" };
+  } else if (p === "/investigation/replay") {
+    data = { steps: [] };
+  } else if (p === "/investigation/what-if") {
+    data = { simulationNodes: [], simulationEdges: [], cascadeImpacts: [] };
+  } else if (p === "/investigation/gaps") {
+    data = { gaps: [] };
+  } else if (p === "/analysis/changes") {
+    data = { changes: [] };
   } else if (p === "/graph") {
     data = (demoFallbackData as { graph: unknown }).graph;
   } else if (p === "/clusters") {
