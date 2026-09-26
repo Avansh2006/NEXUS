@@ -11,7 +11,6 @@
 - **Hosted Workbench (Frontend):** [https://nexus-workbench-avansh.netlify.app](https://nexus-workbench-avansh.netlify.app)
 - **Live Production API (Backend & ML Sidecar):** [https://nexus-app-3n8a.onrender.com](https://nexus-app-3n8a.onrender.com) (Health endpoint: [`/api/health`](https://nexus-app-3n8a.onrender.com/api/health))
 - **Live Demo Access:** Click **`⚡ 1-Click Evaluator Access (Admin)`** on the landing screen to instantly explore the pre-seeded multi-case intelligence graph without manual credential entry.
-- **Technical Presentation Deck (PDF):** [docs/TeamID_Event_Deck.pdf](docs/TeamID_Event_Deck.pdf) · [docs/NEXUS_Hackathon_Deck.pdf](docs/NEXUS_Hackathon_Deck.pdf)
 
 ---
 
@@ -173,7 +172,6 @@ Under Section 63 of the *Bharatiya Sakshya Adhiniyam, 2023* (formerly Section 65
 ## 📄 7. Technical Documentation Index
 
 - **Interactive Hosted Workbench:** [https://nexus-workbench-avansh.netlify.app](https://nexus-workbench-avansh.netlify.app)
-- **Technical Presentation Deck (PDF):** [docs/NEXUS_Hackathon_Deck.pdf](docs/NEXUS_Hackathon_Deck.pdf)
 - **System Architecture & Data Model:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **REST API Contract & Specifications:** [docs/API.md](docs/API.md)
 - **Visual Forensics & Biometrics Guide:** [docs/VISUAL_IDENTITY_SEARCH.md](docs/VISUAL_IDENTITY_SEARCH.md)

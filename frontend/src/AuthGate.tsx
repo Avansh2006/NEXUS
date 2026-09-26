@@ -88,14 +88,14 @@ export default function AuthGate() {
     <main className="login-screen">
       <div className="panel padded login-card" style={{ maxWidth: 440 }}>
         <div className="eyebrow" style={{ color: "#60c5b3", letterSpacing: "0.08em" }}>
-          NEXUS &bull; HACKATHON EVALUATION BENCHMARK
+          NEXUS &bull; ENTERPRISE INVESTIGATION BENCHMARK
         </div>
         <h1 style={{ marginTop: 8, marginBottom: 4 }}>Investigation Workbench</h1>
         <p style={{ color: "#9ca3af", fontSize: 13, marginBottom: 16 }}>
           Evidence-linked criminal network intelligence &amp; forensics.
         </p>
 
-        {/* 1-Click Judge Access Banner */}
+        {/* 1-Click Access Banner */}
         <div style={{
           background: "linear-gradient(135deg, rgba(96,197,179,0.15) 0%, rgba(30,58,62,0.4) 100%)",
           border: "1px solid rgba(96,197,179,0.4)",
@@ -105,7 +105,7 @@ export default function AuthGate() {
           textAlign: "center"
         }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#60c5b3", marginBottom: 6 }}>
-            Judges &amp; Evaluators Quick Access
+            Fast-Track Evaluation Access
           </div>
           <button
             type="button"
